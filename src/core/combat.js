@@ -61,11 +61,30 @@ export function createCombat(ctx) {
     if (result.type === 'none' && w) {
       const surface = ctx.level.surfaceOf(w.object);
       ctx.fx.impact(w.point, w.normal, surface);
-      ctx.audio.play('impact_' + surface, { position: w.point, volume: 0.6 });
+      ctx.audio.play('impact_' + surface, { position: w.point, volume: 0.6, from: o.from });
       result = { type: 'world', point: w.point, distance: w.distance, surface };
     }
+    if (o.from !== 'player' && result.type !== 'player') nearMiss(o, dir, result.distance);
     ctx.fx.tracer(o.origin, result.point);
     return result;
+  }
+
+  // Near miss: closest approach of the shot segment to the player's head -> supersonic crack / whizz.
+  const nmHead = new THREE.Vector3(), nmOff = new THREE.Vector3();
+  function nearMiss(o, dir, len) {
+    const p = ctx.player;
+    if (!p || !p.alive || !ctx.audio) return;
+    if (p.eye) nmHead.copy(p.eye); else nmHead.set(p.position.x, p.position.y + (p.height || 1.8) - 0.12, p.position.z);
+    nmOff.subVectors(nmHead, o.origin);
+    const along = nmOff.dot(dir);
+    if (along < 2 || along > len + 1.5) return;   // passed behind the shooter's muzzle area or stopped well short
+    const miss = Math.sqrt(Math.max(0, nmOff.lengthSq() - along * along));
+    if (miss > 2.2) return;
+    const point = o.origin.clone().addScaledVector(dir, Math.min(along, len));
+    ctx.audio.play('bullet_flyby', {
+      position: point, missDistance: miss, along, dir,
+      weapon: o.shooter?.weaponType || 'pistol', volume: 1,
+    });
   }
 
   // True if nothing static blocks the segment a->b (used by AI for line of sight).
