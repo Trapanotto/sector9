@@ -65,8 +65,8 @@ export const TUNING = {
 
   // ---- focus
   dof: 1.0,                  // 0 disables depth of field (skips both half-res passes)
-  dofCoc: 1.5,              // CoC in px (at 1080p) per dioptre of defocus
-  dofMaxCoc: 8,             // px at 1080p
+  dofCoc: 0.8,              // CoC in px (at 1080p) per dioptre of defocus
+  dofMaxCoc: 5,             // px at 1080p
   afDelay: 0.14,             // s before AF reacts
   afSpeed: 7.5,              // AF spring omega
   afDamping: 0.42,           // < 1 overshoots

@@ -152,7 +152,7 @@ export function createVmMaterials() {
     });
 
   // ---------------------------------------------------------------- glove
-  const glove = inject(new THREE.MeshPhysicalMaterial({ color: 0xffffff, metalness: 0, roughness: 0.85, sheen: 1.0, sheenRoughness: 0.55, sheenColor: new THREE.Color(0.022, 0.022, 0.022) }), 'glove', {
+  const glove = inject(new THREE.MeshPhysicalMaterial({ color: 0x505054, metalness: 0, roughness: 0.85, sheen: 0.35, sheenRoughness: 0.55, sheenColor: new THREE.Color(0.022, 0.022, 0.022) }), 'glove', {
     uniforms: { uFabric: tex.fabric, uLeather: tex.leather, uTexReady: ready },
     vertexHead: 'attribute vec4 aRegion;\nattribute float aAo;\nattribute float aSeam;\nvarying vec4 vRegion;\nvarying float vAo;\nvarying float vSeam;',
     vertexBody: 'vRegion = aRegion; vAo = aAo; vSeam = aSeam;',
@@ -210,7 +210,7 @@ export function createVmMaterials() {
   });
 
   // ---------------------------------------------------------------- sleeve
-  const sleeve = inject(new THREE.MeshPhysicalMaterial({ color: 0x252a31, metalness: 0, roughness: 0.92, sheen: 1.0, sheenRoughness: 0.6, sheenColor: new THREE.Color(0.018, 0.020, 0.024) }), 'sleeve', {
+  const sleeve = inject(new THREE.MeshPhysicalMaterial({ color: 0x15181d, metalness: 0, roughness: 0.92, sheen: 0.35, sheenRoughness: 0.6, sheenColor: new THREE.Color(0.018, 0.020, 0.024) }), 'sleeve', {
     uniforms: { uCloth: tex.cloth, uTexReady: ready },
     vertexHead: 'varying vec2 vVmUv;',
     vertexBody: 'vVmUv = uv;',
