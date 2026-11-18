@@ -106,7 +106,7 @@
   "hdri": {
     "id": "hanger_exterior_cloudy",
     "use": "overcast IBL + visible sky",
-    "file": "hdri/hanger_exterior_cloudy_2k.hdr"
+    "file": "hdri/hanger_exterior_cloudy_1k.hdr"
   },
   "totalBytes": 87072866
 }
