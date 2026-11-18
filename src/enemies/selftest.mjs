@@ -7,6 +7,13 @@ import { createNav } from './nav.js';
 import { aimError } from './ai.js';
 import { TUNING } from './tuning.js';
 
+// The AI is stochastic (reaction delays, look-around, spawn looks); seed Math.random so a run is reproducible.
+// Pass SEED=<n> to try other sequences.
+{
+  let s = (Number(process.env.SEED) || 20261118) >>> 0;
+  Math.random = () => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+
 let failures = 0;
 const check = (cond, msg) => { if (cond) console.log('  ok   ' + msg); else { failures++; console.log('  FAIL ' + msg); } };
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
