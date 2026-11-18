@@ -11,6 +11,7 @@
 import * as THREE from 'three';
 import { Batcher, rng } from './geometry.js';
 import { Kit, TILE, makeLabelTexture, makePropMaterials, PROP_SCALES, PROP_SURFACES } from './propKit.js';
+import { extraBuilders, dressAreas } from './propsExtra.js';
 
 const v3 = (x, y, z) => new THREE.Vector3(x, y, z);
 const ONE = new THREE.Vector3(1, 1, 1);
@@ -159,6 +160,29 @@ export function buildProps(B, layout, seed = 7) {
     for (const dx of [-0.32, 0.32]) {
       box([cx + dx - 0.012, y + 0.895, cz - 0.4], [cx + dx + 0.012, y + 0.905, cz + 0.4], 'dark');
     }
+  };
+  // Shrink-wrapped carton block (one part: used for high rack levels where the detail cannot be seen anyway).
+  const blockLoad = (cx, y, cz) => {
+    const h = rr(0.55, 1.0), t = rr(0.6, 0.95);
+    cb([cx - 0.56, y, cz - 0.38], [cx + 0.56, y + h, cz + 0.38], 'cardboard', { r: 0.03, tint: t });
+    for (const dx of [-0.3, 0.3]) box([cx + dx - 0.012, y + h - 0.004, cz - 0.39], [cx + dx + 0.012, y + h + 0.012, cz + 0.39], 'dark');
+    if (R() < 0.5) lbl([cx + rr(-0.3, 0.3), y + h * 0.5, cz + 0.381], [0, 0, 1], 0.16, 0.2, TILE.notice, { k: 0.8 });
+  };
+  // Cheap stand-ins for rack and shelf loads (hundreds of them: models would cost thousands of triangles each).
+  const sackLoad = (cx, y, cz, layers = 2) => {
+    for (let l = 0; l < layers; l++) for (let i = 0; i < 3; i++) {
+      const yy = y + l * 0.17, t = rr(0.75, 1.0);
+      if (l % 2 === 0) cb([cx - 0.58 + i * 0.39, yy, cz - 0.34], [cx - 0.21 + i * 0.39, yy + 0.16, cz + 0.34], 'paper', { r: 0.05, color: [0.62 * t, 0.58 * t, 0.5 * t] });
+      else if (i < 2) cb([cx - 0.56, yy, cz - 0.36 + i * 0.37], [cx + 0.56, yy + 0.16, cz - 0.02 + i * 0.37], 'paper', { r: 0.05, color: [0.6 * t, 0.56 * t, 0.48 * t] });
+    }
+  };
+  const crateCheap = (x, y, z, ry = 0) => {
+    const m = M(x, y, z, ry);
+    cb([-0.25, 0, -0.2], [0.25, 0.24, 0.2], 'paintBlue', { matrix: m, r: 0.012, tint: rr(0.6, 0.9) });
+  };
+  const drumCheap = (x, y, z, key = 'paintBlue') => {
+    B.cylinder(key, [x, y, z], 0.28, 0.86, { segs: 14, rows: 2, tint: rr(0.6, 0.9) });
+    for (const h of [0.28, 0.58]) B.cylinder(key, [x, y + h, z], 0.29, 0.03, { segs: 14, rows: 2, caps: false, tint: 0.7 });
   };
   // Corrugated sheet (trapezoidal profile) on a vertical plane. axis 'x': runs along x at z=t, faces sz; 'z': along z at x=t.
   const corrugated = (key, axis, t, s, a0, a1, y0, y1, o = {}) => {
@@ -462,10 +486,11 @@ export function buildProps(B, layout, seed = 7) {
       K.pipe('steel', [cx - r - 0.28, 1.55, cz + 0.05], [cx - r - 0.28, 1.55, cz + 0.35], 0.012, { segs: 6 });
       // nozzles with flanges + piping (existing runs to the wall and the corridor)
       const flange = (a, b, rr0) => { K.pipe('steel', a, b, rr0, { segs: 16, tint: 0.65 }); };
-      flange([cx, 4.38, cz - r + 0.05], [cx, 4.38, cz - r - 0.1], 0.2);
-      B.pipe('rust', [cx, 4.38, cz - r - 0.1], [cx, 4.38, -5.8], 0.12);
+      const pX = p.pipeTo ? p.pipeTo[0] : 7.8, pZ = p.pipeTo ? p.pipeTo[1] : -5.8, pd = pZ < cz ? -1 : 1;
+      flange([cx, 4.38, cz + pd * (r - 0.05)], [cx, 4.38, cz + pd * (r + 0.1)], 0.2);
+      B.pipe('rust', [cx, 4.38, cz + pd * (r + 0.1)], [cx, 4.38, pZ], 0.12);
       flange([cx + r - 0.05, 1.2, cz], [cx + r + 0.1, 1.2, cz], 0.18);
-      B.pipe('rust', [cx + r + 0.1, 1.2, cz], [7.8, 1.2, cz], 0.1);
+      B.pipe('rust', [cx + r + 0.1, 1.2, cz], [pX, 1.2, cz], 0.1);
       flange([cx + r + 0.6, 1.2, cz], [cx + r + 0.7, 1.2, cz], 0.17);
       cb([cx + r + 0.35, 1.08, cz - 0.11], [cx + r + 0.55, 1.32, cz + 0.11], 'paintRed', { r: 0.02, tint: 0.8 });   // valve body
       K.pipe('steel', [cx + r + 0.45, 1.32, cz], [cx + r + 0.45, 1.55, cz], 0.02, { segs: 8 });
@@ -712,9 +737,20 @@ export function buildProps(B, layout, seed = 7) {
             const px = along ? cx + s + 0.12 : cx + rr(-0.05, 0.05), pz = along ? cz + rr(-0.05, 0.05) : cz + s + 0.12;
             if (k < 0.18) continue;
             if (y > 2 && k < 0.6) continue;
+            if (p.archive && k < 0.75) {
+              // archive: rows of lever-arch files
+              const n = 4 + Math.floor(R() * 6), key = pick(['paintBlue', 'paintRed', 'dark', 'paintGrey', 'yellow']);
+              for (let b = 0; b < n; b++) {
+                const o = -0.12 + b * 0.065;
+                const lean = b === n - 1 && R() < 0.4 ? 0.25 : 0;
+                const mm = M(along ? px + o : px, y, along ? pz : pz + o, (along ? 0 : PI / 2), 0, lean);
+                box([-0.028, 0, -0.14], [0.028, 0.31, 0.14], key, { matrix: mm, normalMatrix: new THREE.Matrix3().getNormalMatrix(mm), tint: rr(0.6, 1.0), seg: 2 });
+              }
+              continue;
+            }
             if (k < 0.62) carton(px, y, pz, rr(0.25, 0.4), rr(0.16, 0.36), rr(0.28, 0.4), rr(-0.2, 0.2) + (along ? 0 : PI / 2));
-            else if (k < 0.74 && y < 2) model('plastic_crate_02', px, y, pz, { ry: (along ? 0 : PI / 2) + rr(-0.1, 0.1), s: 0.92 });
-            else if (k < 0.86 && y < 2) model('plastic_jerrycan', px, y, pz, { ry: rr(0, 6), s: 0.95 });
+            else if (k < 0.72 && y < 2) crateCheap(px, y, pz, (along ? 0 : PI / 2) + rr(-0.1, 0.1));
+            else if (k < 0.78 && y < 2) model('plastic_jerrycan', px, y, pz, { ry: rr(0, 6), s: 0.95 });
             else model('can_rusted', px, y, pz, { s: 1.4 });
           }
         }
@@ -813,6 +849,22 @@ export function buildProps(B, layout, seed = 7) {
       cb([x0 + 0.04, y1 - 0.11, z0 + 0.04], [x1 - 0.04, y1 - 0.034, z1 - 0.04], 'steel', { r: 0.006, tint: 0.7 });
       for (const [a, b] of [[x0 + 0.05, z0 + 0.05], [x1 - 0.1, z0 + 0.05], [x0 + 0.05, z1 - 0.1], [x1 - 0.1, z1 - 0.1]]) cb([a, 0, b], [a + 0.05, y1 - 0.1, b + 0.05], 'steel', { r: 0.006 });
       for (let i = 0; i < 6; i++) inst.papers.push([rr(x0 + 0.2, x1 - 0.2), y1 + 0.002 + i * 0.001, rr(z0 + 0.1, z1 - 0.2), R() * 3]);
+      if (p.canteen) {
+        // canteen: trays, plates, mugs, a thermos; chairs on both sides
+        for (let i = 0; i < 4; i++) {
+          const x = x0 + 0.35 + i * (x1 - x0 - 0.7) / 3, zz = i % 2 ? z1 - 0.25 : z0 + 0.25;
+          if (R() < 0.25) continue;
+          cb([x - 0.18, y1, zz - 0.13], [x + 0.18, y1 + 0.015, zz + 0.13], i % 2 ? 'paintRed' : 'paintBlue', { r: 0.004, tint: 0.7 });
+          K.lathe('paintGrey', [[0.001, 0.016], [0.1, 0.016], [0.11, 0.03], [0.001, 0.022]], M(x + 0.04, y1, zz), { segs: 14, tint: 1.3 });
+          if (R() < 0.6) K.lathe('paintGrey', [[0.001, 0], [0.04, 0], [0.042, 0.095], [0.036, 0.095], [0.034, 0.008], [0.001, 0.008]], M(x - 0.1, y1 + 0.016, zz - 0.06), { segs: 12, tint: rr(0.8, 1.4) });
+        }
+        K.lathe('dark', [[0.001, 0], [0.06, 0], [0.06, 0.26], [0.035, 0.3], [0.001, 0.3]], M((x0 + x1) / 2, y1, (z0 + z1) / 2), { segs: 12 });
+        for (const [cx2, cz2, ry] of [[x0 + 0.5, z0 - 0.35, 0.1], [x1 - 0.6, z0 - 0.3, -0.2], [x0 + 0.7, z1 + 0.35, PI + 0.2], [x1 - 0.5, z1 + 0.32, PI - 0.15]]) {
+          if (R() < 0.2) continue;
+          model('SchoolChair_01', cx2, 0, cz2, { ry: ry + rr(-0.3, 0.3) });
+        }
+        return;
+      }
       // old radio + ashtray + mug
       cb([x0 + 0.2, y1, z0 + 0.15], [x0 + 0.55, y1 + 0.17, z0 + 0.32], 'dark', { r: 0.015 });
       lbl([x0 + 0.3, y1 + 0.09, z0 + 0.32], [0, 0, 1], 0.12, 0.08, TILE.vent, { k: 1 });
@@ -846,26 +898,26 @@ export function buildProps(B, layout, seed = 7) {
           K.stripes([x - 0.04, 0.2, z1 + 0.06], [x + 0.12, 0.2, z1 + 0.06], [0, 0, 1], 0.16);
         }
       }
-      for (const yb of [1.5, 3.0]) {
+      for (const yb of y1 > 5 ? [1.5, 3.0, 4.6] : [1.5, 3.0]) {
         for (const [za, zb] of [[z0 - 0.012, z0 + 0.06], [z1 - 0.06, z1 + 0.012]]) cb([x0 + 0.08, yb, za], [x1 - 0.08, yb + 0.12, zb], 'paintRed', { r: 0.01, tint: 0.9 });
         for (let i = 0; i < bays; i++) {
           const bx0 = x0 + i * bw + 0.08;
           lbl([bx0 + bw / 2, yb + 0.06, z1 + 0.006], [0, 0, 1], 0.3, 0.3, TILE.number, { u0: (i % 4) * 0.25, u1: (i % 4) * 0.25 + 0.25, k: 0.9 });
           // wire deck support bars
           for (const f of [0.3, 0.7]) cb([bx0 + (bw - 0.08) * f, yb + 0.085, z0 + 0.06], [bx0 + (bw - 0.08) * f + 0.04, yb + 0.115, z1 - 0.06], 'steel', { r: 0.003 });
-          for (let k = 0; k < 2; k++) {
+          const two = bw / 2 - 0.02 >= 1.215;   // narrow bays hold one centred pallet
+          for (let k = 0; k < (two ? 2 : 1); k++) {
             if (R() < 0.18) continue;
-            const px = bx0 + 0.06 + k * (bw / 2 - 0.02);
-            const pw = Math.min(1.2, bw / 2 - 0.12);
-            if (pw < 0.9) continue;
+            const px = two ? bx0 + 0.06 + k * (bw / 2 - 0.02) : bx0 + (bw - 0.08 - 1.2) / 2;
             // pallet across the beams (0.8 deep is less than the rack depth: sits on beams)
             const y = yb + 0.12;
             palletAt(px, y, cz - 0.4, { broken: false });
             const c = R();
-            if (c < 0.25) cementLoad(px + 0.6, y + 0.144, cz, 2);
+            if (y1 > 5 && yb > 2) { if (c < 0.85) blockLoad(px + 0.6, y + 0.144, cz); continue; }
+            if (c < 0.25) sackLoad(px + 0.6, y + 0.144, cz, 2);
             else if (c < 0.7) boxLoad(px + 0.6, y + 0.144, cz);
-            else if (c < 0.9) for (const dx of [0.3, 0.9]) model('Barrel_02', px + dx, y + 0.144, cz + rr(-0.05, 0.05), { s: 0.95 });
-            else for (const dx of [0.33, 0.87]) for (const dz of [-0.2, 0.2]) if (R() < 0.75) model('plastic_crate_02', px + dx, y + 0.144, cz + dz, { ry: rr(-0.05, 0.05) });
+            else if (c < 0.9) for (const dx of [0.3, 0.9]) drumCheap(px + dx, y + 0.144, cz + rr(-0.05, 0.05), R() < 0.5 ? 'paintBlue' : 'barrel');
+            else for (const dx of [0.33, 0.87]) for (const dz of [-0.2, 0.2]) if (R() < 0.75) crateCheap(px + dx, y + 0.144, cz + dz, rr(-0.05, 0.05));
           }
         }
       }
@@ -874,7 +926,7 @@ export function buildProps(B, layout, seed = 7) {
         if (R() < 0.35) continue;
         const px = x0 + i * bw + 0.3;
         palletAt(px, 0, cz - 0.4);
-        if (R() < 0.6) boxLoad(px + 0.6, 0.144, cz); else cementLoad(px + 0.6, 0.144, cz, 2);
+        if (R() < 0.6) boxLoad(px + 0.6, 0.144, cz); else sackLoad(px + 0.6, 0.144, cz, 3);
       }
     },
 
@@ -954,7 +1006,7 @@ export function buildProps(B, layout, seed = 7) {
     // ------------------------------------------------------------ shipping container (doors at +x end)
     container(p) {
       const [x0, , z0] = p.min, [x1, y1, z1] = p.max;
-      const key = p.min[2] > 0 ? 'paintRed' : 'paintBlue', tint = p.min[2] > 0 ? 0.85 : 0.95;
+      const key = p.key ?? (p.min[2] > 0 ? 'paintRed' : 'paintBlue'), tint = key === 'paintRed' ? 0.85 : 0.95;
       const cp = 0.16;
       // inner dark volume (seen through gaps)
       box([x0 + 0.12, 0.17, z0 + 0.12], [x1 - 0.12, y1 - 0.13, z1 - 0.12], 'dark', { seg: 3 });
@@ -1076,7 +1128,7 @@ export function buildProps(B, layout, seed = 7) {
     // ------------------------------------------------------------ panel van (front toward +z)
     van(p) {
       const [x0, , z0] = p.min, [x1, y1, z1] = p.max, cx = (x0 + x1) / 2;
-      const key = 'vanWhite', t = 1.0;
+      const key = 'vanWhite', t = p.tint ?? 1.0;
       const wf = z1 - 1.0, wr = z0 + 0.95, wr2 = 0.36;
       // lower body around wheel arches
       const segs = [[z0 + 0.03, wr - 0.44], [wr + 0.44, wf - 0.44], [wf + 0.44, z1 - 0.06]];
@@ -1225,24 +1277,50 @@ export function buildProps(B, layout, seed = 7) {
     },
   };
 
-  for (const p of layout.props) builders[p.type]?.(p);
+  Object.assign(builders, extraBuilders({ K, K2, B, PB, R, rr, pick, cb, box, lbl, model, hose, carton, palletAt, cementLoad, boxLoad, corrugated, cargoDoors, handle, gauge, estop, handwheel, inst, layout }));
+  // Props standing on another floor (upper storey, basement, stacked containers) are built at y = 0 and lifted.
+  const lift = (dy, fn) => {
+    if (!dy) { fn(); return; }
+    const mark = (bat) => new Map([...bat.buckets].map(([k, b]) => [k, b.pos.length]));
+    const mB = mark(B), mPB = mark(PB);
+    const nL = K.labels.pos.length, nG = K.glass.pos.length, nBo = K.bolts.length, nM = inst.models.length;
+    const nPa = inst.papers.length, nRo = inst.rollers.length, nDe = inst.debris.length;
+    B._dy = PB._dy = dy;
+    try { fn(); } finally { B._dy = PB._dy = 0; }
+    for (const [bat, m] of [[B, mB], [PB, mPB]]) for (const [k, b] of bat.buckets) for (let i = (m.get(k) || 0) + 1; i < b.pos.length; i += 3) b.pos[i] += dy;
+    for (let i = nL + 1; i < K.labels.pos.length; i += 3) K.labels.pos[i] += dy;
+    for (let i = nG + 1; i < K.glass.pos.length; i += 3) K.glass.pos[i] += dy;
+    for (let i = nBo; i < K.bolts.length; i++) K.bolts[i][1] += dy;
+    for (let i = nM; i < inst.models.length; i++) inst.models[i].y += dy;
+    for (let i = nPa; i < inst.papers.length; i++) inst.papers[i][1] += dy;
+    for (let i = nRo; i < inst.rollers.length; i++) inst.rollers[i][1] += dy;
+    for (let i = nDe; i < inst.debris.length; i++) inst.debris[i][4] = (inst.debris[i][4] || 0) + dy;
+  };
+  for (const p of layout.props) {
+    const fn = builders[p.type];
+    if (!fn) continue;
+    const dy = p.min ? p.min[1] : 0;
+    if (!dy) fn(p);
+    else lift(dy, () => fn({ ...p, min: [p.min[0], 0, p.min[2]], max: [p.max[0], p.max[1] - dy, p.max[2]] }));
+  }
+  inst.builderTypes = Object.keys(builders);
 
   // ---- doors: frames, open leaves, the loading door roller shutter
   for (const d of layout.doors) {
-    const h = d.height, [a0, a1] = d.a, t0 = d.t0 - 0.02, t1 = d.t1 + 0.02, f = 0.06;
+    const y0 = d.y || 0, h = y0 + d.height, [a0, a1] = d.a, t0 = d.t0 - 0.02, t1 = d.t1 + 0.02, f = 0.06;
     if (d.axis === 'x') {
-      box([a0, 0, t0], [a0 + f, h, t1], 'steel'); box([a1 - f, 0, t0], [a1, h, t1], 'steel'); box([a0 + f, h - f, t0], [a1 - f, h, t1], 'steel');
+      box([a0, y0, t0], [a0 + f, h, t1], 'steel'); box([a1 - f, y0, t0], [a1, h, t1], 'steel'); box([a0 + f, h - f, t0], [a1 - f, h, t1], 'steel');
     } else {
-      box([t0, 0, a0], [t1, h, a0 + f], 'steel'); box([t0, 0, a1 - f], [t1, h, a1], 'steel'); box([t0, h - f, a0 + f], [t1, h, a1 - f], 'steel');
+      box([t0, y0, a0], [t1, h, a0 + f], 'steel'); box([t0, y0, a1 - f], [t1, h, a1], 'steel'); box([t0, h - f, a0 + f], [t1, h, a1 - f], 'steel');
     }
-    if (d.leafBox) {
+    if (d.leafBox && !d.dyn) {
       const lb = d.leafBox;
       cb(lb.min, lb.max, 'rust', { r: 0.008 });
       // handle on both faces of the leaf
       const thin = lb.max[0] - lb.min[0] < 0.1 ? 0 : 2;
-      const c = [(lb.min[0] + lb.max[0]) / 2, 1.0, (lb.min[2] + lb.max[2]) / 2];
-      if (thin === 0) { for (const s of [-1, 1]) handle([s < 0 ? lb.min[0] : lb.max[0], 1.0, c[2] - 0.06], [s < 0 ? lb.min[0] : lb.max[0], 1.0, c[2] + 0.06], [s, 0, 0], 0.008); }
-      else { for (const s of [-1, 1]) handle([c[0] - 0.06, 1.0, s < 0 ? lb.min[2] : lb.max[2]], [c[0] + 0.06, 1.0, s < 0 ? lb.min[2] : lb.max[2]], [0, 0, s], 0.008); }
+      const hy = y0 + 1.0, c = [(lb.min[0] + lb.max[0]) / 2, hy, (lb.min[2] + lb.max[2]) / 2];
+      if (thin === 0) { for (const s of [-1, 1]) handle([s < 0 ? lb.min[0] : lb.max[0], hy, c[2] - 0.06], [s < 0 ? lb.min[0] : lb.max[0], hy, c[2] + 0.06], [s, 0, 0], 0.008); }
+      else { for (const s of [-1, 1]) handle([c[0] - 0.06, hy, s < 0 ? lb.min[2] : lb.max[2]], [c[0] + 0.06, hy, s < 0 ? lb.min[2] : lb.max[2]], [0, 0, s], 0.008); }
     }
     if (d.shutter) {
       const z = d.t0 - 0.12;
@@ -1287,7 +1365,7 @@ export function buildProps(B, layout, seed = 7) {
   B.pipe('paint', [-23.1, 5.8, 15.1], [-23.1, 0.3, 15.1], 0.08);
   B.pipe('rust', [-23.3, 5.6, -17.3], [19.3, 5.6, -17.3], 0.16);
   B.pipe('paintGrey', [-23.3, 5.2, -17.2], [19.3, 5.2, -17.2], 0.07);
-  for (const x of [-12, 0, 12]) B.pipe('rust', [x, 5.6, -17.3], [x, 0.3, -17.3], 0.12);
+  for (const x of [-12, 0, 10.2]) B.pipe('rust', [x, 5.6, -17.3], [x, 0.3, -17.3], 0.12);
   // pipe flanges + wall brackets
   for (let z = -4; z < 15; z += 3) { K.pipe('steel', [-23.3, 6.2, z], [-23.3, 6.2, z + 0.05], 0.19, { segs: 14, tint: 0.6 }); cb([-23.6, 6.0, z + 0.4], [-23.12, 6.05, z + 0.48], 'steel', { r: 0.004, tint: 0.6 }); }
   for (let x = -20; x < 18; x += 3) { K.pipe('steel', [x, 5.6, -17.3], [x + 0.05, 5.6, -17.3], 0.21, { segs: 14, tint: 0.6 }); cb([x + 0.4, 5.38, -17.6], [x + 0.48, 5.43, -17.1], 'steel', { r: 0.004, tint: 0.6 }); }
@@ -1305,6 +1383,7 @@ export function buildProps(B, layout, seed = 7) {
   for (const [a, b] of [[[-13, 12.7], [-18, 13.5]], [[3.2, 13.2], [0.5, 14.8]], [[-8, -9.4], [-11.5, -7.5]]]) floorCable(B, a, b, R);
 
   scatterClutter({ K, B, R, rr, model, cb, lbl, inst, nearDoor, carton, palletAt, hose });
+  dressAreas({ K, K2, B, PB, R, rr, pick, cb, box, lbl, model, hose, carton, palletAt, cementLoad, boxLoad, corrugated, handle, gauge, estop, handwheel, inst, layout, nearDoor, lift, catenary, floorCable });
 
   // ---- debris: concrete chunks, bricks, papers (instanced)
   const debrisSpots = [[-12.5, 5.5, 2.2], [-2, -2, 1.5], [-8, -12, 2], [8, -12, 2.5], [15, 2, 2], [-20, 9, 2], [9.4, 6, 1.0], [-5, 13.5, 2.0], [15, -10, 2], [-2, 19, 3], [10, 23, 4]];
@@ -1483,7 +1562,7 @@ export function buildInstanced(inst, mats, scales) {
     const m = new THREE.InstancedMesh(g, mats.ceiling, inst.debris.length);
     const R = rng(99);
     inst.debris.forEach(([x, z, s, r], i) => {
-      dummy.position.set(x, s * 0.3, z); dummy.rotation.set(R() * 3, r * 6, R() * 3);
+      dummy.position.set(x, s * 0.3 + (inst.debris[i][4] || 0), z); dummy.rotation.set(R() * 3, r * 6, R() * 3);
       dummy.scale.set(s * (0.8 + R()), s * (0.5 + R() * 0.6), s * (0.8 + R())); dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix); const k = 0.6 + R() * 0.5; m.setColorAt(i, col.setRGB(k, k * 0.98, k * 0.95));
     });

@@ -1,7 +1,7 @@
 // Geometry batching with world-scale UVs and baked grime/AO vertex colours.
 // All static geometry is accumulated per material key and turned into one BufferGeometry per key.
 import * as THREE from 'three';
-import { buildLayout } from './layout.js';
+import { buildLayout, insideBuilding, inHole, FLOORS, HOLES, H } from './layout.js';
 
 // ---- small deterministic noise helpers
 export function rng(seed = 1) {
@@ -295,8 +295,9 @@ function wquad(B, key, alongX, pts, want, o) {
   B.poly(key, P, o);
 }
 
-const FOOT = { min: [-24, -18], max: [20, 16] };
-const insideBuilding = (x, z) => x > FOOT.min[0] && x < FOOT.max[0] && z > FOOT.min[1] && z < FOOT.max[1];
+// floor levels walls can stand on (fillets, skirting and rubble follow the wall base)
+const LEVELS = [0, H.base, ...FLOORS.map((f) => f.y)];
+const onLevel = (y) => LEVELS.some((l) => Math.abs(l - y) < 0.02);
 const faceKey = (mat, f) => (typeof mat === 'string' ? mat : mat?.[f]);
 
 // Architectural detail merged into the static batches (no extra draw calls): cement fillets along every wall base,
@@ -314,7 +315,7 @@ export function addArchitecturalDetail(B, layout, seed = 99) {
   // ---- wall faces standing on the ground
   const faces = [];
   for (const s of solids) {
-    if (!s.visual || (s.kind !== 'wall' && s.kind !== 'pillar') || s.min[1] > 0.02 || s.max[1] - s.min[1] < 1.0) continue;
+    if (!s.visual || (s.kind !== 'wall' && s.kind !== 'pillar') || !onLevel(s.min[1]) || s.max[1] - s.min[1] < 1.0) continue;
     for (const f of ['px', 'nx', 'pz', 'nz']) {
       const key = faceKey(s.mat, f);
       if (!key || key.startsWith('corrugated')) continue;
@@ -323,7 +324,7 @@ export function addArchitecturalDetail(B, layout, seed = 99) {
       const c = alongX ? (sgn > 0 ? s.max[2] : s.min[2]) : (sgn > 0 ? s.max[0] : s.min[0]);
       const a0 = alongX ? s.min[0] : s.min[2], a1 = alongX ? s.max[0] : s.max[2];
       if (a1 - a0 < 0.3) continue;
-      faces.push({ s, f, key, alongX, sgn, c, a0, a1, h: s.max[1] - s.min[1] });
+      faces.push({ s, f, key, alongX, sgn, c, a0, a1, h: s.max[1] - s.min[1], base: s.min[1] });
     }
   }
   // cement fillet (45 deg chamfer) along the base: breaks the ruler-straight wall/floor line, catches dirt
@@ -332,13 +333,14 @@ export function addArchitecturalDetail(B, layout, seed = 99) {
     if (!k) continue;
     const want = F.alongX ? [0, 0.7, F.sgn * 0.7] : [F.sgn * 0.7, 0.7, 0];
     const t0 = F.c + F.sgn * 0.001, t1 = F.c + F.sgn * k;
-    wquad(B, 'ceiling', F.alongX, [[F.a0, 0.002, t1], [F.a1, 0.002, t1], [F.a1, k, t0], [F.a0, k, t0]], want);
+    const y = F.base;
+    wquad(B, 'ceiling', F.alongX, [[F.a0, y + 0.002, t1], [F.a1, y + 0.002, t1], [F.a1, y + k, t0], [F.a0, y + k, t0]], want, { base: y });
   }
   // office skirting board on painted office walls
   for (const F of faces) {
     if (F.key !== 'wallOffice') continue;
     const t1 = F.c + F.sgn * 0.016;
-    wbox(B, F.alongX, F.a0, F.a1, 0.05, 0.13, F.c, t1, 'dark', { tint: 0.8 });
+    wbox(B, F.alongX, F.a0, F.a1, F.base + 0.05, F.base + 0.13, F.c, t1, 'dark', { tint: 0.8, base: F.base });
   }
 
   // ---- pillars: plinth with chamfered top, haunched capital with bearing plate
@@ -402,32 +404,32 @@ export function addArchitecturalDetail(B, layout, seed = 99) {
   // ---- doors: steel frames (Zarge) on normal doors, corner guards + beams on the big openings
   for (const d of doors) {
     const alongX = d.axis === 'x';
-    const [a0, a1] = d.a, h = d.height;
+    const [a0, a1] = d.a, y0 = d.y || 0, h = y0 + d.height;
     const big = d.width > 2.2 || d.shutter;
     for (const side of [-1, 1]) {
       const face = side > 0 ? d.t1 : d.t0;
       if (!big) {
         const o = { tint: 0.5 }, p = face + side * 0.018;
-        wbox(B, alongX, a0 - 0.05, a0, 0, h + 0.05, face, p, 'paintGrey', o);
-        wbox(B, alongX, a1, a1 + 0.05, 0, h + 0.05, face, p, 'paintGrey', o);
+        wbox(B, alongX, a0 - 0.05, a0, y0, h + 0.05, face, p, 'paintGrey', o);
+        wbox(B, alongX, a1, a1 + 0.05, y0, h + 0.05, face, p, 'paintGrey', o);
         wbox(B, alongX, a0, a1, h, h + 0.05, face, p, 'paintGrey', o);
       } else {
         const g = 0.008;
-        wbox(B, alongX, a0 - 0.08, a0, 0, 1.25, face, face + side * g, 'yellow');
-        wbox(B, alongX, a1, a1 + 0.08, 0, 1.25, face, face + side * g, 'yellow');
+        wbox(B, alongX, a0 - 0.08, a0, y0, y0 + 1.25, face, face + side * g, 'yellow');
+        wbox(B, alongX, a1, a1 + 0.08, y0, y0 + 1.25, face, face + side * g, 'yellow');
         wbox(B, alongX, a0 - 0.3, a1 + 0.3, h, h + 0.32, face, face + side * 0.05, 'rust', { tint: 0.6 });
       }
     }
     if (!big) {   // reveal lining
       const o = { tint: 0.45 };
-      wbox(B, alongX, a0, a0 + 0.012, 0, h, d.t0 - 0.018, d.t1 + 0.018, 'paintGrey', o);
-      wbox(B, alongX, a1 - 0.012, a1, 0, h, d.t0 - 0.018, d.t1 + 0.018, 'paintGrey', o);
+      wbox(B, alongX, a0, a0 + 0.012, y0, h, d.t0 - 0.018, d.t1 + 0.018, 'paintGrey', o);
+      wbox(B, alongX, a1 - 0.012, a1, y0, h, d.t0 - 0.018, d.t1 + 0.018, 'paintGrey', o);
       wbox(B, alongX, a0, a1, h - 0.012, h, d.t0 - 0.018, d.t1 + 0.018, 'paintGrey', o);
     } else {      // corner guards wrapping into the reveal
       for (const t of [d.t0, d.t1]) {
         const s = t === d.t0 ? 1 : -1;
-        wbox(B, alongX, a0, a0 + 0.008, 0, 1.25, t, t + s * 0.08, 'yellow');
-        wbox(B, alongX, a1 - 0.008, a1, 0, 1.25, t, t + s * 0.08, 'yellow');
+        wbox(B, alongX, a0, a0 + 0.008, y0, y0 + 1.25, t, t + s * 0.08, 'yellow');
+        wbox(B, alongX, a1 - 0.008, a1, y0, y0 + 1.25, t, t + s * 0.08, 'yellow');
       }
     }
   }
@@ -444,6 +446,8 @@ export function addArchitecturalDetail(B, layout, seed = 99) {
   drain(-11.6, 14.9, -6.4, 14.9);
   drain(-11.4, -15.4, -11.4, -10.6);
   drain(13.0, 21.0, 13.0, 24.8);   // yard gully beside the van
+  drain(30.0, 2.2, 36.0, 2.2);     // foundry: channel along the molding line
+  drain(21.0, -47.0, 21.0, -36.0); // warehouse cross aisle
 
   // ---- rubble piles along wall bases + loose chunks
   const chunk = (cx, cy, cz, r, key) => {
@@ -470,15 +474,15 @@ export function addArchitecturalDetail(B, layout, seed = 99) {
   const inner = faces.filter((F) => F.s.kind === 'wall' && F.h > 2.4 && F.key !== 'wallOffice');
   const totalLen = inner.reduce((s, F) => s + (F.a1 - F.a0), 0);
   let piles = 0;
-  for (let tries = 0; tries < 400 && piles < 46; tries++) {
+  for (let tries = 0; tries < 1200 && piles < 130; tries++) {
     let t = R() * totalLen, F = inner[0];
     for (const G of inner) { if (t < G.a1 - G.a0) { F = G; break; } t -= G.a1 - G.a0; }
     if (F.a1 - F.a0 < 1.2) continue;
     const a = rr(F.a0 + 0.5, F.a1 - 0.5);
     const p = wpt(F.alongX, a, 0, F.c + F.sgn * 0.35);
-    if (Math.abs(p[0]) > 40 || blocked(p[0], p[2], 0.25) || nearDoor(p[0], p[2])) continue;
-    const inside = insideBuilding(p[0], p[2]);
-    if (!inside && !(p[2] > 16 && p[2] < 25.8 && p[0] > -23.8 && p[0] < 19.8)) continue;
+    if (blocked(p[0], p[2], 0.25) || nearDoor(p[0], p[2])) continue;
+    if (p[0] < -23.8 || p[0] > 43.8 || p[2] < -52 || p[2] > 30 || (F.base === 0 && inHole(p[0], p[2]))) continue;
+    const yb = F.base;
     piles++;
     const n = 6 + Math.floor(R() * 16), spread = rr(0.35, 0.9);
     for (let i = 0; i < n; i++) {
@@ -486,14 +490,14 @@ export function addArchitecturalDetail(B, layout, seed = 99) {
       const q = wpt(F.alongX, a + al, 0, F.c + F.sgn * (0.05 + off));
       if (blocked(q[0], q[2], 0.05)) continue;
       const r = (0.03 + R() * R() * 0.11) * (1 - off * 0.6);
-      if (R() < 0.3 && F.key.startsWith('brick')) brickBit(q[0], q[2], 0.03);
-      else chunk(q[0], r * 0.25, q[2], r, R() < 0.25 && F.key.startsWith('brick') ? 'brick' : 'ceiling');
+      if (R() < 0.3 && F.key.startsWith('brick')) brickBit(q[0], q[2], yb + 0.03);
+      else chunk(q[0], yb + r * 0.25, q[2], r, R() < 0.25 && F.key.startsWith('brick') ? 'brick' : 'ceiling');
     }
   }
   // loose chunks and pebbles kicked across the floors
-  for (let i = 0; i < 160; i++) {
-    const x = rr(-23.5, 19.5), z = rr(-17.5, 25.5);
-    if (blocked(x, z, 0.1) || (!insideBuilding(x, z) && z < 16)) continue;
+  for (let i = 0; i < 480; i++) {
+    const x = rr(-23.5, 43.5), z = rr(-51.5, 29.5);
+    if (blocked(x, z, 0.1) || inHole(x, z)) continue;
     chunk(x, 0.004, z, rr(0.012, 0.045), 'ceiling');
   }
 }
@@ -506,13 +510,29 @@ export function groundGrid(batcher, min, max, y, matAt, cell = 1) {
     try { addArchitecturalDetail(batcher, buildLayout()); } catch (e) { console.warn('[world] detail pass failed', e); }
   }
   const nx = Math.round((max[0] - min[0]) / cell), nz = Math.round((max[1] - min[1]) / cell);
+  // cells cut by a floor opening (stair shaft, pit) are emitted as the cell minus the opening
+  const cutBy = (x0, z0) => HOLES.filter((h) => h.x0 < x0 + cell - 1e-6 && h.x1 > x0 + 1e-6 && h.z0 < z0 + cell - 1e-6 && h.z1 > z0 + 1e-6);
+  const quad = (key, x0, z0, x1, z1) => batcher._grid(key, [x0, y, z1], FACES.py, [0, x1 - x0], [0, z1 - z0], {});
   // One quad per cell is too many vertices to share across materials, so emit per-material rows.
   for (let j = 0; j < nz; j++) {
     for (let i = 0; i < nx; i++) {
       const x0 = min[0] + i * cell, z0 = min[1] + j * cell;
+      const cuts = cutBy(x0, z0);
+      if (cuts.length) {
+        const key = insideBuilding(x0 + cell / 2, z0 + cell / 2) ? matAt(x0 + cell / 2, z0 + cell / 2) || 'floor' : 'asphalt';
+        const xs = [...new Set([x0, x0 + cell, ...cuts.flatMap((h) => [h.x0, h.x1])].filter((v) => v >= x0 && v <= x0 + cell))].sort((a, b) => a - b);
+        const zs = [...new Set([z0, z0 + cell, ...cuts.flatMap((h) => [h.z0, h.z1])].filter((v) => v >= z0 && v <= z0 + cell))].sort((a, b) => a - b);
+        for (let a = 0; a < xs.length - 1; a++) for (let b = 0; b < zs.length - 1; b++) {
+          const cx = (xs[a] + xs[a + 1]) / 2, cz = (zs[b] + zs[b + 1]) / 2;
+          if (xs[a + 1] - xs[a] < 1e-4 || zs[b + 1] - zs[b] < 1e-4 || cuts.some((h) => cx > h.x0 && cx < h.x1 && cz > h.z0 && cz < h.z1)) continue;
+          quad(key, xs[a], zs[b], xs[a + 1], zs[b + 1]);
+        }
+        continue;
+      }
       const key = matAt(x0 + cell / 2, z0 + cell / 2);
+      if (!key) continue;
       let i1 = i;
-      while (i1 + 1 < nx && matAt(min[0] + (i1 + 1) * cell + cell / 2, z0 + cell / 2) === key) i1++;
+      while (i1 + 1 < nx && !cutBy(min[0] + (i1 + 1) * cell, z0).length && matAt(min[0] + (i1 + 1) * cell + cell / 2, z0 + cell / 2) === key) i1++;
       const x1 = min[0] + (i1 + 1) * cell;
       const ss = []; for (let k = 0; k <= i1 - i + 1; k++) ss.push(k * cell);
       // py face: origin at (x0, y, z1) with r=+x, v=-z

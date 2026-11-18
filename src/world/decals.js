@@ -8,6 +8,7 @@
 import * as THREE from 'three';
 import { makeCanvas, SURF_UNIFORMS } from './materials.js';
 import { rng, windowGrid } from './geometry.js';
+import { insideBuilding, inHole as inHoleXZ, H, WATER } from './layout.js';
 
 /** Intact (breakable) window panes; filled by buildDecals. Each: Mesh with userData { surface:'glass', breakable, broken, shatter() }. */
 export const glassPanes = [];
@@ -73,20 +74,31 @@ function normalFromHeight(hc, strength) {
 
 // ------------------------------------------------------------------------------------------------ ground mask
 // RGBA over the layout GROUND rect: R wet, G dirt, B oil, A wear. Read by floor / lino / asphalt shaders.
+// Two bands side by side: left = ground floor, right = every other level (basement, upper storey, catwalks; their
+// footprints barely overlap). The surface shader picks the band from the world height.
 function buildGroundMask(layout, opts, R) {
   const N = 1024;
   const rect = SURF_UNIFORMS.sGroundRect.value;   // minX, minZ, sizeX, sizeZ
   const sx = N / rect.z, sz = N / rect.w;
-  const X = (x) => (x - rect.x) * sx, Z = (z) => (z - rect.y) * sz;
+  let band = 0;
+  const X = (x) => (x - rect.x) * sx + band * N, Z = (z) => (z - rect.y) * sz;
   const rr = (a, b) => a + (b - a) * R();
-  const ch = [0, 1, 2, 3].map(() => { const c = makeCanvas(N, N), g = c.getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, N, N); return { c, g }; });
+  const ch = [0, 1, 2, 3].map(() => { const c = makeCanvas(2 * N, N), g = c.getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, 2 * N, N); return { c, g }; });
   const [wet, dirt, oil, wear] = ch.map((o) => o.g);
+  for (const g of [wet, dirt, oil, wear]) { g.beginPath(); g.rect(0, 0, N, N); g.clip(); }
   const W = '255,255,255';
-  const inside = (x, z) => x > -24 && x < 20 && z > -18 && z < 16;
+  const inside = (x, z) => insideBuilding(x, z);
+  const levelBand = (y) => (Math.abs(y) > 1.8 ? 1 : 0);
+  const setBand = (b) => {
+    band = b;
+    for (const g of [wet, dirt, oil, wear]) { g.restore(); g.save(); g.beginPath(); g.rect(b * N, 0, N, N); g.clip(); }
+  };
+  for (const g of [wet, dirt, oil, wear]) g.save();
+  setBand(0);
 
   // ---- wet: puddles (+ damp halo), rain under the roof holes, blown in at the doors; the yard is damp overall
-  wet.fillStyle = 'rgba(255,255,255,0.18)'; wet.fillRect(0, Z(16), N, Z(26.5) - Z(16));
-  wet.fillStyle = 'rgba(255,255,255,0.12)'; wet.fillRect(0, 0, N, Z(-18)); wet.fillRect(0, Z(16), X(-24), N);
+  wet.fillStyle = 'rgba(255,255,255,0.18)'; wet.fillRect(X(-28), Z(16), N, Z(30.5) - Z(16));
+  wet.fillStyle = 'rgba(255,255,255,0.12)'; wet.fillRect(X(-28), Z(-34), N, Z(-18) - Z(-34)); wet.fillRect(X(-28), Z(-52), X(0) - X(-28), Z(-34) - Z(-52));
   const puddle = (x, z, s, core = 0.85) => {
     blob(wet, R, X(x), Z(z), s * 1.25 * sx, W, 0.28, 18);
     blob(wet, R, X(x), Z(z), s * 0.7 * sx, W, core, 26, 0.35);
@@ -97,8 +109,10 @@ function buildGroundMask(layout, opts, R) {
     blob(wet, R, X(cx), Z(cz), Math.max(w, d) * 0.9 * sx, W, 0.35, 30);
     for (let i = 0; i < 4; i++) puddle(cx + rr(-w, w) * 0.45, cz + rr(-d, d) * 0.45, rr(0.6, 1.4));
   }
-  for (let i = 0; i < 26; i++) puddle(rr(-23, 19), rr(16.6, 25.4), rr(0.5, 2.2), 0.8);   // yard
-  for (let i = 0; i < 14; i++) { const x = rr(-23, 19), z = rr(-17.4, 15.4); puddle(x, z, rr(0.3, 0.9), 0.7); }
+  for (let i = 0; i < 40; i++) puddle(rr(-23, 43), rr(16.6, 29.4), rr(0.5, 2.2), 0.8);   // yard
+  for (let i = 0; i < 30; i++) puddle(rr(-23, 43), rr(-33.6, -18.4), rr(0.5, 2.0), 0.8);   // siding
+  for (let i = 0; i < 12; i++) puddle(rr(-23, -1), rr(-51.6, -34.6), rr(0.5, 2.0), 0.8);   // rear lot
+  for (let i = 0; i < 30; i++) { const x = rr(-23, 43), z = rr(-51.4, 15.4); if (inside(x, z)) puddle(x, z, rr(0.3, 0.9), 0.7); }
   for (const d of layout.doors) {
     const [cx, cz] = d.center;
     const outA = d.normal === 'z' ? !inside(cx, cz + 1) || !inside(cx, cz - 1) : !inside(cx + 1, cz) || !inside(cx - 1, cz);
@@ -108,27 +122,31 @@ function buildGroundMask(layout, opts, R) {
 
   // ---- dirt: drifts along every wall base, heavier in corners (overlap), around machine feet, at the doors
   dirt.filter = 'blur(5px)';
-  for (const s of layout.solids) {
-    if (!(s.kind === 'wall' || s.kind === 'pillar') || s.min[1] > 0.05) continue;
-    for (const [m, a] of [[0.9, 0.22], [0.45, 0.35], [0.18, 0.55]]) {
-      dirt.fillStyle = `rgba(255,255,255,${a})`;
+  for (const b of [0, 1]) {
+    setBand(b);
+    for (const s of layout.solids) {
+      if (!(s.kind === 'wall' || s.kind === 'pillar') || levelBand(s.min[1] + 0.01) !== b || (b === 0 && s.min[1] > 0.05)) continue;
+      for (const [m, a] of [[0.9, 0.22], [0.45, 0.35], [0.18, 0.55]]) {
+        dirt.fillStyle = `rgba(255,255,255,${a})`;
+        dirt.fillRect(X(s.min[0] - m), Z(s.min[2] - m), (s.max[0] - s.min[0] + 2 * m) * sx, (s.max[2] - s.min[2] + 2 * m) * sz);
+      }
+    }
+    for (const s of layout.solids) {
+      if (s.kind !== 'prop' || levelBand(s.min[1] + 0.01) !== b || (b === 0 && s.min[1] > 0.05)) continue;
+      const m = 0.25;
+      dirt.fillStyle = 'rgba(255,255,255,0.35)';
       dirt.fillRect(X(s.min[0] - m), Z(s.min[2] - m), (s.max[0] - s.min[0] + 2 * m) * sx, (s.max[2] - s.min[2] + 2 * m) * sz);
     }
   }
-  for (const s of layout.solids) {
-    if (s.kind !== 'prop' || s.min[1] > 0.05) continue;
-    const m = 0.25;
-    dirt.fillStyle = 'rgba(255,255,255,0.35)';
-    dirt.fillRect(X(s.min[0] - m), Z(s.min[2] - m), (s.max[0] - s.min[0] + 2 * m) * sx, (s.max[2] - s.min[2] + 2 * m) * sz);
-  }
+  setBand(0);
   dirt.filter = 'none';
   for (const d of layout.doors) {
     const [cx, cz] = d.center;
     blob(dirt, R, X(cx), Z(cz), (d.width * 0.7 + 0.8) * sx, W, 0.3, 24);
   }
-  for (let i = 0; i < 70; i++) blob(dirt, R, X(rr(-23.5, 19.5)), Z(rr(-17.5, 25.5)), rr(0.6, 2.6) * sx, W, 0.16, 10);
-  // the yard: grit everywhere near fence and facades
-  dirt.fillStyle = 'rgba(255,255,255,0.1)'; dirt.fillRect(0, Z(16), N, N - Z(16));
+  for (let i = 0; i < 180; i++) blob(dirt, R, X(rr(-23.5, 43.5)), Z(rr(-51.5, 29.5)), rr(0.6, 2.6) * sx, W, 0.16, 10);
+  // outdoors: grit everywhere near fences and facades
+  dirt.fillStyle = 'rgba(255,255,255,0.1)'; dirt.fillRect(X(-28), Z(16), N, N - Z(16)); dirt.fillRect(X(-28), Z(-34), N, Z(-18) - Z(-34)); dirt.fillRect(X(-28), Z(-56), X(0) - X(-28), Z(-34) - Z(-56));
 
   // ---- oil: under machines and vehicles, drips along forklift lanes
   const oilSpot = (x, z, r, a = 0.8) => blob(oil, R, X(x), Z(z), r * sx, W, a, 22, 0.2);
@@ -136,6 +154,9 @@ function buildGroundMask(layout, opts, R) {
     [14.0, 20.8, 1.2], [14.2, 22.6, 0.8], [-11.4, 12.1, 0.7], [-3.0, 12.1, 0.5], [4.5, -2.5, 0.9], [-17.4, -15.8, 0.8],
     [12.2, -13.2, 0.7], [-1.0, -8.0, 0.6], [-6.0, 20.6, 0.7], [17.0, -10.0, 0.5]]) oilSpot(x, z, r);
   for (let i = 0; i < 90; i++) oilSpot(rr(-15, 1), rr(-14.5, -6.6), rr(0.04, 0.16), 0.6);
+  for (let i = 0; i < 70; i++) oilSpot(rr(3, 40), rr(-39.5, -35), rr(0.04, 0.16), 0.6);         // warehouse forklift lane
+  for (let i = 0; i < 50; i++) oilSpot(rr(22, 42), rr(-16, 14), rr(0.04, 0.2), 0.55);            // foundry
+  for (const [x, z, r] of [[26.6, -37.0, 1.0], [3.0, -48.0, 0.8], [-7.6, -45.0, 1.4], [32.0, 26.0, 1.0], [23.6, 24.8, 0.9], [39.0, -13.4, 1.2], [31.6, -12.4, 0.9]]) oilSpot(x, z, r);
   for (const [x, z] of opts.oilSpots || []) oilSpot(x, z, 0.6);
 
   // ---- wear: polished traffic paths
@@ -154,12 +175,29 @@ function buildGroundMask(layout, opts, R) {
   path([[10.4, 12.8], [17.0, 12.8], [17.0, 10.0], [17.7, 7.4], [13.4, 4.4], [12.6, 1.7], [17.7, -0.3], [17.7, -3.6], [13.2, -3.6]], 1.2, 0.55);
   path([[-9, 24], [-8, 16], [9.3, 16.4], [16.7, 16.4]], 2.4, 0.4);
   path([[3, 21], [14, 21]], 2.6, 0.35);
+  path([[36, 36], [36, 30], [34, 24], [26, 19], [10, 18], [-8, 16]], 2.8, 0.45);                     // gate -> yard -> hall
+  path([[20, -11.5], [30, -10], [31, -4], [31, 6], [24, 12.8], [38, 12.8]], 1.8, 0.6);              // foundry floor
+  path([[32, -17.6], [32, -24], [18, -24], [3.8, -24], [3.8, -34]], 2.2, 0.45);                     // siding
+  path([[3.8, -34], [3.8, -37], [26, -37], [38, -37]], 2.6, 0.7);                                     // warehouse lane
+  path([[3.8, -37], [3.8, -45.9], [34, -45.9]], 1.6, 0.5); path([[3.8, -41.9], [34, -41.9]], 1.6, 0.5);
+  path([[0.4, -44], [-8, -44], [-20, -43]], 2.6, 0.5);                                                 // dock -> extraction
+  // other levels (band 1): gallery, upper rooms, catwalks, basement
+  setBand(1);
+  path([[9.4, 15.0], [9.4, -5.4]], 1.2, 0.7); path([[11.6, -1], [11.6, 4.2]], 1.0, 0.5); path([[10.8, 12.6], [15, 13], [17.4, 10.2], [17.4, 7.2], [11.6, 7.2]], 1.0, 0.5);
+  path([[20.8, -17.4], [20.8, 15.4]], 1.0, 0.5); path([[21.6, 4.7], [40, 4.7]], 0.9, 0.45);
+  path([[20.8, -17.0], [20.8, 5.6], [20.8, 10.6], [27.6, 10.6]], 1.4, 0.55);
+  wet.fillStyle = 'rgba(255,255,255,0.35)';
+  for (const w of WATER) wet.fillRect(X(w.min[0] - 0.4), Z(w.min[1] - 0.4), (w.max[0] - w.min[0] + 0.8) * sx, (w.max[1] - w.min[1] + 0.8) * sz);
+  for (const [x, z, s] of [[20.8, -12, 1.4], [26, -2, 2.4], [21.6, -6, 2.0], [24, 10, 1.4], [33, 13, 1.2], [9.4, 0.5, 0.8], [20.8, 8.5, 0.8]]) puddle(x, z, s);
+  for (let i = 0; i < 30; i++) blob(dirt, R, X(rr(8.4, 42)), Z(rr(-17.4, 15.4)), rr(0.5, 1.8) * sx, W, 0.18, 8);
+  setBand(0);
+  for (const g of [wet, dirt, oil, wear]) g.restore();
 
   // combine
-  const datas = ch.map((o) => o.g.getImageData(0, 0, N, N).data);
-  const out = new Uint8Array(N * N * 4);
-  for (let i = 0; i < N * N; i++) for (let k = 0; k < 4; k++) out[i * 4 + k] = datas[k][i * 4];
-  const t = new THREE.DataTexture(out, N, N, THREE.RGBAFormat);
+  const datas = ch.map((o) => o.g.getImageData(0, 0, 2 * N, N).data);
+  const out = new Uint8Array(2 * N * N * 4);
+  for (let i = 0; i < 2 * N * N; i++) for (let k = 0; k < 4; k++) out[i * 4 + k] = datas[k][i * 4];
+  const t = new THREE.DataTexture(out, 2 * N, N, THREE.RGBAFormat);
   t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter; t.generateMipmaps = true;
   t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.needsUpdate = true;
   SURF_UNIFORMS.sGround.value = t;
@@ -386,8 +424,28 @@ export const SIGNS = [
   { text: 'FEUERLÖSCHER', bg: '#b51f1f', fg: '#f2f2f2', font: 'bold 62px Arial' },                  // 21
   { text: 'D-17', fg: 'rgba(25,25,25,0.85)', font: 'bold 110px Arial', stencil: true },                  // 22
   { text: 'TRAFO 2 · 10 kV', bg: '#e8c22c', fg: '#111', font: 'bold 60px Arial', border: '#111' },       // 23
+  { text: 'WERK 2 · GIESSEREI', bg: '#1d3a5f', fg: '#e8e4d8', font: 'bold 60px Arial' },                   // 24
+  { text: 'LAGER 3', bg: '#1d3a5f', fg: '#e8e4d8', font: 'bold 76px Arial' },                              // 25
+  { text: 'KELLER ↓ VERSORGUNG', bg: '#e9e6dc', fg: '#222', font: 'bold 54px Arial', border: '#222' },     // 26
+  { text: 'KANTINE', bg: '#e9e6dc', fg: '#222', font: 'bold 70px Arial' },                                 // 27
+  { text: 'ARCHIV', bg: '#e9e6dc', fg: '#222', font: 'bold 70px Arial' },                                  // 28
+  { text: 'BETRIEBSLEITUNG', bg: '#e9e6dc', fg: '#222', font: 'bold 58px Arial' },                         // 29
+  { text: 'PFORTE · ANMELDUNG', bg: '#f0ede4', fg: '#1d3a5f', font: 'bold 54px Arial', border: '#1d3a5f' }, // 30
+  { text: 'GLEIS 2', bg: '#2b2b2b', fg: '#e6c84a', font: 'bold 76px Arial' },                              // 31
+  { text: 'VERLADUNG  TOR 7', bg: '#2b2b2b', fg: '#e6c84a', font: 'bold 62px Arial' },                     // 32
+  { text: 'KESSELHAUS', bg: '#e9e6dc', fg: '#222', font: 'bold 70px Arial' },                              // 33
+  { text: 'PUMPENRAUM · HOCHWASSER', bg: '#e8c22c', fg: '#111', font: 'bold 44px Arial', border: '#111' }, // 34
+  { text: 'SAMMELPLATZ', bg: '#1f7a3a', fg: '#f2f2f2', font: 'bold 66px Arial' },                          // 35
+  { text: 'TOR 5', fg: 'rgba(230,196,60,0.9)', font: 'bold 104px Arial', stencil: true },                  // 36
+  { text: 'GALERIE', bg: '#e9e6dc', fg: '#222', font: 'bold 70px Arial' },                                 // 37
+  { text: 'WERK 2', fg: 'rgba(225,222,210,0.85)', font: 'bold 104px Arial', stencil: true },               // 38
+  { text: 'LAGER 3', fg: 'rgba(225,222,210,0.85)', font: 'bold 104px Arial', stencil: true },              // 39
+  { text: 'KEIN DURCHGANG', bg: '#f0ede4', fg: '#b51f1f', font: 'bold 56px Arial', border: '#b51f1f' },    // 40
+  { text: 'TOR GESPERRT', bg: '#f0ede4', fg: '#b51f1f', font: 'bold 60px Arial', border: '#b51f1f' },      // 41
+  { text: 'GLEIS 2', fg: 'rgba(230,196,60,0.9)', font: 'bold 104px Arial', stencil: true },                // 42
+  { text: '↑ BÜROS · KANTINE', bg: '#e9e6dc', fg: '#222', font: 'bold 56px Arial', border: '#222' },       // 43
 ];
-const SIGN_ROWS = 12;
+const SIGN_ROWS = 22;
 
 function signAtlas(R) {
   const W = 1024, Hc = 128, c = makeCanvas(W, Hc * SIGN_ROWS), g = c.getContext('2d');
@@ -556,7 +614,7 @@ const signUV = (i) => {
 const SIGN_PLACES = [
   [0, [-9.0, 6.0, 16.03], '+z', 6.0, 1.5],
   [5, [-12.0, 3.2, 16.03], '+z', 1.8, 0.45],
-  [4, [0.0, 1.5, 25.78], '-z', 1.4, 0.35],
+  [4, [0.0, 1.5, 29.98], '-z', 1.4, 0.35],
   [13, [-9.0, 1.35, 22.03], '+z', 2.4, 0.6],
   [1, [-9.0, 5.6, -5.78], '+z', 3.6, 0.9],
   [2, [-12.3, 2.7, -5.78], '+z', 1.1, 0.27],
@@ -567,7 +625,7 @@ const SIGN_PLACES = [
   [11, [-19.75, 1.6, 11.83], '+z', 0.9, 0.22],
   [6, [10.58, 1.75, 9.1], '-x', 0.8, 0.2],
   [7, [10.58, 1.75, 14.6], '-x', 0.8, 0.2],
-  [8, [10.58, 1.75, 3.1], '-x', 0.8, 0.2],
+  [43, [10.58, 2.55, 2.0], '-x', 1.4, 0.35],
   [9, [10.58, 1.75, -1.9], '-x', 0.8, 0.2],
   [14, [-14.4, 2.5, -17.58], '+z', 1.2, 0.3],
   [12, [-17.5, 4.15, -17.58], '+z', 3.2, 0.2],
@@ -587,6 +645,17 @@ const SIGN_PLACES = [
   [22, [7.78, 3.0, 0.5], '-x', 1.2, 0.3],
   [22, [19.58, 3.0, -9.0], '-x', 1.2, 0.3],
   [23, [7.78, 1.5, 13.5], '-x', 1.4, 0.35],
+  // expanded site
+  [24, [32.0, 9.4, 16.03], '+z', 6.0, 1.5], [38, [26.0, 6.0, -18.02], '-z', 3.6, 0.9], [36, [32.0, 5.2, -17.58], '+z', 2.0, 0.5],
+  [31, [40.0, 3.0, -18.02], '-z', 1.6, 0.4], [40, [36.2, 2.5, 16.03], '+z', 1.4, 0.35],
+  [25, [22.0, 8.6, -33.98], '+z', 5.0, 1.25], [39, [18.0, 4.9, -33.98], '+z', 2.6, 0.65], [42, [30.0, 1.5, -33.98], '+z', 2.2, 0.55],
+  [32, [0.42, 5.0, -44.0], '+x', 2.6, 0.65], [32, [-0.02, 5.0, -44.0], '-x', 2.6, 0.65], [14, [0.42, 2.6, -36.8], '+x', 1.1, 0.27],
+  [35, [-23.78, 2.0, -38.0], '+x', 2.0, 0.5], [41, [-12.0, 2.0, -33.95], '+z', 1.4, 0.35],
+  [26, [13.8, 2.4, -17.58], '+z', 2.6, 0.65], [26, [39.0, 2.4, 15.58], '-z', 2.6, 0.65],
+  [33, [20.8, -1.4, 5.58], '-z', 1.6, 0.4], [34, [22.38, -1.25, -0.6], '-x', 1.8, 0.45],
+  [27, [10.58, 5.9, 12.65], '-x', 1.0, 0.25], [28, [10.58, 5.9, -2.95], '-x', 1.0, 0.25], [29, [10.58, 5.9, 7.25], '-x', 1.4, 0.35],
+  [37, [7.78, 6.9, 14.4], '-x', 1.0, 0.25], [43, [0.6, 2.6, 15.58], '-z', 1.4, 0.35], [30, [36.98, 2.5, 26.5], '-x', 1.8, 0.45],
+  [12, [36.0, 0.05, 13.42], '+z', 6.4, 0.1], [14, [3.8, 2.75, -17.58], '+z', 1.1, 0.27],
 ];
 
 // ------------------------------------------------------------------------------------------------ build
@@ -594,7 +663,7 @@ export function buildDecals(scene, layout, opts = {}) {
   const R = rng(1234);
   const rr = (a, b) => a + (b - a) * R();
   const out = { meshes: [], panes: glassPanes };
-  const inside = (x, z) => x > -24 && x < 20 && z > -18 && z < 16;
+  const inside = (x, z) => insideBuilding(x, z);
   const props = layout.solids.filter((s) => s.collide && s.kind !== 'wall' && s.max[1] - s.min[1] > 0.1);
   const underProp = (x, z, m = 0) => props.some((s) => x > s.min[0] - m && x < s.max[0] + m && z > s.min[2] - m && z < s.max[2] + m);
 
@@ -609,11 +678,12 @@ export function buildDecals(scene, layout, opts = {}) {
     if (k === 1) floorDecal(x, z, s * 0.8, GC.oil); else if (R() < 0.6) floorDecal(x, z, s, GC.grime);
   }
   // cracks on the floor slabs and the yard
-  for (let i = 0; i < 34; i++) { const x = rr(-23, 19), z = rr(-17.4, 25.4); if (!underProp(x, z)) floorDecal(x, z, rr(1.2, 3.2), GC.crack, R() * 6.28, rr(0.8, 1.6)); }
+  for (let i = 0; i < 100; i++) { const x = rr(-23, 43), z = rr(-51.4, 29.4); if (!underProp(x, z) && !inHoleXZ(x, z)) floorDecal(x, z, rr(1.2, 3.2), GC.crack, R() * 6.28, rr(0.8, 1.6)); }
   // broken tiles in the lino rooms
   for (const [x, z] of [[12.4, 14.6], [18.4, 11.0], [12.0, 8.6], [18.5, 5.6], [12.2, -5.0], [18.6, -2.4], [16.2, 12.4]]) floorDecal(x, z, rr(1.2, 1.8), GC.tiles);
   // leaves and dirt fans at every door to the outside, on both sides
   for (const d of layout.doors) {
+    if (Math.abs(d.y || 0) > 0.1) continue;
     const [cx, cz] = d.center;
     const nrm = d.normal === 'z' ? [0, 1] : [1, 0];
     const outside = !inside(cx + nrm[0], cz + nrm[1]) || !inside(cx - nrm[0], cz - nrm[1]);
@@ -628,7 +698,9 @@ export function buildDecals(scene, layout, opts = {}) {
       }
     }
   }
-  for (let i = 0; i < 14; i++) floorDecal(rr(-23, 19), rr(16.3, 25.6), rr(1.0, 2.2), GC.leaves);   // yard, along the fence
+  for (let i = 0; i < 24; i++) floorDecal(rr(-23, 43), rr(26.3, 29.7), rr(1.0, 2.2), GC.leaves);   // yard, along the fence
+  for (let i = 0; i < 16; i++) floorDecal(rr(-23, 43), rr(-33.7, -30), rr(1.0, 2.2), GC.leaves);   // siding fence
+  for (let i = 0; i < 10; i++) floorDecal(rr(-23.5, -1), rr(-51.7, -48), rr(1.0, 2.2), GC.leaves);
   // tyre marks: forklift arcs in the bay, van and lorry tracks in the yard
   const tyre = (pts, w = 0.55) => {
     for (let i = 0; i < pts.length - 1; i++) {
@@ -644,6 +716,8 @@ export function buildDecals(scene, layout, opts = {}) {
   tyre(arc(-2.0, -9.5, 4.0, -1.4, 0.6));
   tyre([[-8.4, 25.6], [-8.2, 22.6]], 0.7); tyre([[-9.8, 16.2], [-9.6, 18.8]], 0.7);
   tyre(arc(10.0, 21.0, 4.0, 1.7, 3.6), 0.6); tyre([[14.0, 18.2], [14.0, 16.4]], 0.6);
+  tyre([[36.2, 36.0], [35.8, 30.4], [34.2, 26.0], [31.0, 17.0]], 0.7); tyre([[37.0, 36.0], [36.8, 30.4]], 0.7);
+  tyre(arc(26.0, -36.6, 3.0, 0.4, 2.8)); tyre([[4, -37.2], [16, -37.0], [30, -37.4]]); tyre(arc(-6.0, -44.0, 4.5, -0.6, 1.4), 0.7);
   // safety lines along the walkways + hazard borders around machines (faded floor paint)
   const line = (x0, z0, x1, z1, w = 0.1, cellI = GC.line) => {
     const l = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(l / 2.0));
@@ -658,7 +732,16 @@ export function buildDecals(scene, layout, opts = {}) {
   line(-22.8, 3.0, -22.8, 15.0); line(-15.5, 10.6, 1.0, 10.6); line(-15.5, -4.9, 6.0, -4.9);
   line(-3.6, -5.6, -3.6, -1.0); line(-6.4, -5.6, -6.4, -1.0);
   const hazardRing = (x0, z0, x1, z1) => { line(x0, z0, x1, z0, 0.1, GC.hazard); line(x0, z1, x1, z1, 0.1, GC.hazard); line(x0, z0, x0, z1, 0.1, GC.hazard); line(x1, z0, x1, z1, 0.1, GC.hazard); };
-  hazardRing(-11.6, 1.4, -6.9, 6.1); hazardRing(2.6, -4.4, 6.4, -0.6); hazardRing(2.5, 12.7, 5.9, 15.3);
+  hazardRing(-11.6, 1.4, -6.9, 6.1); hazardRing(2.6, -4.4, 6.4, -0.6); hazardRing(2.1, 9.9, 5.5, 12.5);
+  hazardRing(24.4, -12.6, 29.6, -7.4); hazardRing(32.4, -12.6, 37.6, -7.4); hazardRing(35.9, -17.3, 41.1, -12.1); hazardRing(23.9, 7.9, 28.4, 12.4);
+  line(22.2, -17.4, 22.2, 15.4); line(42.4, -17.4, 42.4, 12.6); line(24.0, 1.9, 36.0, 1.9); line(1.0, -39.0, 43.0, -39.0); line(1.0, -35.0, 43.0, -35.0);
+  line(5.0, -47.0, 34.0, -47.0, 0.1, GC.hazard); line(5.0, -40.0, 34.0, -40.0, 0.1, GC.hazard);
+  floorDecal(31.0, -6.0, 1.6, GC.stencil, 0, 1.6); floorDecal(21.5, -40.0, 1.6, GC.stencil, Math.PI / 2, 1.6); floorDecal(-21.5, -43.0, 2.0, GC.stencil, Math.PI / 2, 2.0);
+  // upper floors / basement: grime and stencils on their floors
+  const upDecal = (x, y, z, s, cell, rot = R() * 6.28) => D.add([x, y + 0.004 + R() * 0.003, z], '+y', s, s, gUV(cell), rot);
+  for (const [x, z] of [[9.4, 2], [9.4, -3], [9.4, 9], [15, 13], [16, 7], [15, -3.6], [12, 1.6]]) upDecal(x, H.up, z, rr(1.0, 2.0), GC.grime);
+  for (const [x, z] of [[20.8, -10], [20.8, 3], [24, 9], [30, 11], [26, -2], [21.2, -15]]) upDecal(x, H.base, z, rr(1.2, 2.2), R() < 0.5 ? GC.grime : GC.tide);
+  upDecal(20.8, H.base, -16.4, 1.4, GC.stencil, 0); upDecal(9.4, H.up, 13.6, 1.3, GC.stencil, 0);
   floorDecal(-4.0, -3.4, 1.6, GC.stencil, 0, 1.6); floorDecal(-15.0, -10.5, 1.6, GC.stencil, Math.PI / 2, 1.6); floorDecal(9.4, 6.0, 1.3, GC.stencil, 0, 1.3);
 
   // ---- walls: stains under windows, rust runs below fixings, peeling paint, bullet pocks, graffiti

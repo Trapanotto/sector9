@@ -8,9 +8,26 @@
 //   E(n) = c0 + c1 . n      (c0 = pi * mean(L), c1 = 2 pi * mean(L * dir))
 // which is exactly what three's indirect-diffuse term wants.
 
-export const VOX = { x0: -30, y0: -0.5, z0: -26, s: 0.25, nx: 224, ny: 42, nz: 232 };
-// Probe centres coincide with voxel centres (probe i sits on voxel 2i+1 along each axis, offset 17 in x/z, 1 in y).
-export const PROBE = { x0: -25.625, y0: -0.125, z0: -21.625, s: 0.5, nx: 96, ny: 20, nz: 100 };
+import { GI_GRID, BUILDINGS } from './layout.js';
+
+// Grid sized to the level (layout GI_GRID). Probe centres coincide with voxel centres: probe i sits on voxel 2i+1
+// along each axis, so the probe spacing is twice the voxel size.
+const G = GI_GRID;
+const _n = (a, b) => Math.ceil((b - a) / G.s - 1e-6);
+export const VOX = { x0: G.x0, y0: G.y0, z0: G.z0, s: G.s, nx: _n(G.x0, G.x1), ny: _n(G.y0, G.y1), nz: _n(G.z0, G.z1) };
+export const PROBE = {
+  x0: G.x0 + 1.5 * G.s, y0: G.y0 + 1.5 * G.s, z0: G.z0 + 1.5 * G.s, s: 2 * G.s,
+  nx: Math.floor((VOX.nx - 2) / 2), ny: Math.floor((VOX.ny - 2) / 2), nz: Math.floor((VOX.nz - 2) / 2),
+};
+// Open air well above the ground and away from every building only ever sees sky and distant facades: those probes
+// are not traced; they copy their nearest traced neighbour (fillInvalid), like probes inside solids.
+export function skipProbe(i, j, k) {
+  const y = PROBE.y0 + j * PROBE.s;
+  if (y < 5.2) return false;
+  const x = PROBE.x0 + i * PROBE.s, z = PROBE.z0 + k * PROBE.s;
+  for (const b of BUILDINGS) if (x > b.min[0] - 3 && x < b.max[0] + 3 && z > b.min[1] - 3 && z < b.max[1] + 3 && y < (b.roof ?? 8) + 2.5) return false;
+  return true;
+}
 export const PROBE_VOX_OFF = [
   Math.round((PROBE.x0 - VOX.x0) / VOX.s - 0.5),
   Math.round((PROBE.y0 - VOX.y0) / VOX.s - 0.5),
@@ -143,7 +160,7 @@ export function createTracer(params) {
   const GOLD = 0.6180339887498949;
   let hits = null, jit = null, slices = null, nRays = 0;
   // rays climbing above every roof only meet the sky (distant silhouettes are ignored from up there)
-  const skyY = Math.ceil(((params.skyHeight ?? 8.7) - y0) / s);
+  const skyY = Math.ceil(((params.skyHeight ?? G.skyY ?? 8.7) - y0) / s);
 
   function traceSlices(zs, rays, seed) {
     slices = zs; nRays = rays;
@@ -159,7 +176,7 @@ export function createTracer(params) {
       const ju = rnd(), jv = rnd();
       jit[p * 2] = ju; jit[p * 2 + 1] = jv;
       const hb = p * rays;
-      if (vox[idx0] !== 0) { hits[hb] = 0x7fffffff; continue; }     // probe inside a solid
+      if (vox[idx0] !== 0 || skipProbe(pi, pj, pk)) { hits[hb] = 0x7fffffff; continue; }     // probe inside a solid / open sky
       for (let r = 0; r < rays; r++) {
         const dy = 1 - 2 * ((r + ju) / rays);
         const rad = Math.sqrt(Math.max(0, 1 - dy * dy));
@@ -236,7 +253,7 @@ export function probeValidity(vox) {
   const { nx, ny, nz } = PROBE;
   const valid = new Uint8Array(nx * ny * nz);
   for (let k = 0; k < nz; k++) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
-    valid[i + nx * (j + ny * k)] = vox[probeVoxIdx(i, j, k)] === 0 ? 1 : 0;
+    valid[i + nx * (j + ny * k)] = vox[probeVoxIdx(i, j, k)] === 0 && !skipProbe(i, j, k) ? 1 : 0;
   }
   return valid;
 }

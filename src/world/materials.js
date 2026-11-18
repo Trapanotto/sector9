@@ -77,7 +77,7 @@ export const MATS = {
 export const SURF_UNIFORMS = {
   sNoise: { value: null },
   sGround: { value: null },
-  sGroundRect: { value: new THREE.Vector4(-30, -26, 56, 58) },   // minX, minZ, sizeX, sizeZ (layout GROUND)
+  sGroundRect: { value: new THREE.Vector4(-28, -56, 76, 93) },   // minX, minZ, sizeX, sizeZ (layout GROUND)
 };
 
 function makeCanvas(w, h) {
@@ -373,7 +373,9 @@ vec3 sNT = vec3( 0.0, 0.0, 1.0 );
 
   #ifdef SURF_GROUND
   {
-    vec2 gUV = ( sWP.xz - sGroundRect.xy ) / sGroundRect.zw;
+    // two bands: ground floor (left half), all other levels (right half)
+    vec2 gUV = clamp( ( sWP.xz - sGroundRect.xy ) / sGroundRect.zw, vec2( 0.001 ), vec2( 0.999 ) );
+    gUV.x = gUV.x * 0.5 + ( abs( sWP.y ) > 1.8 ? 0.5 : 0.0 );
     vec4 gm = texture2D( sGround, gUV );
     float nz = sN2.a - 0.5;
     // worn traffic paths: lighter, polished, dirt swept away
