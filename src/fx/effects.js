@@ -536,6 +536,28 @@ export function createEffects(ctx) {
   const qRestX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2);
 
   // ---- API ----------------------------------------------------------------------------------
+  // Shattering window pane: shards burst mostly along the bullet's path, some back toward the shooter, then rain down.
+  const glassCol = lin(0.62, 0.70, 0.68), glassDust = lin(0.75, 0.80, 0.80);
+  function glass(point, dir) {
+    if (!point) return;
+    const d = dir && dir.lengthSq() > 1e-8 ? vN.copy(dir).normalize() : vN.copy(UP);
+    const gy = groundAt(point.x, point.z);
+    for (let i = 0; i < 46; i++) {
+      randUnit(vA);
+      const fwd = Math.random() < 0.75 ? rnd(0.6, 3.2) : -rnd(0.3, 1.4);
+      const ox = vA.x * 0.35, oy = vA.y * 0.35, oz = vA.z * 0.35;      // spread over the pane, not a point
+      debris.spawn(point.x + ox, point.y + oy, point.z + oz,
+        d.x * fwd + vA.x * 0.9, d.y * fwd + vA.y * 0.9 + 0.4, d.z * fwd + vA.z * 0.9,
+        rnd(0.008, 0.028), rnd(1.4, 2.6), glassCol, 1, 9.8, 0.3, 0, LAND_STOP, gy + 0.004);
+    }
+    for (let i = 0; i < 10; i++) {
+      randUnit(vA); const sp = rnd(0.3, 1.6);
+      dust.spawn(point.x + vA.x * 0.2, point.y + vA.y * 0.2, point.z + vA.z * 0.2,
+        d.x * sp + vA.x * 0.4, d.y * sp + vA.y * 0.4, d.z * sp + vA.z * 0.4,
+        rnd(0.03, 0.07), rnd(0.5, 1.1), glassDust, rnd(0.25, 0.45), 1.2, 3.5, 0.18);
+    }
+  }
+
   function impact(point, normal, surface) {
     if (!point) return;
     vN.copy(normal && normal.lengthSq() > 1e-8 ? normal : UP).normalize();
@@ -780,5 +802,5 @@ export function createEffects(ctx) {
     shellMesh.instanceMatrix.needsUpdate = true;
   }
 
-  return { impact, blood, bloodPool, muzzleFlash, tracer, shell, update, reset, tuning: T };
+  return { impact, glass, blood, bloodPool, muzzleFlash, tracer, shell, update, reset, tuning: T };
 }

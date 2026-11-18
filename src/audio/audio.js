@@ -14,17 +14,17 @@ import * as THREE from 'three';
 export const AUDIO_TUNING = {
   maxVoices: 40,
   masterVolume: 0.8,          // default, overridden by setMasterVolume
-  shotGain: 0.75,             // player pistol (peaks deliberately drive the clipper)
+  shotGain: 1.05,             // player pistol (peaks deliberately drive the clipper)
   enemyShotGain: 0.9,
   stepGain: 0.55,
-  reverbReturn: 0.55,         // wet level of the hall
+  reverbReturn: 0.68,         // wet level of the hall
   reverbSeconds: 2.8,         // impulse response length (RT60-ish)
-  bandLow: 150,               // mic band-limit (Hz)
+  bandLow: 85,                // mic band-limit (Hz)
   bandHigh: 7000,
-  clipDrive: 1.25,            // pre-gain into the soft clipper
+  clipDrive: 1.7,             // pre-gain into the soft clipper
   compThreshold: -20, compRatio: 8, compAttack: 0.003, compRelease: 0.5,
   makeup: 1.5,
-  duckDepth: 0.45,            // AGC pump depth on the whole mix after a close shot
+  duckDepth: 0.6,             // AGC pump depth on the whole mix after a close shot
   ambDuckDepth: 0.8,          // extra duck depth on the ambience bed
   duckRecover: 1.0,           // seconds to (mostly) recover
   hiss: 0.0035,
@@ -421,6 +421,12 @@ export function createAudio(ctx) {
     // low thump
     tn(v, t, 'sine', vary(130, 0.08) * p, 0.002, 1.7 * bodyAmt, 0.2, 42, 0.14);
     nb(v, t, 'lowpass', 300, 0.7, 0.001, 1.2 * bodyAmt, 0.12, 0, 0.6);
+    // pressure wave: full-band 1 ms spike, sub drop and a mid "knock" that survives small speakers
+    nb(v, t, 'allpass', 1000, 0.7, 0.0002, 2.6 * crackAmt, 0.004);
+    tn(v, t, 'sine', vary(190, 0.06) * p, 0.001, 2.4 * bodyAmt, 0.26, 48, 0.11);
+    tn(v, t, 'triangle', vary(95, 0.06) * p, 0.004, 1.3 * bodyAmt, 0.3, 40, 0.2);
+    nb(v, t, 'bandpass', vary(620, 0.12) * p, 1.6, 0.001, 1.5 * bodyAmt, vary(0.07, 0.15));
+    nb(v, t + 0.012, 'lowpass', 1800, 0.7, 0.004, 0.8 * bodyAmt, vary(0.2, 0.15));   // muzzle gas roar
     // short body resonance
     nb(v, t, 'bandpass', vary(380, 0.1) * p, 5, 0.003, 0.9 * bodyAmt, vary(0.26, 0.15));
     tn(v, t, 'triangle', vary(240, 0.06) * p, 0.002, 0.22 * bodyAmt, 0.17);
@@ -431,6 +437,13 @@ export function createAudio(ctx) {
     const t = v.t;
     shotLayers(v, t, p, 1, 1);
     click(v, t + vary(0.035, 0.1), 3200 * p, 0.22, 0.02); // slide cycling
+    // first reflections off nearby walls: two quick slaps make the shot feel big instead of dry
+    for (const [dt, g, f] of [[vary(0.045, 0.2), 0.34, 2600], [vary(0.11, 0.2), 0.2, 1500]]) {
+      const dl = node(v, ac.createDelay(0.3)); dl.delayTime.value = dt;
+      const lp = filt(v, 'lowpass', f, 0.7), gg = gainN(v, g);
+      v.input.connect(dl); dl.connect(lp); lp.connect(gg); gg.connect(v.out);
+      bump(v, v.end + dt);
+    }
     duck(1);
   }
 
@@ -554,6 +567,18 @@ export function createAudio(ctx) {
     const n = 3 + (Math.random() * 3 | 0);
     for (let i = 0; i < n; i++) nb(v, t + rnd(0.04, 0.32), 'bandpass', rnd(3000, 6000), 3, 0.0005, rnd(0.04, 0.12), 0.01);
   }
+  function sndImpactGlass(o, p) {
+    const v = voice({ volume: (o.volume ?? 1) * 0.9, send: 0.5, position: o.position });
+    const t = v.t;
+    nb(v, t, 'highpass', 2500, 0.7, 0.0004, 1.0, 0.03);                 // crack
+    nb(v, t, 'bandpass', 5200, 1.2, 0.002, 0.6, 0.22);                  // shatter wash
+    for (let i = 0; i < 14; i++) {                                      // shards ringing and landing
+      const tt = t + 0.01 + Math.pow(Math.random(), 1.6) * 0.75;
+      tn(v, tt, 'sine', rnd(2600, 7200) * p, 0.0006, rnd(0.05, 0.2), rnd(0.02, 0.09));
+      if (i % 3 === 0) nb(v, tt, 'bandpass', rnd(3500, 6500), 6, 0.0005, 0.25, 0.015);
+    }
+  }
+
   function sndImpactMetal(o, p) {
     const v = voice({ volume: o.volume ?? 1, send: 0.6, position: o.position });
     const t = v.t;
@@ -746,7 +771,7 @@ export function createAudio(ctx) {
     shot: sndShot, shot_enemy: sndShotEnemy, dry: sndDry,
     reload_out: sndReloadOut, reload_in: sndReloadIn, slide: sndSlide,
     step_concrete: (o, p) => sndStep(o, p, false), step_metal: (o, p) => sndStep(o, p, true), land: sndLand,
-    impact_concrete: sndImpactConcrete, impact_metal: sndImpactMetal, impact_wood: sndImpactWood, impact_flesh: sndImpactFlesh,
+    impact_concrete: sndImpactConcrete, impact_metal: sndImpactMetal, impact_glass: sndImpactGlass, impact_wood: sndImpactWood, impact_flesh: sndImpactFlesh,
     hurt: sndHurt, death: sndDeath, body_fall: sndBodyFall, shell: sndShell, shout: sndShout, radio: sndRadio,
     ui_click: sndUiClick,
   };
