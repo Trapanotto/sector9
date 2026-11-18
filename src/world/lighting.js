@@ -1,15 +1,21 @@
-// Sky / IBL, overcast sun, practical lights (dying fluorescent tubes, one shadowed work lamp),
-// fake daylight shafts and dust motes. Exposes update(dt) for flicker / sway / dust animation.
+// Sky / IBL, overcast sun (static high-res shadow + small per-frame cascade for moving objects), the shadowed
+// work lamp with a visible beam, fluorescent fixtures as analytic tube lights (room-clipped, flickering, with
+// bounce fill), daylight shafts and dust motes, zone-dependent haze. Indirect light comes from the baked
+// irradiance volume and local reflection probes (lightGI.js / lightProbes.js / lightShader.js).
 import * as THREE from 'three';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { FIXTURES, WORK_LAMP, BOUNCE_LIGHTS, H } from './layout.js';
+import { FIXTURES, WORK_LAMP, H } from './layout.js';
 import { ASSET_BASE, makeCanvas } from './materials.js';
 import { rng } from './geometry.js';
+import { LP, MAX_TUBES } from './lightShader.js';
+import { REFL_ZONES } from './lightProbes.js';
 
 export const SUN_DIR = new THREE.Vector3(0.42, -0.72, -0.55).normalize(); // direction the light travels
+export const SUN = { color: 0xe6ebf2, intensity: 2.6 };
+export const LAMP = { color: 0xffd2a0, intensity: 100, angle: 0.68, penumbra: 0.55, range: 26 };
 
-async function loadSky(renderer, scene) {
+export async function loadSky(renderer, scene) {
   const pmrem = new THREE.PMREMGenerator(renderer);
   let bg = null;
   try {
@@ -37,7 +43,10 @@ async function loadSky(renderer, scene) {
   return { bg, env };
 }
 
-// Additive light-shaft prism from an opening rectangle along the sun direction down to the floor.
+// Linear RGB * intensity of a three colour (what the bake needs to match the real-time light).
+export const linColor = (hex, k) => { const c = new THREE.Color(hex); return [c.r * k, c.g * k, c.b * k]; };
+
+// ------------------------------------------------------------------------------------------------ shafts
 // Distance along the sun ray from p to the first ray-blocking solid (or the floor).
 function rayEnd(p, solids) {
   const L = SUN_DIR;
@@ -61,7 +70,6 @@ function shaftGeometry(list, solids) {
   const pos = [], tt = [], nor = [];
   const L = SUN_DIR;
   for (const raw of list) {
-    // shrink slightly so rays starting on the opening edge do not graze the surrounding wall boxes
     const ctr = raw.reduce((a, c) => a.add(c), new THREE.Vector3()).multiplyScalar(0.25);
     const corners = raw.map((c) => c.clone().lerp(ctr, 0.03));
     const proj = corners.map((c) => c.clone().addScaledVector(L, rayEnd(c, solids)));
@@ -80,8 +88,9 @@ function shaftGeometry(list, solids) {
   return g;
 }
 
-const shaftMaterial = () => new THREE.ShaderMaterial({
-  uniforms: { uTime: { value: 0 }, uColor: { value: new THREE.Color(0xdfe6ee) }, uStrength: { value: 0.07 } },
+// Additive in-scatter volume. Brightness is tied to the sun intensity so shafts match the patches they produce.
+const shaftMaterial = (color, strength) => new THREE.ShaderMaterial({
+  uniforms: { uTime: { value: 0 }, uColor: { value: color }, uStrength: { value: strength } },
   vertexShader: /* glsl */`
     attribute float aT; varying float vT; varying vec3 vN; varying vec3 vW;
     void main(){ vT = aT; vN = normalize(normal); vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz;
@@ -90,17 +99,16 @@ const shaftMaterial = () => new THREE.ShaderMaterial({
     uniform float uTime; uniform vec3 uColor; uniform float uStrength; varying float vT; varying vec3 vN; varying vec3 vW;
     void main(){
       vec3 V = normalize(cameraPosition - vW);
-      float facing = pow(abs(dot(normalize(vN), V)), 1.6);
-      float along = (1.0 - vT) * smoothstep(0.0, 0.12, vT + 0.02) + 0.15 * (1.0 - vT);
+      float facing = pow(abs(dot(normalize(vN), V)), 1.4);
+      float along = (1.0 - vT) * smoothstep(0.0, 0.12, vT + 0.02) + 0.2 * (1.0 - vT);
       float d = length(cameraPosition - vW);
       float nearFade = smoothstep(0.4, 3.5, d);
-      float swirl = 0.75 + 0.25 * sin(vW.x * 1.7 + uTime * 0.21) * sin(vW.z * 1.3 - uTime * 0.17 + vW.y * 0.8);
-      float a = uStrength * facing * along * nearFade * swirl;
+      float floorFade = smoothstep(0.0, 0.5, vW.y);
+      float swirl = 0.72 + 0.28 * sin(vW.x * 1.7 + uTime * 0.21) * sin(vW.z * 1.3 - uTime * 0.17 + vW.y * 0.8);
+      float a = uStrength * facing * along * nearFade * swirl * floorFade;
       gl_FragColor = vec4(uColor * a, 1.0);
-      #include <tonemapping_fragment>
-      #include <colorspace_fragment>
     }`,
-  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false, toneMapped: false,
 });
 
 function dustPoints(list, count, R) {
@@ -120,7 +128,7 @@ function dustPoints(list, count, R) {
   g.setAttribute('aSeed', new THREE.Float32BufferAttribute(seed, 1));
   g.computeBoundingSphere();
   const m = new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uScale: { value: 600 } },
+    uniforms: { uTime: { value: 0 }, uScale: { value: 600 }, uColor: { value: new THREE.Color(0.95, 0.93, 0.88) } },
     vertexShader: /* glsl */`
       attribute float aSeed; uniform float uTime; uniform float uScale; varying float vA;
       void main(){
@@ -134,54 +142,107 @@ function dustPoints(list, count, R) {
         gl_Position = projectionMatrix * mv;
       }`,
     fragmentShader: /* glsl */`
-      varying float vA;
+      uniform vec3 uColor; varying float vA;
       void main(){ vec2 c = gl_PointCoord - 0.5; float r = dot(c, c); if (r > 0.25) discard;
-        float a = vA * (1.0 - r * 4.0) * 0.55; gl_FragColor = vec4(vec3(0.95, 0.93, 0.88) * a, 1.0);
-        #include <tonemapping_fragment>
-        #include <colorspace_fragment>
+        float a = vA * (1.0 - r * 4.0) * 0.55; gl_FragColor = vec4(uColor * a, 1.0);
       }`,
-    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false, toneMapped: false,
   });
   const pts = new THREE.Points(g, m);
   pts.frustumCulled = false;
   return pts;
 }
 
-export async function setupLighting(ctx, layout, onProgress = () => {}) {
+// Visible cone of the work lamp in the haze (additive, soft edges, fades into the floor).
+function beamMesh(pos, tgt, angle, len, color, strength) {
+  const r = Math.tan(angle) * len;
+  const g = new THREE.CylinderGeometry(0.09, r, len, 40, 12, true).translate(0, -len / 2, 0).rotateX(-Math.PI / 2);
+  const m = new THREE.ShaderMaterial({
+    uniforms: { uColor: { value: color }, uStrength: { value: strength }, uApex: { value: pos.clone() }, uAxis: { value: tgt.clone().sub(pos).normalize() },
+      uCos: { value: Math.cos(angle) }, uLen: { value: len }, uTime: { value: 0 } },
+    vertexShader: /* glsl */`
+      varying vec3 vW; varying vec3 vN;
+      void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vN = normalize(mat3(modelMatrix) * normal);
+        gl_Position = projectionMatrix * viewMatrix * w; }`,
+    fragmentShader: /* glsl */`
+      uniform vec3 uColor; uniform float uStrength; uniform vec3 uApex; uniform vec3 uAxis; uniform float uCos; uniform float uLen; uniform float uTime;
+      varying vec3 vW; varying vec3 vN;
+      void main(){
+        vec3 V = normalize(cameraPosition - vW);
+        float facing = pow(abs(dot(normalize(vN), V)), 2.0);
+        vec3 d = vW - uApex; float t = dot(d, uAxis);
+        float fall = 1.0 / (1.0 + t * t * 0.35);
+        float endFade = 1.0 - smoothstep(uLen * 0.55, uLen, t);
+        float floorFade = smoothstep(0.0, 0.7, vW.y);
+        float nearFade = smoothstep(0.3, 2.5, length(cameraPosition - vW));
+        float n = 0.8 + 0.2 * sin(vW.x * 2.1 + uTime * 0.3) * sin(vW.z * 1.7 - uTime * 0.23 + vW.y);
+        float a = uStrength * facing * fall * endFade * floorFade * nearFade * n;
+        gl_FragColor = vec4(uColor * a, 1.0);
+      }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false, toneMapped: false,
+  });
+  const mesh = new THREE.Mesh(g, m);
+  mesh.position.copy(pos);
+  mesh.lookAt(tgt);
+  mesh.renderOrder = 6;
+  mesh.userData.dynamic = true;
+  return mesh;
+}
+
+// Room box (from the reflection zones) a fixture lives in; its light is clipped to it (tube lights cast no shadows).
+function zoneBox(p) {
+  for (let i = REFL_ZONES.length - 1; i >= 1; i--) {
+    const z = REFL_ZONES[i];
+    if (p[0] >= z.min[0] && p[0] <= z.max[0] && p[2] >= z.min[2] && p[2] <= z.max[2] && p[1] <= z.max[1] + 0.2) return z;
+  }
+  return REFL_ZONES[0];
+}
+
+// ------------------------------------------------------------------------------------------------ setup
+export async function setupLighting(ctx, layout, { sky } = {}) {
   const { renderer, scene } = ctx;
   const R = rng(4242);
-  onProgress(0, 'Himmel');
-  await loadSky(renderer, scene);
-  onProgress(1, 'Himmel');
+  if (!sky) await loadSky(renderer, scene);
   scene.fog = new THREE.FogExp2(0x8a8f94, 0.0105);
 
   const root = new THREE.Group(); root.name = 'lighting';
+  root.userData.static = true;
   scene.add(root);
 
-  // ---- overcast sun (the only directional, one well-fitted shadow map over the whole site)
-  const sun = new THREE.DirectionalLight(0xe4eaf2, 2.4);
-  const center = new THREE.Vector3(-2, 0, 2);
-  sun.position.copy(center).addScaledVector(SUN_DIR, -60);
-  sun.target.position.copy(center);
+  // ---- sun: three's shadow map is a small cascade that follows the player and only holds moving casters;
+  // static casters live in the high-resolution static map (lightSun.js).
+  const sun = new THREE.DirectionalLight(SUN.color, SUN.intensity);
   sun.castShadow = true;
-  const big = (renderer.capabilities.maxTextureSize || 4096) >= 8192;
-  sun.shadow.mapSize.set(big ? 4096 : 2048, big ? 4096 : 2048);
+  sun.shadow.mapSize.set(1024, 1024);
+  const CASCADE = 11;
   const sc = sun.shadow.camera;
-  sc.left = -36; sc.right = 36; sc.top = 34; sc.bottom = -34; sc.near = 20; sc.far = 110;
+  sc.left = -CASCADE; sc.right = CASCADE; sc.top = CASCADE; sc.bottom = -CASCADE; sc.near = 1; sc.far = 120;
   sc.updateProjectionMatrix();
-  sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.035;
+  sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.03; sun.shadow.radius = 2;
   root.add(sun, sun.target);
+  const sunCenter = new THREE.Vector3(), lsX = new THREE.Vector3(), lsY = new THREE.Vector3();
+  lsX.crossVectors(SUN_DIR, new THREE.Vector3(0, 1, 0)).normalize(); lsY.crossVectors(lsX, SUN_DIR).normalize();
+  const texel = (2 * CASCADE) / 1024;
+  function placeSun(p) {
+    // snap the cascade to its texel grid in light space so the shadow edges do not crawl while moving
+    const x = Math.round(p.dot(lsX) / texel) * texel, y = Math.round(p.dot(lsY) / texel) * texel, z = p.dot(SUN_DIR);
+    sunCenter.set(0, 0, 0).addScaledVector(lsX, x).addScaledVector(lsY, y).addScaledVector(SUN_DIR, z);
+    sun.target.position.copy(sunCenter);
+    sun.position.copy(sunCenter).addScaledVector(SUN_DIR, -60);
+    sun.target.updateMatrixWorld(); sun.updateMatrixWorld();
+  }
+  placeSun(new THREE.Vector3(-9, 0, 20));
 
-  // ---- work lamp (single shadow-casting spot)
+  // ---- work lamp (single shadow-casting spot, warm practical)
   const lampPos = new THREE.Vector3(...WORK_LAMP.pos), lampTgt = new THREE.Vector3(...WORK_LAMP.target);
-  const spot = new THREE.SpotLight(0xffd6a0, 90, 24, 0.72, 0.65, 2);
+  const spot = new THREE.SpotLight(LAMP.color, LAMP.intensity, LAMP.range, LAMP.angle, LAMP.penumbra, 2);
   spot.position.copy(lampPos); spot.target.position.copy(lampTgt);
-  spot.castShadow = true; spot.shadow.mapSize.set(1024, 1024); spot.shadow.bias = -0.0006; spot.shadow.normalBias = 0.02;
-  spot.shadow.camera.near = 0.3; spot.shadow.camera.far = 24;
+  spot.castShadow = true; spot.shadow.mapSize.set(1024, 1024); spot.shadow.bias = -0.0004; spot.shadow.normalBias = 0.025;
+  spot.shadow.camera.near = 0.3; spot.shadow.camera.far = LAMP.range; spot.shadow.radius = 2;
   root.add(spot, spot.target);
   {
     const steel = new THREE.MeshStandardMaterial({ color: 0x2a2b2d, roughness: 0.5, metalness: 0.7 });
-    const lens = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xffe0b0, emissiveIntensity: 6 });
+    const lens = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xffe0b0, emissiveIntensity: 40 });
     const g = new THREE.Group();
     for (let i = 0; i < 3; i++) {
       const a = (i / 3) * Math.PI * 2;
@@ -197,16 +258,21 @@ export async function setupLighting(ctx, layout, onProgress = () => {}) {
     face.position.set(0, 0, 0.081); head.add(face);
     g.add(head);
     g.traverse((o) => { o.castShadow = o !== face && o.isMesh; o.userData.surface = 'metal'; });
-    face.castShadow = false;
+    // the lamp sits at the apex of its own shadow frustum: keep the head itself out of the spot's shadow map
+    head.castShadow = false;
     root.add(g);
   }
+  const beam = beamMesh(lampPos.clone().addScaledVector(lampTgt.clone().sub(lampPos).normalize(), 0.1), lampTgt, LAMP.angle * 0.8, 9,
+    new THREE.Color(LAMP.color), 0.05);
+  root.add(beam);
 
-  // ---- fluorescent fixtures
+  // ---- fluorescent fixtures: emissive tubes + analytic tube lights (lightShader.js)
   const housingMat = new THREE.MeshStandardMaterial({ color: 0x55585c, roughness: 0.55, metalness: 0.6 });
-  const onMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xeaf2ff, emissiveIntensity: 3.2, roughness: 0.3 });
+  const onMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xeaf2ff, emissiveIntensity: 4, roughness: 0.3 });
   const deadMat = new THREE.MeshStandardMaterial({ color: 0x8c8e8a, roughness: 0.35 });
   const chainMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.6, metalness: 0.8 });
   const fixtures = [];
+  let nt = 0;
   for (const f of FIXTURES) {
     const len = f.len;
     const housing = new THREE.BoxGeometry(len + 0.1, 0.07, 0.2).translate(0, 0.035, 0);
@@ -216,11 +282,12 @@ export async function setupLighting(ctx, layout, onProgress = () => {}) {
     ]);
     const grp = new THREE.Group();
     grp.position.set(...f.pos);
-    if (Math.abs(f.pos[0] - 9.4) < 0.01 || f.pos[2] > 100) grp.rotation.y = Math.PI / 2; // corridor tubes run along z
+    const alongZ = Math.abs(f.pos[0] - 9.4) < 0.01 || f.pos[2] > 100;   // corridor tubes run along z
+    if (alongZ) grp.rotation.y = Math.PI / 2;
     const hm = new THREE.Mesh(housing, housingMat); hm.castShadow = true;
     let mat = f.state === 'dead' ? deadMat : onMat;
-    if (f.state === 'flicker') mat = onMat.clone();
-    if (f.tint) { mat = mat === onMat ? onMat.clone() : mat; mat.emissive.set(f.tint); }
+    if (f.state === 'flicker' || f.tint) mat = onMat.clone();
+    if (f.tint) mat.emissive.set(f.tint);
     const tm = new THREE.Mesh(tubes, mat);
     if (f.state === 'dead' && R() < 0.6) { tm.rotation.z = 0.25; tm.position.y = -0.06; }   // a tube hanging loose
     grp.add(hm, tm);
@@ -232,25 +299,24 @@ export async function setupLighting(ctx, layout, onProgress = () => {}) {
         c.position.set(dx, L / 2 + 0.07, 0); grp.add(c);
       }
     }
-    let light = null;
-    if (f.point && f.state !== 'dead') {
-      light = new THREE.PointLight(f.tint ?? 0xe8eef8, f.hang ? 22 : 9, f.hang ? 16 : 9, 2);
-      light.position.set(f.pos[0], f.pos[1] - 0.25, f.pos[2]);
-      root.add(light);
-    }
     root.add(grp);
-    fixtures.push({
-      f, grp, mat, light, base: light ? light.intensity : 0, baseE: mat.emissiveIntensity ?? 0,
-      level: 1, timer: R() * 2, phase: R() * 10,
-    });
+    let tube = -1, power = 0;
+    if (f.state !== 'dead' && nt < MAX_TUBES) {
+      tube = nt++;
+      const z = zoneBox(f.pos);
+      const hang = !!f.hang;
+      power = hang ? 34 : 11;
+      LP.lpTubeA.value[tube].set(f.pos[0], f.pos[1] - 0.02, f.pos[2], len / 2);
+      LP.lpTubeB.value[tube].set(alongZ ? 0 : 1, 0, alongZ ? 1 : 0, hang ? 15 : 7.5);
+      const col = new THREE.Color(f.tint ?? 0xe9eef5);
+      LP.lpTubeC.value[tube].set(col.r * power, col.g * power, col.b * power, hang ? 0.12 : 0.35);
+      LP.lpTubeMin.value[tube].set(z.min[0] - 0.1, z.min[1] - 0.1, z.min[2] - 0.1);
+      LP.lpTubeMax.value[tube].set(z.max[0] + 0.1, z.max[1] + 0.1, z.max[2] + 0.1);
+    }
+    fixtures.push({ f, grp, mat, tube, power, col: new THREE.Color(f.tint ?? 0xe9eef5), baseE: mat.emissiveIntensity ?? 0, level: 1, timer: R() * 2, phase: R() * 10 });
+    if (!f.hang) { grp.updateMatrix(); grp.matrixAutoUpdate = false; }
   }
-
-  // ---- cheap daylight bounce fills near the big openings (no shadows)
-  for (const b of BOUNCE_LIGHTS) {
-    const l = new THREE.PointLight(b.color, b.intensity, b.distance, 1.6);
-    l.position.set(...b.pos);
-    root.add(l);
-  }
+  LP.lpTubeCount.value = nt;
 
   // ---- daylight shafts + dust in them
   const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -265,22 +331,29 @@ export async function setupLighting(ctx, layout, onProgress = () => {}) {
     const y = h.max[1];
     openings.push([V(h.min[0], y, h.min[2]), V(h.max[0], y, h.min[2]), V(h.max[0], y, h.max[2]), V(h.min[0], y, h.max[2])]);
   }
-  const shaftMat = shaftMaterial();
+  const sunLin = new THREE.Color(SUN.color).multiplyScalar(SUN.intensity);
+  const shaftMat = shaftMaterial(sunLin, 0.006);
   const shafts = new THREE.Mesh(shaftGeometry(openings, layout.solids), shaftMat);
-  shafts.renderOrder = 5; shafts.frustumCulled = false;
+  shafts.renderOrder = 5; shafts.frustumCulled = false; shafts.userData.dynamic = true;
   root.add(shafts);
   const dust = dustPoints(openings, 1800, R);
-  dust.renderOrder = 6;
+  dust.renderOrder = 6; dust.userData.dynamic = true;
+  dust.material.uniforms.uColor.value.copy(sunLin).multiplyScalar(0.4);
   root.add(dust);
 
   // ---- per-frame animation
   let time = 0;
+  const tmpV = new THREE.Vector3();
   function update(dt) {
     time += dt;
     shaftMat.uniforms.uTime.value = time;
     dust.material.uniforms.uTime.value = time;
+    beam.material.uniforms.uTime.value = time;
     const cam = ctx.camera;
     if (cam?.isPerspectiveCamera) dust.material.uniforms.uScale.value = (renderer.domElement.height || 900) / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2));
+    // cascade follows the player (or the camera before the player exists)
+    const p = ctx.player?.position || cam?.position;
+    if (p) { tmpV.copy(p); tmpV.y = Math.max(0, tmpV.y); placeSun(tmpV); }
     for (const fx of fixtures) {
       if (fx.f.hang) fx.grp.rotation.x = Math.sin(time * 0.6 + fx.phase) * 0.012;
       if (fx.f.state !== 'flicker') continue;
@@ -295,10 +368,10 @@ export async function setupLighting(ctx, layout, onProgress = () => {}) {
       const hum = fx.level > 0.5 ? 0.93 + 0.07 * Math.sin(time * 190 + fx.phase) : 1;
       const k = fx.level * hum;
       fx.mat.emissiveIntensity = fx.baseE * k;
-      if (fx.light) fx.light.intensity = fx.base * k;
+      if (fx.tube >= 0) LP.lpTubeC.value[fx.tube].set(fx.col.r * fx.power * k, fx.col.g * fx.power * k, fx.col.b * fx.power * k, LP.lpTubeC.value[fx.tube].w);
     }
-    spot.intensity = 90 * (0.985 + 0.015 * Math.sin(time * 120));
+    spot.intensity = LAMP.intensity * (0.985 + 0.015 * Math.sin(time * 120));
   }
 
-  return { update, sun, spot, root };
+  return { update, sun, spot, root, fixtures, shafts, dust, beam };
 }
