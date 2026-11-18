@@ -1,0 +1,11 @@
+{
+ "id": "trashbag",
+ "use": "rubbish bags",
+ "url": "https://polyhaven.com/a/trashbag",
+ "license": "CC0",
+ "gltf": "trashbag/trashbag.gltf",
+ "textureSize": 512,
+ "triangles": 1200,
+ "bytes": 136082,
+ "variants": {}
+}

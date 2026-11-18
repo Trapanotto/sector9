@@ -1,0 +1,11 @@
+{
+ "id": "metal_tool_chest",
+ "use": "tool chests at the workbench",
+ "url": "https://polyhaven.com/a/metal_tool_chest",
+ "license": "CC0",
+ "gltf": "metal_tool_chest/metal_tool_chest.gltf",
+ "textureSize": 1024,
+ "triangles": 6736,
+ "bytes": 548729,
+ "variants": {}
+}

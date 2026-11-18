@@ -1,0 +1,11 @@
+{
+ "id": "plastic_monobloc_chair_01",
+ "use": "chairs in yard / locker room",
+ "url": "https://polyhaven.com/a/plastic_monobloc_chair_01",
+ "license": "CC0",
+ "gltf": "plastic_monobloc_chair_01/plastic_monobloc_chair_01.gltf",
+ "textureSize": 512,
+ "triangles": 2556,
+ "bytes": 209441,
+ "variants": {}
+}

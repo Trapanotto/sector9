@@ -1,0 +1,11 @@
+{
+ "id": "plastic_jerrycan",
+ "use": "jerry cans",
+ "url": "https://polyhaven.com/a/plastic_jerrycan",
+ "license": "CC0",
+ "gltf": "plastic_jerrycan/plastic_jerrycan.gltf",
+ "textureSize": 512,
+ "triangles": 2662,
+ "bytes": 222761,
+ "variants": {}
+}

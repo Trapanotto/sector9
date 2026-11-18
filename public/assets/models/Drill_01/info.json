@@ -1,0 +1,11 @@
+{
+ "id": "Drill_01",
+ "use": "cordless drill on the bench",
+ "url": "https://polyhaven.com/a/Drill_01",
+ "license": "CC0",
+ "gltf": "Drill_01/Drill_01.gltf",
+ "textureSize": 512,
+ "triangles": 1348,
+ "bytes": 135949,
+ "variants": {}
+}

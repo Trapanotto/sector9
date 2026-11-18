@@ -1,0 +1,259 @@
+{
+ "source": "Poly Haven (polyhaven.com), all models CC0",
+ "totalBytes": 5553855,
+ "models": {
+  "Barrel_01": {
+   "id": "Barrel_01",
+   "use": "steel oil drums",
+   "url": "https://polyhaven.com/a/Barrel_01",
+   "license": "CC0",
+   "gltf": "Barrel_01/Barrel_01.gltf",
+   "textureSize": 1024,
+   "triangles": 1800,
+   "bytes": 1198741,
+   "variants": {
+    "oxide_green": {
+     "diff": "Barrel_01_oxide_green_diff.webp",
+     "nor": "Barrel_01_oxide_green_nor_gl.webp",
+     "arm": "Barrel_01_oxide_green_arm.webp"
+    },
+    "oxide_grey": {
+     "diff": "Barrel_01_oxide_grey_diff.webp",
+     "nor": "Barrel_01_oxide_grey_nor_gl.webp",
+     "arm": "Barrel_01_oxide_grey_arm.webp"
+    }
+   }
+  },
+  "Barrel_02": {
+   "id": "Barrel_02",
+   "use": "blue plastic drums",
+   "url": "https://polyhaven.com/a/Barrel_02",
+   "license": "CC0",
+   "gltf": "Barrel_02/Barrel_02.gltf",
+   "textureSize": 512,
+   "triangles": 1600,
+   "bytes": 114464,
+   "variants": {}
+  },
+  "metal_office_desk": {
+   "id": "metal_office_desk",
+   "use": "office desks",
+   "url": "https://polyhaven.com/a/metal_office_desk",
+   "license": "CC0",
+   "gltf": "metal_office_desk/metal_office_desk.gltf",
+   "textureSize": 1024,
+   "triangles": 4546,
+   "bytes": 324578,
+   "variants": {}
+  },
+  "SchoolChair_01": {
+   "id": "SchoolChair_01",
+   "use": "office / control room chairs",
+   "url": "https://polyhaven.com/a/SchoolChair_01",
+   "license": "CC0",
+   "gltf": "SchoolChair_01/SchoolChair_01.gltf",
+   "textureSize": 512,
+   "triangles": 2000,
+   "bytes": 129713,
+   "variants": {}
+  },
+  "plastic_monobloc_chair_01": {
+   "id": "plastic_monobloc_chair_01",
+   "use": "chairs in yard / locker room",
+   "url": "https://polyhaven.com/a/plastic_monobloc_chair_01",
+   "license": "CC0",
+   "gltf": "plastic_monobloc_chair_01/plastic_monobloc_chair_01.gltf",
+   "textureSize": 512,
+   "triangles": 2556,
+   "bytes": 209441,
+   "variants": {}
+  },
+  "steel_frame_shelves_01": {
+   "id": "steel_frame_shelves_01",
+   "use": "storage shelving",
+   "url": "https://polyhaven.com/a/steel_frame_shelves_01",
+   "license": "CC0",
+   "gltf": "steel_frame_shelves_01/steel_frame_shelves_01.gltf",
+   "textureSize": 1024,
+   "triangles": 3000,
+   "bytes": 261140,
+   "variants": {}
+  },
+  "worn_metal_rack": {
+   "id": "worn_metal_rack",
+   "use": "office wall racks",
+   "url": "https://polyhaven.com/a/worn_metal_rack",
+   "license": "CC0",
+   "gltf": "worn_metal_rack/worn_metal_rack.gltf",
+   "textureSize": 512,
+   "triangles": 4460,
+   "bytes": 292482,
+   "variants": {}
+  },
+  "metal_tool_chest": {
+   "id": "metal_tool_chest",
+   "use": "tool chests at the workbench",
+   "url": "https://polyhaven.com/a/metal_tool_chest",
+   "license": "CC0",
+   "gltf": "metal_tool_chest/metal_tool_chest.gltf",
+   "textureSize": 1024,
+   "triangles": 6736,
+   "bytes": 548729,
+   "variants": {}
+  },
+  "old_tyre": {
+   "id": "old_tyre",
+   "use": "tyres in yard and bay",
+   "url": "https://polyhaven.com/a/old_tyre",
+   "license": "CC0",
+   "gltf": "old_tyre/old_tyre.gltf",
+   "textureSize": 512,
+   "triangles": 1248,
+   "bytes": 150615,
+   "variants": {}
+  },
+  "cement_bag": {
+   "id": "cement_bag",
+   "use": "cement sack piles",
+   "url": "https://polyhaven.com/a/cement_bag",
+   "license": "CC0",
+   "gltf": "cement_bag/cement_bag.gltf",
+   "textureSize": 512,
+   "triangles": 844,
+   "bytes": 69097,
+   "variants": {}
+  },
+  "WetFloorSign_01": {
+   "id": "WetFloorSign_01",
+   "use": "wet floor sign in corridor",
+   "url": "https://polyhaven.com/a/WetFloorSign_01",
+   "license": "CC0",
+   "gltf": "WetFloorSign_01/WetFloorSign_01.gltf",
+   "textureSize": 512,
+   "triangles": 228,
+   "bytes": 55176,
+   "variants": {}
+  },
+  "Television_01": {
+   "id": "Television_01",
+   "use": "old CRT monitors on desks / consoles",
+   "url": "https://polyhaven.com/a/Television_01",
+   "license": "CC0",
+   "gltf": "Television_01/Television_01.gltf",
+   "textureSize": 512,
+   "triangles": 1918,
+   "bytes": 148042,
+   "variants": {}
+  },
+  "plastic_crate_02": {
+   "id": "plastic_crate_02",
+   "use": "stackable plastic crates",
+   "url": "https://polyhaven.com/a/plastic_crate_02",
+   "license": "CC0",
+   "gltf": "plastic_crate_02/plastic_crate_02.gltf",
+   "textureSize": 512,
+   "triangles": 3030,
+   "bytes": 214731,
+   "variants": {}
+  },
+  "propane_tank": {
+   "id": "propane_tank",
+   "use": "gas bottles",
+   "url": "https://polyhaven.com/a/propane_tank",
+   "license": "CC0",
+   "gltf": "propane_tank/propane_tank.gltf",
+   "textureSize": 512,
+   "triangles": 3404,
+   "bytes": 213678,
+   "variants": {}
+  },
+  "trashbag": {
+   "id": "trashbag",
+   "use": "rubbish bags",
+   "url": "https://polyhaven.com/a/trashbag",
+   "license": "CC0",
+   "gltf": "trashbag/trashbag.gltf",
+   "textureSize": 512,
+   "triangles": 1200,
+   "bytes": 136082,
+   "variants": {}
+  },
+  "can_rusted": {
+   "id": "can_rusted",
+   "use": "rusty paint cans (clutter)",
+   "url": "https://polyhaven.com/a/can_rusted",
+   "license": "CC0",
+   "gltf": "can_rusted/can_rusted.gltf",
+   "textureSize": 512,
+   "triangles": 322,
+   "bytes": 125750,
+   "variants": {}
+  },
+  "bench_vice_01": {
+   "id": "bench_vice_01",
+   "use": "vice on the workbench",
+   "url": "https://polyhaven.com/a/bench_vice_01",
+   "license": "CC0",
+   "gltf": "bench_vice_01/bench_vice_01.gltf",
+   "textureSize": 512,
+   "triangles": 1318,
+   "bytes": 173313,
+   "variants": {}
+  },
+  "sledgehammer_01": {
+   "id": "sledgehammer_01",
+   "use": "tool leaning on the bench",
+   "url": "https://polyhaven.com/a/sledgehammer_01",
+   "license": "CC0",
+   "gltf": "sledgehammer_01/sledgehammer_01.gltf",
+   "textureSize": 512,
+   "triangles": 800,
+   "bytes": 97397,
+   "variants": {}
+  },
+  "Drill_01": {
+   "id": "Drill_01",
+   "use": "cordless drill on the bench",
+   "url": "https://polyhaven.com/a/Drill_01",
+   "license": "CC0",
+   "gltf": "Drill_01/Drill_01.gltf",
+   "textureSize": 512,
+   "triangles": 1348,
+   "bytes": 135949,
+   "variants": {}
+  },
+  "plastic_jerrycan": {
+   "id": "plastic_jerrycan",
+   "use": "jerry cans",
+   "url": "https://polyhaven.com/a/plastic_jerrycan",
+   "license": "CC0",
+   "gltf": "plastic_jerrycan/plastic_jerrycan.gltf",
+   "textureSize": 512,
+   "triangles": 2662,
+   "bytes": 222761,
+   "variants": {}
+  },
+  "hand_truck": {
+   "id": "hand_truck",
+   "use": "sack truck in the bay",
+   "url": "https://polyhaven.com/a/hand_truck",
+   "license": "CC0",
+   "gltf": "hand_truck/hand_truck.gltf",
+   "textureSize": 512,
+   "triangles": 8520,
+   "bytes": 572084,
+   "variants": {}
+  },
+  "utility_box_01": {
+   "id": "utility_box_01",
+   "use": "electrical boxes",
+   "url": "https://polyhaven.com/a/utility_box_01",
+   "license": "CC0",
+   "gltf": "utility_box_01/utility_box_01.gltf",
+   "textureSize": 512,
+   "triangles": 2038,
+   "bytes": 159892,
+   "variants": {}
+  }
+ }
+}
