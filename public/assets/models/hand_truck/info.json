@@ -1,0 +1,11 @@
+{
+ "id": "hand_truck",
+ "use": "sack truck in the bay",
+ "url": "https://polyhaven.com/a/hand_truck",
+ "license": "CC0",
+ "gltf": "hand_truck/hand_truck.gltf",
+ "textureSize": 512,
+ "triangles": 8520,
+ "bytes": 572084,
+ "variants": {}
+}

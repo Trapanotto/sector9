@@ -1,0 +1,11 @@
+{
+ "id": "utility_box_01",
+ "use": "electrical boxes",
+ "url": "https://polyhaven.com/a/utility_box_01",
+ "license": "CC0",
+ "gltf": "utility_box_01/utility_box_01.gltf",
+ "textureSize": 512,
+ "triangles": 2038,
+ "bytes": 159892,
+ "variants": {}
+}

@@ -1,0 +1,22 @@
+{
+ "id": "Barrel_01",
+ "use": "steel oil drums",
+ "url": "https://polyhaven.com/a/Barrel_01",
+ "license": "CC0",
+ "gltf": "Barrel_01/Barrel_01.gltf",
+ "textureSize": 1024,
+ "triangles": 1800,
+ "bytes": 1198741,
+ "variants": {
+  "oxide_green": {
+   "diff": "Barrel_01_oxide_green_diff.webp",
+   "nor": "Barrel_01_oxide_green_nor_gl.webp",
+   "arm": "Barrel_01_oxide_green_arm.webp"
+  },
+  "oxide_grey": {
+   "diff": "Barrel_01_oxide_grey_diff.webp",
+   "nor": "Barrel_01_oxide_grey_nor_gl.webp",
+   "arm": "Barrel_01_oxide_grey_arm.webp"
+  }
+ }
+}

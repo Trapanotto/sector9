@@ -1,0 +1,11 @@
+{
+ "id": "plastic_crate_02",
+ "use": "stackable plastic crates",
+ "url": "https://polyhaven.com/a/plastic_crate_02",
+ "license": "CC0",
+ "gltf": "plastic_crate_02/plastic_crate_02.gltf",
+ "textureSize": 512,
+ "triangles": 3030,
+ "bytes": 214731,
+ "variants": {}
+}

@@ -1,0 +1,11 @@
+{
+ "id": "WetFloorSign_01",
+ "use": "wet floor sign in corridor",
+ "url": "https://polyhaven.com/a/WetFloorSign_01",
+ "license": "CC0",
+ "gltf": "WetFloorSign_01/WetFloorSign_01.gltf",
+ "textureSize": 512,
+ "triangles": 228,
+ "bytes": 55176,
+ "variants": {}
+}

@@ -282,8 +282,12 @@ export function buildLayout() {
     return s;
   };
   const crate = (x, z, s = 1.0, h = s, y = 0, rot = 0) => P('crate', [x - s / 2, y, z - s / 2], [x + s / 2, y + h, z + s / 2], { rot });
-  const pallets = (x, z, n) => P('pallets', [x - 0.6, 0, z - 0.4], [x + 0.6, n * 0.144, z + 0.4], { n });
+  // load: what sits on the top pallet ('cement' sacks, 'boxes' shrink-wrapped cartons); raises the collider.
+  const LOAD_H = { cement: 0.54, boxes: 0.9 };
+  const pallets = (x, z, n, load) => P('pallets', [x - 0.6, 0, z - 0.4], [x + 0.6, n * 0.144 + (LOAD_H[load] || 0), z + 0.4], { n, load });
   const barrel = (x, z) => P('barrel', [x - 0.3, 0, z - 0.3], [x + 0.3, 0.9, z + 0.3], { surface: 'metal' });
+  // collider-backed clutter groups (drawn by props.js from Poly Haven models / procedural parts)
+  const group = (type, min, max, o = {}) => P(type, min, max, { surface: 'metal', ...o });
 
   // Hall
   for (const x of [-14.5, -6.5, 1.5]) for (const z of [0.5, 8.0]) {
@@ -301,16 +305,20 @@ export function buildLayout() {
   crate(-4.2, -3.6, 1.0); crate(-5.3, -3.4, 1.2);
   crate(6.6, 14.4, 1.0); crate(6.8, 13.2, 0.8);
   crate(-21.8, 14.6, 1.2); crate(-20.6, 14.7, 0.9);
-  pallets(-9.5, -3.4, 5); pallets(6.6, 5.5, 3); pallets(-15.6, 14.4, 7); pallets(-20.5, 5.0, 2);
+  pallets(-9.5, -3.4, 5); pallets(6.6, 5.5, 3); pallets(-15.6, 14.4, 7); pallets(-20.5, 5.0, 2, 'cement');
+  group('gasbottles', [5.5, 0, 14.95], [6.05, 0.6, 15.5]);
   barrel(-1.6, 9.0); barrel(-1.0, 9.6); barrel(-2.2, 9.6); barrel(6.9, -4.9); barrel(6.2, -5.0);
   barrel(-15.9, -4.8); barrel(-16.0, -4.1); barrel(-20.8, 12.6);
   // Corridor
   P('vending', [8.25, 0, 9.4], [8.95, 1.9, 10.4], { surface: 'metal' });
+  group('wetsign', [10.12, 0, 4.85], [10.48, 0.65, 5.2], { surface: 'wood' });
   // Office
   P('desk', [13.2, 0, 11.2], [14.8, 0.76, 12.0], { surface: 'wood' });
   P('desk', [13.2, 0, 14.2], [14.8, 0.76, 15.0], { surface: 'wood' });
   P('filing', [18.9, 0, 10.6], [19.5, 1.3, 12.2], { surface: 'metal' });
-  P('shelf', [17.6, 0, 15.0], [19.4, 2.0, 15.5], { surface: 'wood' });
+  P('shelf', [17.6, 0, 15.0], [19.4, 2.0, 15.5], { surface: 'metal', facing: -1 });
+  group('chair', [13.75, 0, 10.45], [14.3, 0.95, 10.95], { facing: 1 });
+  group('chair', [13.75, 0, 15.05], [14.3, 0.95, 15.55], { facing: -1 });
   // Lockers
   P('lockers', [19.0, 0, 5.0], [19.55, 1.95, 9.4], { surface: 'metal', facing: -1 });
   P('lockers', [13.8, 0, 6.0], [14.35, 1.95, 9.2], { surface: 'metal', facing: 1 });
@@ -319,6 +327,7 @@ export function buildLayout() {
   P('shelf', [18.85, 0, -0.6], [19.5, 2.4, 3.8], { surface: 'metal', metal: true });
   P('shelf', [14.5, 0, 0.6], [16.5, 2.2, 1.2], { surface: 'metal', metal: true });
   crate(12.0, 3.4, 0.8); crate(16.0, 3.5, 0.9); crate(17.0, 3.6, 0.6);
+  group('plasticcrates', [11.15, 0, -0.9], [11.7, 0.78, -0.4], { surface: 'wood' });
   // Control room
   P('console', [11.4, 0, -5.6], [14.6, 1.1, -4.9], { surface: 'metal' });
   P('console', [16.8, 0, -5.6], [19.4, 1.1, -4.9], { surface: 'metal' });
@@ -326,13 +335,17 @@ export function buildLayout() {
   // Bay
   P('rack', [-2.0, 0, -16.8], [8.0, 4.2, -15.7], { surface: 'metal' });
   P('rack', [10.0, 0, -12.2], [18.0, 4.2, -11.1], { surface: 'metal' });
-  P('forklift', [-9.2, 0, -12.0], [-7.0, 2.2, -9.4], { surface: 'metal' });
+  P('forklift', [-8.75, 0, -12.0], [-7.45, 2.2, -9.4], { surface: 'metal' });
   P('container', [2.0, 0, -10.5], [8.1, 2.6, -8.1], { surface: 'metal' });
   crate(-13.0, -9.0, 1.2); crate(-11.8, -9.2, 1.0); crate(-12.9, -9.0, 0.9, 0.9, 1.2);
   crate(-21.5, -8.4, 1.2); crate(-21.3, -9.7, 1.0);
   crate(14.0, -15.8, 1.2); crate(15.3, -15.9, 1.0); crate(-2.0, -12.5, 1.0); crate(-1.0, -12.3, 0.8);
-  pallets(-20.8, -11.4, 4); pallets(12.0, -15.9, 6); pallets(-4.0, -8.0, 3);
+  pallets(-20.8, -11.4, 4); pallets(12.0, -15.9, 6); pallets(-4.0, -8.0, 3, 'boxes');
   barrel(18.6, -7.2); barrel(18.6, -7.9); barrel(-14.5, -16.6); barrel(-13.9, -16.9);
+  group('reel', [16.4, 0, -17.5], [17.4, 1.0, -16.9], { surface: 'wood' });
+  group('handtruck', [19.0, 0, -14.6], [19.55, 1.4, -14.0]);
+  group('drumlying', [18.7, 0, -10.3], [19.55, 0.6, -9.7]);
+  group('utility', [4.5, 0, -17.55], [5.6, 1.15, -17.1]);
   // Trailer outside dock door (closes the opening) and the yard
   P('trailer', [-18.95, 0, -30.0], [-16.05, 4.0, -18.05], { surface: 'metal' });
   P('container', [-12.5, 0, 19.6], [-5.5, 2.6, 22.0], { surface: 'metal' });
@@ -340,7 +353,12 @@ export function buildLayout() {
   P('van', [13.0, 0, 18.4], [15.0, 2.2, 23.2], { surface: 'metal' });
   P('barrier', [-3.0, 0, 23.0], [-1.0, 0.85, 23.6], { surface: 'concrete' });
   P('barrier', [6.0, 0, 21.0], [8.0, 0.85, 21.6], { surface: 'concrete' });
-  pallets(-19.0, 18.2, 3); crate(-17.6, 18.0, 1.0); barrel(17.5, 17.0); barrel(18.2, 17.3);
+  pallets(-19.0, 18.2, 3, 'cement'); crate(-17.6, 18.0, 1.0); barrel(17.5, 17.0); barrel(18.2, 17.3);
+  group('tyres', [-22.65, 0, 23.55], [-21.85, 0.68, 24.35], { surface: 'concrete' });
+  group('tyres', [-21.6, 0, 24.75], [-20.8, 0.34, 25.55], { surface: 'concrete', n: 2 });
+  group('trashbags', [4.1, 0, 17.2], [4.9, 0.55, 17.9], { surface: 'wood' });
+  group('utility', [10.5, 0, 16.02], [11.6, 1.15, 16.48]);
+  group('chair', [18.3, 0, 16.3], [18.95, 0.9, 16.95], { facing: -1, kind: 'mono' });
 
   // ---- yard fence (corrugated, 2.6 m)
   const F = { mat: { pz: 'corrugatedOut', nz: 'corrugatedOut', px: 'corrugatedOut', nx: 'corrugatedOut', py: 'steel', ny: 'steel' }, surface: 'metal', kind: 'wall' };

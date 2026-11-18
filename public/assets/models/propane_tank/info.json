@@ -1,0 +1,11 @@
+{
+ "id": "propane_tank",
+ "use": "gas bottles",
+ "url": "https://polyhaven.com/a/propane_tank",
+ "license": "CC0",
+ "gltf": "propane_tank/propane_tank.gltf",
+ "textureSize": 512,
+ "triangles": 3404,
+ "bytes": 213678,
+ "variants": {}
+}

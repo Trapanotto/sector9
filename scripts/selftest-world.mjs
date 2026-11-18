@@ -133,8 +133,60 @@ for (const d of layout.doors.filter((d) => d.nav)) {
   }
   const fakeMats = Object.fromEntries(Object.keys(MATS).map((k) => [k, {}]));
   const im = buildInstanced(inst, fakeMats, scales);
-  console.log(`static: ${geos.size} merged meshes, ${tris} tris, ${verts} verts; instanced meshes: ${im.length} (` +
-    `barrels ${inst.barrels.length}, rollers ${inst.rollers.length}, debris ${inst.debris.length}, papers ${inst.papers.length})`);
+  console.log(`static: ${geos.size} merged meshes, ${tris} tris, ${verts} verts; instanced/extra meshes: ${im.length} (` +
+    `rollers ${inst.rollers.length}, debris ${inst.debris.length}, papers ${inst.papers.length}, bolts ${inst.bolts.length}, ` +
+    `label tris ${inst.labelGeo ? inst.labelGeo.index.count / 3 : 0})`);
+  // Model placements: known ids, finite transforms.
+  const { MODEL_INFO } = await import('../src/world/props.js');
+  const perModel = {};
+  for (const m of inst.models) {
+    ok(!!MODEL_INFO[m.id], `unknown model id ${m.id}`);
+    ok([m.x, m.y, m.z, m.ry, m.rx, m.rz].every(Number.isFinite), `bad model placement ${m.id}`);
+    perModel[m.id] = (perModel[m.id] || 0) + 1;
+  }
+  console.log(`model placements: ${inst.models.length} (${Object.entries(perModel).map(([k, v]) => `${k} ${v}`).join(', ')})`);
+  // Decorative clutter without colliders must stay out of doorways.
+  for (const m of inst.models) {
+    for (const d of layout.doors.filter((d) => d.nav)) {
+      const near = Math.hypot(m.x - d.center[0], m.z - d.center[1]) < 0.7;
+      ok(!near, `model ${m.id} at ${fmt([m.x, m.y, m.z])} sits in doorway ${d.name}`);
+    }
+  }
+  for (const [key, g] of geos) {
+    const p = g.attributes.position.array, c = g.attributes.color.array;
+    ok(p.length === c.length, `attribute length mismatch in ${key}`);
+  }
+
+  // Z-fighting guard: no two axis-aligned prop parts may have coplanar, same-facing, overlapping faces
+  // (within 6 mm: with a 3 cm near plane that still flickers a few metres away). Down-facing faces resting
+  // on the floor are ignored (never visible).
+  const { Kit } = await import('../src/world/propKit.js');
+  const parts = [];
+  const origC = Kit.prototype.cbox, origB = Batcher.prototype.box;
+  Kit.prototype.cbox = function (min, max, key, o = {}) { if (!o.matrix) parts.push({ min, max, key }); return origC.call(this, min, max, key, o); };
+  Batcher.prototype.box = function (min, max, mats, o = {}) { if (!o.matrix && typeof mats === 'string') parts.push({ min, max, key: mats }); return origB.call(this, min, max, mats, o); };
+  buildProps(new Batcher(scales, makeGrime({ floorAO: () => 1 })), layout, 7);
+  Kit.prototype.cbox = origC; Batcher.prototype.box = origB;
+  const EPS = 0.006;
+  let zf = 0;
+  for (let i = 0; i < parts.length; i++) for (let j = i + 1; j < parts.length; j++) {
+    const a = parts[i], b = parts[j];
+    if ([0, 1, 2].some((k) => a.max[k] < b.min[k] - EPS || b.max[k] < a.min[k] - EPS)) continue;
+    for (let k = 0; k < 3; k++) {
+      const u = (k + 1) % 3, v = (k + 2) % 3;
+      if (Math.min(a.max[u], b.max[u]) - Math.max(a.min[u], b.min[u]) <= 0.002) continue;
+      if (Math.min(a.max[v], b.max[v]) - Math.max(a.min[v], b.min[v]) <= 0.002) continue;
+      for (const side of ['min', 'max']) {
+        if (k === 1 && side === 'min') continue;
+        if (Math.abs(a[side][k] - b[side][k]) < EPS) {
+          zf++;
+          if (zf <= 10) console.error(`  coplanar ${'xyz'[k]}${side === 'max' ? '+' : '-'} faces: ${a.key} ${fmt(a.min)}-${fmt(a.max)} / ${b.key} ${fmt(b.min)}-${fmt(b.max)}`);
+        }
+      }
+    }
+  }
+  console.log(`z-fight check: ${parts.length} axis-aligned prop parts, ${zf} coplanar overlaps`);
+  ok(zf === 0, `${zf} coplanar overlapping prop faces (z-fighting)`);
 }
 
 if (failures) { console.error(`\n${failures} failure(s)`); process.exitCode = 1; }

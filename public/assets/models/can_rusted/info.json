@@ -1,0 +1,11 @@
+{
+ "id": "can_rusted",
+ "use": "rusty paint cans (clutter)",
+ "url": "https://polyhaven.com/a/can_rusted",
+ "license": "CC0",
+ "gltf": "can_rusted/can_rusted.gltf",
+ "textureSize": 512,
+ "triangles": 322,
+ "bytes": 125750,
+ "variants": {}
+}
