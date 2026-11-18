@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import * as decals from '../world/decals.js'; // glassPanes is optional (namespace import tolerates its absence)
 
 // Central hitscan resolver. Everything that shoots goes through fire().
 export function createCombat(ctx) {
@@ -64,8 +65,26 @@ export function createCombat(ctx) {
       ctx.audio.play('impact_' + surface, { position: w.point, volume: 0.6 });
       result = { type: 'world', point: w.point, distance: w.distance, surface };
     }
+    breakGlass(o.origin, dir, result.distance);
     ctx.fx.tracer(o.origin, result.point);
     return result;
+  }
+
+  // Window panes do not stop bullets: every intact pane on the bullet's path shatters and the shot carries on.
+  const glassRay = new THREE.Raycaster();
+  function breakGlass(origin, dir, maxDist) {
+    const panes = decals.glassPanes;
+    if (!panes || !panes.length) return;
+    glassRay.set(origin, dir); glassRay.near = 0; glassRay.far = maxDist;
+    for (const h of glassRay.intersectObjects(panes, false)) {
+      const u = h.object.userData;
+      if (u.broken || !h.object.visible) continue;
+      u.shatter?.(h.point, dir);
+      u.broken = true;
+      ctx.fx.glass?.(h.point, dir);
+      ctx.audio.play('impact_glass', { position: h.point });
+      ctx.enemies?.alertNoise?.(h.point, 14);
+    }
   }
 
   // True if nothing static blocks the segment a->b (used by AI for line of sight).

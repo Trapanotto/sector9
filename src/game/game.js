@@ -293,6 +293,7 @@ export function createGame(ctx) {
     const p = pending || {}; pending = null;
     if (p.restart) {
       ctx.player?.reset?.(); ctx.enemies?.reset?.(); ctx.fx?.reset?.();
+      import('../world/decals.js').then((m) => m.resetGlass?.()).catch(() => {});   // restore shot-out windows
       ctx.audio?.setMuffled?.(false); ctx.pipeline?.setDead?.(false);
     }
     if (p.restart || p.first) {
