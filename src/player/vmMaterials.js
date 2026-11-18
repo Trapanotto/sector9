@@ -63,7 +63,7 @@ float vmCurv(vec3 n, vec3 p, out float convex) {
 }
 `;
 
-function inject(mat, key, { vertexHead = '', vertexBody = '', fragHead = '', fragBody = '', fragBegin = '', uniforms = {} }) {
+function inject(mat, key, { vertexHead = '', vertexBody = '', fragHead = '', fragBody = '', fragBegin = '', fragLights = '', fragOcc = '', uniforms = {} }) {
   mat.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
     shader.vertexShader = shader.vertexShader
@@ -73,7 +73,9 @@ function inject(mat, key, { vertexHead = '', vertexBody = '', fragHead = '', fra
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>\n${GLSL_COMMON}\n${fragHead}`)
       .replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>\nvec3 vmGeoN = normal;\n${fragBegin}`)
-      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>\n${fragBody}`);
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>\n${fragBody}`)
+      .replace('#include <lights_physical_fragment>', `#include <lights_physical_fragment>\n${fragLights}`)
+      .replace('#include <aomap_fragment>', `#include <aomap_fragment>\n${fragOcc}`);
   };
   mat.customProgramCacheKey = () => 'vm-' + key;
   return mat;
@@ -152,78 +154,135 @@ export function createVmMaterials() {
     });
 
   // ---------------------------------------------------------------- glove
-  const glove = inject(new THREE.MeshPhysicalMaterial({ color: 0x505054, metalness: 0, roughness: 0.85, sheen: 0.35, sheenRoughness: 0.55, sheenColor: new THREE.Color(0.022, 0.022, 0.022) }), 'glove', {
-    uniforms: { uFabric: tex.fabric, uLeather: tex.leather, uTexReady: ready },
-    vertexHead: 'attribute vec4 aRegion;\nattribute float aAo;\nattribute float aSeam;\nvarying vec4 vRegion;\nvarying float vAo;\nvarying float vSeam;',
-    vertexBody: 'vRegion = aRegion; vAo = aAo; vSeam = aSeam;',
-    fragHead: 'uniform sampler2D uFabric; uniform sampler2D uLeather; uniform float uTexReady; varying vec4 vRegion; varying float vAo; varying float vSeam;',
+  // Regions come from the explicit hand mesh (vmHands.js): aGlove = (leather, rubber, strap 0/1/2 = velcro, cuff),
+  // aOcc = baked AO (self, contact with gun / other hand), aLen = metres along the part (stitch spacing).
+  // Shading: matte black stretch fabric on the back (sheen, low specular), slightly glossy synthetic leather on the
+  // palm / finger sides / tips, satin rubber knuckle guard and finger pads, woven strap, fuzzy hook-and-loop tab,
+  // neoprene gauntlet; seams are grooves with raised stitch dashes; baked AO darkens diffuse AND specular (glossy
+  // leather does not shine inside the creases); a sky rim term separates the silhouette from the floor.
+  const shared = { rim: { value: 0.0 } };   // set per frame from the sky visibility (viewmodel.setEnvironment)
+  const makeGlove = (contact) => inject(new THREE.MeshPhysicalMaterial({
+    color: 0xffffff, metalness: 0, roughness: 0.85, specularIntensity: 0.999,
+    sheen: 1.0, sheenRoughness: 0.5, sheenColor: new THREE.Color(0.05, 0.05, 0.052),
+  }), 'glove', {
+    uniforms: { uFabric: tex.fabric, uLeather: tex.leather, uTexReady: ready, uContact: contact, uRim: shared.rim },
+    vertexHead: 'attribute vec4 aGlove;\nattribute vec2 aOcc;\nattribute float aLen;\nvarying vec4 vGlove;\nvarying vec2 vOcc;\nvarying float vLen;',
+    vertexBody: 'vGlove = aGlove; vOcc = aOcc; vLen = aLen;',
+    fragHead: 'uniform sampler2D uFabric; uniform sampler2D uLeather; uniform float uTexReady; uniform float uContact; uniform float uRim;\n' +
+      'varying vec4 vGlove; varying vec2 vOcc; varying float vLen;',
+    fragBegin: 'float vmSpecK = 1.0; float vmSheenK = 1.0; float vmOccD = 1.0; float vmOccS = 1.0; float vmRimK = 1.0;',
     fragBody: /* glsl */`
     {
-      vec4 R = vRegion;
-      float pad = smoothstep(0.2, 0.8, R.x);
-      float strap = step(0.5, R.z);
-      float loop = step(0.5, R.w) * strap;
-      float palm = (1.0 - smoothstep(-0.36, -0.28, R.y)) * (1.0 - strap);
-      float cuff = R.w * (1.0 - strap);
-      // stretch-fabric wrinkles (ridged noise), strongest on the back of the hand, none on armour / leather
-      float wn = vmFbm(vObjPos * vec3(95.0, 120.0, 95.0) + 4.0);
-      float ridge = 1.0 - abs(2.0 * wn - 1.0);
-      float wr = ridge * ridge * (1.0 - pad) * (1.0 - palm * 0.6) * (1.0 - strap) * (1.0 - cuff * 0.7);
-      normal = vmBump(-vViewPosition, normal, wr * 0.00024, faceDirection);
+      vec4 R = vGlove;
+      float leather = smoothstep(0.35, 0.65, R.x);
+      float rubber = smoothstep(0.3, 0.7, R.y);
+      float strap = smoothstep(0.4, 0.6, R.z);
+      float velcro = smoothstep(1.4, 1.6, R.z);
+      float cuff = smoothstep(0.4, 0.9, R.w) * (1.0 - strap);
+      float fabric = (1.0 - leather) * (1.0 - rubber) * (1.0 - strap) * (1.0 - cuff);
       vec3 eyeP = -vViewPosition;
+      // stretch-fabric wrinkles (ridged noise) on fabric and neoprene
+      float wn = vmFbm(vObjPos * vec3(110.0, 140.0, 110.0) + 4.0);
+      float ridge = 1.0 - abs(2.0 * wn - 1.0);
+      float wr = ridge * ridge * (fabric + cuff * 0.5);
+      float H = wr * 0.00022;
+      // seam where leather meets fabric: a groove with stitch dashes on the fabric side
+      float dL = abs(R.x - 0.5), wL = max(fwidth(R.x), 1e-4);
+      float seam = (1.0 - smoothstep(0.0, wL * 1.5, dL)) * (1.0 - strap) * (1.0 - rubber);
+      float band = smoothstep(wL * 1.4, wL * 2.0, dL) * (1.0 - smoothstep(wL * 2.6, wL * 3.4, dL)) * step(R.x, 0.5);
+      float dash = smoothstep(0.25, 0.4, fract(vLen / 0.0026)) * (1.0 - smoothstep(0.75, 0.9, fract(vLen / 0.0026)));
+      float stitch = band * dash * (1.0 - strap) * (1.0 - rubber) * clamp(2.0 - wL * 60.0, 0.0, 1.0);
+      H += -seam * 0.00045 + stitch * 0.00012;
+      // rubber: moulded fine texture and a rounded raised edge; strap: woven ribs; velcro: hooks
+      H += rubber * (vmNoise(vObjPos * 1900.0) - 0.5) * 0.00005;
+      H += strap * (1.0 - velcro) * sin(vLen * 2400.0) * 0.00003;
+      H += velcro * (vmNoise(vObjPos * 3200.0) - 0.5) * 0.00008;
+      normal = vmBump(eyeP, normal, H, faceDirection);
       float rF, rL;
-      vec3 nF = vmTriplanar(uFabric, strap > 0.5 ? 16.0 : 12.0, 2.2, normal, eyeP, rF);
-      vec3 nL = vmTriplanar(uLeather, 7.0, 1.6, normal, eyeP, rL);
-      vec3 nT = normalize(mix(nF, nL, palm));
-      float rT = mix(rF, rL, palm);
-      nT = normalize(mix(nT, normal, pad * 0.85));
+      vec3 nF = vmTriplanar(uFabric, strap > 0.5 ? 18.0 : 13.0, 2.4, normal, eyeP, rF);
+      vec3 nL = vmTriplanar(uLeather, 8.0, 1.8, normal, eyeP, rL);
+      vec3 nT = normalize(mix(nF, nL, leather));
+      float rT = mix(rF, rL, leather);
+      nT = normalize(mix(nT, normal, rubber * 0.9));
       normal = normalize(mix(normal, nT, uTexReady));
-      // seam between palm leather and back fabric (+ a second one along the finger sides)
-      float d = abs(R.y + 0.32);
-      float w = max(fwidth(R.y) * 1.2, 0.02);
-      float seam = (1.0 - smoothstep(0.0, w + 0.03, d)) * (1.0 - strap) * (1.0 - pad);
-      float ws = max(fwidth(vSeam) * 1.2, 0.04);
-      seam = max(seam, (1.0 - smoothstep(0.0, ws + 0.05, abs(vSeam))) * (1.0 - strap) * (1.0 - pad) * (1.0 - cuff) * step(-0.99, vSeam) * step(vSeam, 0.99));
-      normal = vmBump(-vViewPosition, normal, -seam * 0.00045, faceDirection);
-      // colour / roughness per region
-      vec3 cFab = vec3(0.0175, 0.0178, 0.0170);
-      vec3 cLea = vec3(0.0085, 0.0082, 0.0080);
-      vec3 cPad = vec3(0.0120, 0.0122, 0.0126);
-      vec3 cStr = vec3(0.0120, 0.0122, 0.0120);
-      vec3 col = mix(cFab, cLea, palm);
-      col = mix(col, cPad, pad);
-      col = mix(col, vec3(0.0130, 0.0132, 0.0135), cuff);
-      col = mix(col, cStr * (1.0 + loop * 0.25), strap);
-      col *= 1.0 - wr * 0.25;
-      col *= 1.0 - vAo * 0.6;
-      float dirt = vmFbm(vObjPos * 55.0);
-      col *= 0.85 + 0.3 * dirt;
-      col *= 1.0 - seam * 0.45;
+      // albedo (linear): blacks that still separate from each other
+      vec3 cFab = vec3(0.020, 0.0205, 0.020);
+      vec3 cLea = vec3(0.028, 0.026, 0.024);
+      vec3 cRub = vec3(0.011, 0.0115, 0.012);
+      vec3 cStr = vec3(0.024, 0.024, 0.023);
+      vec3 cVel = vec3(0.016, 0.016, 0.016);
+      vec3 cCuf = vec3(0.017, 0.0175, 0.018);
+      vec3 col = cFab;
+      col = mix(col, cLea, leather);
+      col = mix(col, cCuf, cuff);
+      col = mix(col, cRub, rubber);
+      col = mix(col, cStr, strap);
+      col = mix(col, cVel, velcro);
+      float dirt = vmFbm(vObjPos * 60.0);
+      col *= (0.82 + 0.36 * dirt) * (1.0 - wr * 0.2) * (1.0 - seam * 0.5) * (1.0 + stitch * 0.6);
+      // worn, slightly lighter leather on the most exposed convex palm/finger edges
+      float convex; float curv = vmCurv(vmGeoN, eyeP, convex);
+      col *= 1.0 + leather * smoothstep(200.0, 700.0, curv) * max(convex, 0.0) * 0.35;
       diffuseColor.rgb = col;
-      float rough = mix(0.86, 0.62, palm);
-      rough = mix(rough, 0.66, pad);
-      rough = mix(rough, 0.92 + loop * 0.06, strap);
-      roughnessFactor = clamp(rough + (rT - 0.5) * 0.35 * uTexReady + (dirt - 0.5) * 0.1, 0.25, 1.0);
-      // rubber armour: tiny moulded texture
-      normal = vmBump(-vViewPosition, normal, pad * (vmNoise(vObjPos * 1800.0) - 0.5) * 0.00006, faceDirection);
+      float rough = 0.9;
+      rough = mix(rough, 0.48, leather);
+      rough = mix(rough, 0.72, cuff);
+      rough = mix(rough, 0.42, rubber);
+      rough = mix(rough, 0.74, strap);
+      rough = mix(rough, 0.97, velcro);
+      roughnessFactor = clamp(rough + (rT - 0.5) * 0.3 * uTexReady * (1.0 - rubber) + (dirt - 0.5) * 0.08, 0.3, 1.0);
+      vmSpecK = 0.3 * fabric + 1.0 * leather + 0.85 * rubber + 0.55 * strap * (1.0 - velcro) + 0.15 * velcro + 0.6 * cuff;
+      vmSheenK = fabric + cuff * 0.6 + strap * 0.5;
+      // baked occlusion: self + contact (fades out when the support hand leaves the gun)
+      float occ = clamp(vOcc.x * 0.85 + vOcc.y * uContact * 0.9, 0.0, 1.0);
+      vmOccD = 1.0 - occ * 0.92;
+      vmOccS = 1.0 - smoothstep(0.05, 0.6, occ) * 0.97;
+      vmRimK = (1.0 - occ) * (0.6 + 0.4 * fabric);
+    }`,
+    fragLights: /* glsl */`
+      material.specularColor *= vmSpecK;
+      material.specularF90 *= vmSpecK;
+      #ifdef USE_SHEEN
+      material.sheenColor *= vmSheenK;
+      #endif`,
+    fragOcc: /* glsl */`
+    {
+      reflectedLight.indirectDiffuse *= vmOccD;
+      reflectedLight.indirectSpecular *= vmOccS;
+      reflectedLight.directDiffuse *= mix(1.0, vmOccD, 0.6);
+      reflectedLight.directSpecular *= mix(1.0, vmOccS, 0.75);
+      // sky rim: grazing light from the overcast sky / skylights outlines the dark glove against the floor
+      float fr = pow(1.0 - saturate(dot(normal, geometryViewDir)), 3.0);
+      reflectedLight.indirectSpecular += iblIrradiance * RECIPROCAL_PI * fr * uRim * vmRimK;
     }`,
   });
+  const contactStrong = { value: 1 }, contactSupport = { value: 1 };
+  const glove = makeGlove(contactStrong);
+  const gloveSupport = makeGlove(contactSupport);
 
   // ---------------------------------------------------------------- sleeve
-  const sleeve = inject(new THREE.MeshPhysicalMaterial({ color: 0x15181d, metalness: 0, roughness: 0.92, sheen: 0.35, sheenRoughness: 0.6, sheenColor: new THREE.Color(0.018, 0.020, 0.024) }), 'sleeve', {
-    uniforms: { uCloth: tex.cloth, uTexReady: ready },
+  const sleeve = inject(new THREE.MeshPhysicalMaterial({ color: 0x15181d, metalness: 0, roughness: 0.92, sheen: 0.6, sheenRoughness: 0.55, sheenColor: new THREE.Color(0.03, 0.033, 0.038) }), 'sleeve', {
+    uniforms: { uCloth: tex.cloth, uTexReady: ready, uRim: shared.rim },
     vertexHead: 'varying vec2 vVmUv;',
     vertexBody: 'vVmUv = uv;',
-    fragHead: 'uniform sampler2D uCloth; uniform float uTexReady; varying vec2 vVmUv;',
+    fragHead: 'uniform sampler2D uCloth; uniform float uTexReady; uniform float uRim; varying vec2 vVmUv;',
     fragBody: /* glsl */`
     {
       vec2 uv = vVmUv;
       vec4 t = texture2D(uCloth, uv);
       vec3 nT = normalize(vmTBN(-vViewPosition, normal, uv) * vmMapN(t, 1.6));
-      normal = normalize(mix(normal, nT, uTexReady));
+      // rib-knit cuff band (first 3 cm): fine ribs along the arm
+      float rib = 1.0 - smoothstep(0.53, 0.56, uv.y);
+      normal = vmBump(-vViewPosition, normal, rib * sin(uv.x * 260.0) * 0.00007, faceDirection);
+      normal = normalize(mix(normal, nT, uTexReady * (1.0 - rib * 0.7)));
       float dirt = vmFbm(vObjPos * 18.0);
-      diffuseColor.rgb *= 0.8 + 0.4 * dirt;
+      diffuseColor.rgb *= (0.8 + 0.4 * dirt) * (1.0 - rib * 0.25);
       roughnessFactor = clamp(0.9 + (t.b - 0.5) * 0.3 * uTexReady, 0.6, 1.0);
+    }`,
+    fragOcc: /* glsl */`
+    {
+      float fr = pow(1.0 - saturate(dot(normal, geometryViewDir)), 3.0);
+      reflectedLight.indirectSpecular += iblIrradiance * RECIPROCAL_PI * fr * uRim * 0.7;
     }`,
   });
 
@@ -241,19 +300,29 @@ export function createVmMaterials() {
     dot: new THREE.MeshStandardMaterial({ color: 0xd8e6c4, emissive: 0x7d9a40, emissiveIntensity: 0.7, roughness: 0.4 }),
     lens: new THREE.MeshStandardMaterial({ color: 0x9aa4ad, metalness: 0.3, roughness: 0.08, emissive: 0xfff2d8, emissiveIntensity: 0 }),
     reflector: new THREE.MeshStandardMaterial({ color: 0xd0d2d4, metalness: 1.0, roughness: 0.15, emissive: 0xfff2d8, emissiveIntensity: 0 }),
+    watchGlass: new THREE.MeshStandardMaterial({ color: 0x050607, metalness: 0.0, roughness: 0.12 }),
     glove,
+    gloveSupport,
     sleeve,
   };
-  // Mostly indoors under a bright sky environment: keep IBL low on dull gear, a bit more on steel so it catches highlights.
-  for (const m of Object.values(mats)) m.envMapIntensity = 0.35;
-  mats.slide.envMapIntensity = 0.2;
-  mats.steel.envMapIntensity = 0.6;
-  mats.barrel.envMapIntensity = 0.6;
-  mats.brass.envMapIntensity = 0.6;
-  mats.copper.envMapIntensity = 0.6;
-  mats.lens.envMapIntensity = 0.8;
-  mats.reflector.envMapIntensity = 0.8;
-  mats.glove.envMapIntensity = 0.3;
-  mats.sleeve.envMapIntensity = 0.3;
+  // IBL strength under open sky (the viewmodel scales these down under a roof, see viewmodel.setEnvironment).
+  // These only take effect because the viewmodel assigns material.envMap explicitly (three ignores
+  // envMapIntensity for materials lit by scene.environment alone).
+  for (const m of Object.values(mats)) m.envMapIntensity = 0.7;
+  mats.slide.envMapIntensity = 0.75;
+  mats.steel.envMapIntensity = 0.9;
+  mats.barrel.envMapIntensity = 0.9;
+  mats.brass.envMapIntensity = 0.9;
+  mats.copper.envMapIntensity = 0.9;
+  mats.lens.envMapIntensity = 1.0;
+  mats.reflector.envMapIntensity = 1.0;
+  mats.glove.envMapIntensity = 0.45;
+  mats.gloveSupport.envMapIntensity = 0.45;
+  mats.sleeve.envMapIntensity = 0.55;
+  mats.watchGlass.envMapIntensity = 0.5;
+  // base IBL strengths; the viewmodel scales them by sky visibility (indoors the sky must not light the hands)
+  const baseEnv = new Map();
+  for (const m of Object.values(mats)) baseEnv.set(m, m.envMapIntensity);
+  Object.defineProperty(mats, '_env', { value: { baseEnv, rim: shared.rim, contactStrong, contactSupport }, enumerable: false });
   return mats;
 }

@@ -59,7 +59,22 @@ const CSS = `
 #ui input[type=range].s9-range { -webkit-appearance: none; appearance: none; width: 180px; height: 2px; background: var(--s9-line); outline: none; }
 #ui input[type=range].s9-range::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 14px; background: var(--s9-fg); border: 0; border-radius: 1px; cursor: pointer; }
 #ui input[type=range].s9-range::-moz-range-thumb { width: 10px; height: 14px; background: var(--s9-fg); border: 0; border-radius: 1px; cursor: pointer; }
-#ui .s9-val { font-family: var(--s9-mono); font-size: 11px; color: var(--s9-mut); width: 40px; }
+#ui .s9-val { font-family: var(--s9-mono); font-size: 11px; color: var(--s9-mut); width: 52px; }
+#ui .s9-row > span:first-child { width: 150px; flex: none; }
+#ui .s9-row { flex-wrap: wrap; row-gap: 4px; }
+#ui .s9-keys2 { display: grid; grid-template-columns: max-content 1fr; gap: 5px 14px; font-size: 12.5px; color: #bfc1bb; }
+#ui .s9-keys2 kbd { font-family: var(--s9-mono); font-size: 11px; color: var(--s9-fg); border: 1px solid var(--s9-line);
+  padding: 1px 6px; border-radius: 2px; background: rgba(255,255,255,.02); white-space: nowrap; margin-right: 4px; }
+#ui .s9-keys2 > span:nth-child(odd) { white-space: nowrap; }
+#ui .s9-sub2 { font-family: var(--s9-mono); font-size: 10px; letter-spacing: .14em; color: var(--s9-mut); margin: 10px 0 4px; text-transform: uppercase; }
+#ui .s9-dim .s9-card { max-height: calc(100vh - 32px); overflow-y: auto; }
+#ui .s9-card .s9-sec { padding-bottom: 6px; }
+#ui .s9-card .s9-row { gap: 10px; }
+#ui .s9-card .s9-row > span:first-child { width: 128px; }
+#ui .s9-card input[type=range].s9-range { width: 150px; }
+#ui .s9-reset { background: transparent; border: 0; color: var(--s9-mut); font-family: var(--s9-mono); font-size: 10.5px;
+  letter-spacing: .1em; cursor: pointer; padding: 4px 0; text-decoration: underline; }
+#ui .s9-reset:hover { color: var(--s9-fg); }
 #ui .s9-btn { display: inline-block; margin-top: 18px; padding: 11px 22px; background: transparent; color: var(--s9-fg);
   border: 1px solid #5b605b; font-family: var(--s9-mono); font-size: 12px; letter-spacing: .22em; text-transform: uppercase; cursor: pointer; }
 #ui .s9-btn:hover { background: rgba(211,213,207,.08); border-color: var(--s9-fg); }
@@ -161,23 +176,20 @@ export function createGame(ctx) {
         </div>
         <div class="s9-sec">
           <h2>Steuerung</h2>
-          <div class="s9-keys">
-            <kbd>W A S D</kbd><span>Bewegen</span>          <kbd>Maus</kbd><span>Umsehen</span>
-            <kbd>Linke Maustaste</kbd><span>Schießen</span>  <kbd>Rechte Maustaste</kbd><span>Zielen</span>
-            <kbd>R</kbd><span>Nachladen</span>              <kbd>F</kbd><span>Taschenlampe</span>
-            <kbd>Shift</kbd><span>Sprinten</span>           <kbd>C</kbd><span>Ducken</span>
-            <kbd>Q / E</kbd><span>Lehnen</span>             <kbd>Esc</kbd><span>Pause</span>
+          <div class="s9-keys2">
+            <span><kbd>W A S D</kbd><kbd>Pfeiltasten</kbd></span><span>Bewegen</span>
+            <span><kbd>Maus</kbd></span><span>Umsehen und Waffe führen</span>
+            <span><kbd>Linke Maustaste</kbd></span><span>Schießen</span>
+            <span><kbd>Rechte Maustaste</kbd></span><span>Zielen (Halten oder Umschalten, siehe Einstellungen)</span>
+            <span><kbd>R</kbd><kbd>Enter</kbd><kbd>Num 1</kbd></span><span>Nachladen</span>
+            <span><kbd>F</kbd><kbd>Ende</kbd><kbd>Num ,</kbd></span><span>Waffenlicht</span>
+            <span><kbd>Shift</kbd><kbd>Shift rechts</kbd></span><span>Sprinten (nur vorwärts, bricht frühes Nachladen ab)</span>
+            <span><kbd>C</kbd><kbd>Strg</kbd><kbd>Strg rechts</kbd><kbd>Num 0</kbd></span><span>Ducken</span>
+            <span><kbd>Q</kbd><kbd>E</kbd> · <kbd>Entf</kbd><kbd>Bild ↓</kbd></span><span>Lehnen links / rechts</span>
+            <span><kbd>Esc</kbd></span><span>Pause und Einstellungen</span>
           </div>
         </div>
-        <div class="s9-sec">
-          <h2>Einstellungen</h2>
-          <div class="s9-row"><span>Grafikqualität</span>
-            <span class="s9-seg" data-k="quality">
-              <button type="button" data-q="low">Niedrig</button><button type="button" data-q="medium">Mittel</button><button type="button" data-q="high">Hoch</button>
-            </span></div>
-          <div class="s9-row"><span>Lautstärke</span>
-            <input class="s9-range" type="range" min="0" max="100" step="1" value="80" data-k="vol"><span class="s9-val" data-k="volv">80 %</span></div>
-        </div>
+        <div data-k="settings-slot"></div>
         <button type="button" class="s9-btn s9-primary" data-act="start">Einsatz beginnen</button>
         <div class="s9-note" data-k="note"></div>
         <p class="s9-warn">Inhaltshinweis: Dieses Spiel zeigt realistisch dargestellte Waffengewalt und Blut.</p>
@@ -195,8 +207,46 @@ export function createGame(ctx) {
         </table>
         <button type="button" class="s9-btn s9-primary" data-act="resume">Fortsetzen</button><button type="button" class="s9-btn" data-act="restart">Neu starten</button>
         <div class="s9-note" data-k="note"></div>
+        <div data-k="settings-slot" style="margin-top:14px"></div>
       </div>
     </div>`);
+
+  // settings block: one element, moved into whichever screen (menu / pause) is shown
+  const settingsEl = (() => {
+    const t = document.createElement('template');
+    t.innerHTML = `
+      <div class="s9-sec">
+        <h2>Einstellungen</h2>
+        <div class="s9-sub2">Maus und Zielen</div>
+        <div class="s9-row"><span>Mausempfindlichkeit</span>
+          <input class="s9-range" type="range" min="0" max="1000" step="1" data-k="sens"><span class="s9-val" data-k="sensv"></span></div>
+        <div class="s9-row"><span>Empfindlichkeit beim Zielen</span>
+          <input class="s9-range" type="range" min="30" max="150" step="1" data-k="adssens"><span class="s9-val" data-k="adssensv"></span></div>
+        <div class="s9-row"><span>Y-Achse umkehren</span>
+          <span class="s9-seg" data-k="invert"><button type="button" data-v="0">Aus</button><button type="button" data-v="1">An</button></span></div>
+        <div class="s9-row"><span>Freies Zielen</span>
+          <span class="s9-seg" data-k="freeaim"><button type="button" data-v="aus">Aus</button><button type="button" data-v="gering">Gering</button><button type="button" data-v="standard">Standard</button><button type="button" data-v="stark">Stark</button></span></div>
+        <div class="s9-row"><span>Zielen</span>
+          <span class="s9-seg" data-k="aimmode"><button type="button" data-v="hold">Halten</button><button type="button" data-v="toggle">Umschalten</button></span></div>
+        <div class="s9-row"><span>Ducken</span>
+          <span class="s9-seg" data-k="crouchmode"><button type="button" data-v="toggle">Umschalten</button><button type="button" data-v="hold">Halten</button></span></div>
+        <div class="s9-sub2">Bild und Ton</div>
+        <div class="s9-row"><span>Sichtfeld</span>
+          <input class="s9-range" type="range" min="80" max="110" step="1" data-k="fov"><span class="s9-val" data-k="fovv"></span></div>
+        <div class="s9-row"><span>Kamerawackeln</span>
+          <input class="s9-range" type="range" min="0" max="100" step="5" data-k="shake"><span class="s9-val" data-k="shakev"></span></div>
+        <div class="s9-row"><span>Gesichter verpixeln</span>
+          <span class="s9-seg" data-k="faces"><button type="button" data-v="1">An</button><button type="button" data-v="0">Aus</button></span></div>
+        <div class="s9-row"><span>Grafikqualität</span>
+          <span class="s9-seg" data-k="quality">
+            <button type="button" data-q="low">Niedrig</button><button type="button" data-q="medium">Mittel</button><button type="button" data-q="high">Hoch</button>
+          </span></div>
+        <div class="s9-row"><span>Lautstärke</span>
+          <input class="s9-range" type="range" min="0" max="100" step="1" value="80" data-k="vol"><span class="s9-val" data-k="volv">80 %</span></div>
+        <button type="button" class="s9-reset" data-k="reset">Steuerung zurücksetzen</button>
+      </div>`.trim();
+    return t.content.firstElementChild;
+  })();
 
   const scrDead = el(`
     <div class="s9-screen s9-dead s9-hidden">
@@ -229,6 +279,8 @@ export function createGame(ctx) {
   const screens = [scrLoading, scrMenu, scrPause, scrDead, scrDone];
   function showScreen(s) {
     for (const x of screens) x.classList.toggle('s9-hidden', x !== s);
+    const slot = s && $(s, '[data-k=settings-slot]');
+    if (slot && settingsEl.parentNode !== slot) slot.appendChild(settingsEl);
     for (const x of screens) { const n = $(x, '[data-k=note]'); if (n) n.textContent = ''; }
     const hud = s === null;
     hudAmmo.classList.toggle('s9-hidden', !hud);
@@ -267,10 +319,9 @@ export function createGame(ctx) {
     note('Zeigersperre vom Browser abgelehnt – bitte in einem Moment erneut klicken.');
   }
   function requestLock() {
-    const c = canvas();
-    if (!c?.requestPointerLock) { ctx.input?.requestLock?.(); return; }
+    // raw (unaccelerated) mouse where the browser supports it, plain pointer lock otherwise (input.js)
     try {
-      const r = c.requestPointerLock();
+      const r = ctx.input?.requestLock?.();
       if (r && typeof r.then === 'function') r.catch(lockFailed);
     } catch (e) { lockFailed(); }
   }
@@ -363,7 +414,7 @@ export function createGame(ctx) {
     // 'retry' is handled by the global mousedown below (works with and without pointer lock)
   });
 
-  const qBtns = scrMenu.querySelectorAll('[data-q]');
+  const qBtns = settingsEl.querySelectorAll('[data-q]');
   function setQuality(q) {
     if (q !== 'low' && q !== 'medium' && q !== 'high') return;
     quality = q;
@@ -371,7 +422,7 @@ export function createGame(ctx) {
     store('s9.quality', q);
     ctx.pipeline?.setQuality?.(q);
   }
-  const volInput = $(scrMenu, '[data-k=vol]'), volVal = $(scrMenu, '[data-k=volv]');
+  const volInput = $(settingsEl, '[data-k=vol]'), volVal = $(settingsEl, '[data-k=volv]');
   function setVolume(v) {
     volume = Math.min(1, Math.max(0, v));
     volInput.value = String(Math.round(volume * 100));
@@ -380,6 +431,75 @@ export function createGame(ctx) {
     ctx.audio?.setMasterVolume?.(volume);
   }
   volInput.addEventListener('input', () => setVolume(Number(volInput.value) / 100));
+
+  // ---- control / view settings (persisted as JSON, applied live to player + pipeline) ---------
+  const CTRL_DEFAULTS = {
+    sens: 3.0, adsSens: 0.85, invertY: false, freeAim: 'standard', aimMode: 'hold', crouchMode: 'toggle',
+    fov: 97, shake: 1, faceBlur: true,
+  };
+  const ctrl = Object.assign({}, CTRL_DEFAULTS);
+  try { Object.assign(ctrl, JSON.parse(load('s9.controls') || '{}')); } catch (e) { /* ignore */ }
+  const SENS_MIN = 0.2, SENS_MAX = 10;
+  const sensToSlider = (s) => Math.round(1000 * Math.log(s / SENS_MIN) / Math.log(SENS_MAX / SENS_MIN));
+  const sliderToSens = (x) => SENS_MIN * Math.pow(SENS_MAX / SENS_MIN, x / 1000);
+  let shakeBase = null;   // pipeline shake constants at full strength
+  function applyControls() {
+    const p = ctx.player;
+    if (p?.settings) {
+      Object.assign(p.settings, {
+        sens: ctrl.sens, adsSens: ctrl.adsSens, invertY: !!ctrl.invertY, freeAim: ctrl.freeAim,
+        aimMode: ctrl.aimMode, crouchMode: ctrl.crouchMode, fov: ctrl.fov, shake: ctrl.shake,
+      });
+    }
+    const T = ctx.pipeline?.tuning;
+    if (T) {
+      if (!shakeBase) shakeBase = { shakeOffset: T.shakeOffset, shakeRotation: T.shakeRotation, wobble: T.wobble, eis: T.eis };
+      for (const k of Object.keys(shakeBase)) T[k] = shakeBase[k] * Math.max(0, ctrl.shake);
+    }
+    ctx.pipeline?.setFaceBlur?.(!!ctrl.faceBlur);
+  }
+  const segSel = (key, val) => settingsEl.querySelectorAll(`[data-k=${key}] button`).forEach((b) => b.classList.toggle('on', b.dataset.v === String(val)));
+  function syncControlsUI() {
+    $(settingsEl, '[data-k=sens]').value = String(sensToSlider(ctrl.sens));
+    $(settingsEl, '[data-k=sensv]').textContent = ctrl.sens.toFixed(2);
+    $(settingsEl, '[data-k=adssens]').value = String(Math.round(ctrl.adsSens * 100));
+    $(settingsEl, '[data-k=adssensv]').textContent = `${Math.round(ctrl.adsSens * 100)} %`;
+    $(settingsEl, '[data-k=fov]').value = String(ctrl.fov);
+    $(settingsEl, '[data-k=fovv]').textContent = `${ctrl.fov}°`;
+    $(settingsEl, '[data-k=shake]').value = String(Math.round(ctrl.shake * 100));
+    $(settingsEl, '[data-k=shakev]').textContent = `${Math.round(ctrl.shake * 100)} %`;
+    segSel('invert', ctrl.invertY ? 1 : 0);
+    segSel('freeaim', ctrl.freeAim);
+    segSel('aimmode', ctrl.aimMode);
+    segSel('crouchmode', ctrl.crouchMode);
+    segSel('faces', ctrl.faceBlur ? 1 : 0);
+  }
+  function setCtrl(patch) {
+    Object.assign(ctrl, patch);
+    store('s9.controls', JSON.stringify(ctrl));
+    syncControlsUI();
+    applyControls();
+  }
+  const onRange = (k, f) => $(settingsEl, `[data-k=${k}]`).addEventListener('input', (e) => setCtrl(f(Number(e.target.value))));
+  onRange('sens', (x) => ({ sens: Math.round(sliderToSens(x) * 100) / 100 }));
+  onRange('adssens', (x) => ({ adsSens: x / 100 }));
+  onRange('fov', (x) => ({ fov: x }));
+  onRange('shake', (x) => ({ shake: x / 100 }));
+  settingsEl.addEventListener('click', (e) => {
+    const b = e.target.closest?.('button');
+    if (!b) return;
+    const seg = b.parentElement?.dataset?.k, v = b.dataset.v;
+    if (b.dataset.k === 'reset') { const keep = { faceBlur: ctrl.faceBlur }; setCtrl(Object.assign({}, CTRL_DEFAULTS, keep)); return; }
+    if (v === undefined) return;
+    if (seg === 'invert') setCtrl({ invertY: v === '1' });
+    else if (seg === 'freeaim') setCtrl({ freeAim: v });
+    else if (seg === 'aimmode') setCtrl({ aimMode: v });
+    else if (seg === 'crouchmode') setCtrl({ crouchMode: v });
+    else if (seg === 'faces') setCtrl({ faceBlur: v === '1' });
+  });
+  // keyboard focus stays on the canvas side: sliders / buttons must not eat game keys after a click
+  settingsEl.addEventListener('pointerup', () => { setTimeout(() => document.activeElement?.blur?.(), 0); });
+  syncControlsUI();
 
   function canRetry() { return game.state === 'dead' && clock - deadShownAt > G.retryGuard; }
   addEventListener('mousedown', () => { if (canRetry()) beginPlay({ restart: true }); });
@@ -406,6 +526,7 @@ export function createGame(ctx) {
     if (ctx.pipeline && ctx.pipeline.quality !== q) ctx.pipeline.setQuality?.(q);
     const savedV = Number(load('s9.volume'));
     setVolume(load('s9.volume') !== null && Number.isFinite(savedV) ? savedV : volume);
+    applyControls();
     game.state = 'menu';
     ctx.pipeline?.setMenu?.(true);
     showScreen(scrMenu);

@@ -77,6 +77,11 @@ export const TUNING = {
   afAimNear: 1.0,            // when aiming, AF prefers the nearest subject (front sight)
   focusBreathing: 0.006,     // image scale per dioptre of focus
 
+  // ---- first-person viewmodel (arms + pistol, masked by the viewmodel pass)
+  vmCocHip: 1.15,            // max defocus of the viewmodel at the hip (half-res px): slightly soft, never a ghost
+  vmCocAds: 0.3,             // ... when aiming (front sight / gun sharp)
+  vmTnr: 0.12,               // temporal-NR strength on the viewmodel relative to the scene (no smeared hands)
+
   // ---- ambient occlusion (GTAO at half res, depth-reconstructed normals)
   aoStrength: 1.25,
 
@@ -339,9 +344,34 @@ export function createPipeline(ctx) {
     uHaloAmt: { value: 0 }, uStreakAmt: { value: 0 }, uStreakTaps: { value: 8 },
     uStreakDir: { value: new THREE.Vector2(1, 0) },
   });
-  const dofPrepMat = mk(SH.dofPrepFrag, Object.assign({}, EXPU, DEPTHU, {
+  // ---- viewmodel treatment (patched into the shared shader sources here, so shaders.js stays untouched):
+  // DOF: the viewmodel's circle of confusion is clamped (uVMCoc) in the prep pass and in the composite, so the
+  //   near-field gather can no longer spread the arms over the background (halo / see-through ghost) and the
+  //   hands stay readable; TNR: much weaker on viewmodel pixels so moving hands do not smear in the dark.
+  const uVMCoc = { value: T.vmCocHip };
+  const uVMTnr = { value: T.vmTnr };
+  const vmPatch = (src, find, repl, what) => {
+    if (!src.includes(find)) { console.warn('[pipeline] viewmodel patch skipped:', what); return src; }
+    return src.replace(find, repl);
+  };
+  let dofPrepSrc = vmPatch(SH.dofPrepFrag, 'uniform float uCocMax;', 'uniform float uCocMax;\nuniform sampler2D tVM;\nuniform float uVMCoc;', 'dof prep uniforms');
+  dofPrepSrc = vmPatch(dofPrepSrc, '  gl_FragColor = vec4(min(c, vec3(2e3)), clamp(coc, -uCocMax, uCocMax));',
+    `  float vmM = max(max(textureLod(tVM, uv0, 0.0).r, textureLod(tVM, uv1, 0.0).r), max(textureLod(tVM, uv2, 0.0).r, textureLod(tVM, uv3, 0.0).r));
+  if (vmM > 0.5) coc = clamp(coc, -uVMCoc, uVMCoc);
+  gl_FragColor = vec4(min(c, vec3(2e3)), clamp(coc, -uCocMax, uCocMax));`, 'dof prep clamp');
+  let compSrc = vmPatch(SH.compositeFrag, 'uniform float uTNR;', 'uniform float uTNR;\nuniform float uVMCoc;\nuniform float uVMTnr;', 'composite uniforms');
+  compSrc = vmPatch(compSrc, '  float cocF = uCocK * (AF.r - 1.0 / max(zc, 0.02));',
+    '  float cocF = uCocK * (AF.r - 1.0 / max(zc, 0.02));\n  if (vm) cocF = clamp(cocF, -uVMCoc, uVMCoc);', 'composite coc clamp');
+  // on the viewmodel itself the half-res gather (minimum radius ~1 half-res px) would always win through its
+  // coverage alpha; there the blend follows the clamped CoC only, so full-resolution detail survives
+  compSrc = vmPatch(compSrc, '      float a = max(smoothstep(0.6, 1.8, abs(cocF)), d.a);',
+    '      float a = vm ? smoothstep(0.6, 1.8, abs(cocF)) : max(smoothstep(0.6, 1.8, abs(cocF)), d.a);', 'composite vm dof blend');
+  compSrc = vmPatch(compSrc, '    float k = uTNR * smoothstep(1.6, 6.0, gain) * (1.0 - smoothstep(0.03, 0.12, diff));',
+    '    float k = uTNR * smoothstep(1.6, 6.0, gain) * (1.0 - smoothstep(0.03, 0.12, diff));\n    if (vm) k *= uVMTnr;', 'composite tnr');
+
+  const dofPrepMat = mk(dofPrepSrc, Object.assign({}, EXPU, DEPTHU, {
     tScene: { value: sceneRT.texture }, uFullTexel: { value: new THREE.Vector2() },
-    uCocK: { value: 1 }, uCocMax: { value: 4 },
+    uCocK: { value: 1 }, uCocMax: { value: 4 }, tVM: { value: vmRT.texture }, uVMCoc,
   }));
   const dofGatherMat = mk(SH.dofGatherFrag, {
     tPrep: { value: dofPrepRT.texture }, uTexel: { value: new THREE.Vector2() },
@@ -388,8 +418,9 @@ export function createPipeline(ctx) {
     uDamage: { value: 0 }, uDeadDesat: { value: 0 }, uBlur: { value: 0 }, uBlurLod: { value: T.menuBlurLod },
     uMenu: { value: 0 },
     uHeads: { value: heads }, uHeadCount: { value: 0 },
+    uVMCoc, uVMTnr,
   });
-  const compMat = mk(SH.compositeFrag, compU);
+  const compMat = mk(compSrc, compU);
 
   const osd = createOSD(document.getElementById('overlay'));
 
@@ -776,6 +807,8 @@ export function createPipeline(ctx) {
     stateU.uAFFixed.value = T.dof > 0 ? 0 : 0.1;
     aimAmt += ((ctx.player?.isAiming ? 1 : 0) - aimAmt) * (1 - Math.exp(-dt * 4));
     stateU.uAFNear.value = aimAmt * T.afAimNear;
+    uVMCoc.value = T.vmCocHip + (T.vmCocAds - T.vmCocHip) * aimAmt;
+    uVMTnr.value = T.vmTnr;
     pendingKick = 0;
     needReset = false;
     draw(stateMat, stateRT[stateIdx]);
