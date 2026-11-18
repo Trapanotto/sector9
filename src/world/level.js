@@ -2,16 +2,28 @@
 // level API described in CONTRACT.md. Pure layout data lives in layout.js / nav.js (importable in Node).
 import * as THREE from 'three';
 import {
-  buildLayout, groundHeight, floorMatAt, GROUND, BOUNDS, PLAYER_SPAWN, ENEMY_SPAWNS, EXTRACTION,
+  buildLayout, groundHeight, floorMatAt, GROUND, BOUNDS, PLAYER_SPAWN, ENEMY_SPAWNS, EXTRACTION, WORK_LAMP,
 } from './layout.js';
 import { computeWorldData } from './nav.js';
 import { loadMaterials, makeCanvas } from './materials.js';
 import { Batcher, makeGrime, groundGrid, rng } from './geometry.js';
 import { buildProps, buildInstanced } from './props.js';
 import { buildDecals } from './decals.js';
-import { setupLighting } from './lighting.js';
+import { setupLighting, loadSky, linColor, SUN, SUN_DIR, LAMP, SKY_GAIN } from './lighting.js';
+import { installLightPatch, adoptScene, setVolume, LP } from './lightShader.js';
+import { bakeIrradianceVolume, skyTable } from './lightGI.js';
+import { createReflectionProbes } from './lightProbes.js';
+import { createStaticSun, excludeFromSunCascade, isStatic } from './lightSun.js';
 
 const NO_CAST = new Set(['floor', 'lino', 'asphalt']);
+// Distant silhouettes beyond the fences (drawn below, also occluders for the light bake).
+const SILHOUETTES = [
+  { min: [-46, 0, 8], max: [-34, 13, 40], mat: 'brick' },
+  { min: [30, 0, -24], max: [44, 9, 22], mat: 'corrugatedOut' },
+  { min: [-28, 0, 38], max: [14, 7, 50], mat: 'brick' },
+  { min: [-40, 0, -48], max: [10, 10, -36], mat: 'corrugatedOut' },
+  { min: [-33.6, 0, -31.6], max: [-30.4, 32, -28.4], mat: 'brick' },
+];
 
 function screenMaterial() {
   const c = makeCanvas(256, 128), g = c.getContext('2d');
@@ -41,8 +53,20 @@ export async function createLevel(ctx, onProgress = () => {}) {
     console.warn(`[world] nav graph is disconnected: ${world.graph.components.count} components`);
   }
 
+  // ---------------------------------------------------------------- sky + light bake (runs in workers while textures load)
+  installLightPatch();
+  const matsP = loadMaterials(renderer, (p) => progress(0.03 + p * 0.62, 'Lade Texturen'));
+  const sky = await loadSky(renderer, scene);
+  const lampDir = new THREE.Vector3(...WORK_LAMP.target).sub(new THREE.Vector3(...WORK_LAMP.pos)).normalize();
+  const giP = bakeIrradianceVolume({
+    layout, extra: SILHOUETTES, sky: skyTable(sky.bg, SKY_GAIN),
+    sun: { dir: SUN_DIR.clone().negate().toArray(), color: linColor(SUN.color, SUN.intensity) },
+    lamp: { pos: WORK_LAMP.pos, dir: lampDir.toArray(), angle: LAMP.angle, penumbra: LAMP.penumbra, range: LAMP.range, color: linColor(LAMP.color, LAMP.intensity) },
+  }).catch((e) => { console.warn('[light] irradiance bake failed:', e); return null; });
+
   // ---------------------------------------------------------------- materials
-  const lib = await loadMaterials(renderer, (p) => progress(0.03 + p * 0.62, 'Lade Texturen'));
+  const lib = await matsP;
+  const tMats = performance.now();
   if (lib.missing.length) console.warn('[world] procedural fallback for:', lib.missing.join(', '));
   lib.mats.screen = screenMaterial();
   lib.scales.screen = 0.5; lib.surfaces.screen = 'metal';
@@ -68,15 +92,15 @@ export async function createLevel(ctx, onProgress = () => {}) {
   groundGrid(B, GROUND.min, GROUND.max, 0, floorMatAt, 1);
   const inst = buildProps(B, layout, 7);
   // distant silhouettes beyond the fences (no collision, no rays)
-  B.box([-46, 0, 8], [-34, 13, 40], { px: 'brick', nx: 'brick', pz: 'brick', nz: 'brick', py: 'concreteOut', ny: 'brick' });
-  B.box([30, 0, -24], [44, 9, 22], { px: 'corrugatedOut', nx: 'corrugatedOut', pz: 'corrugatedOut', nz: 'corrugatedOut', py: 'concreteOut', ny: 'concreteOut' });
-  B.box([-28, 0, 38], [14, 7, 50], { px: 'brick', nx: 'brick', pz: 'brick', nz: 'brick', py: 'concreteOut', ny: 'brick' });
-  B.box([-40, 0, -48], [10, 10, -36], { px: 'corrugatedOut', nx: 'corrugatedOut', pz: 'corrugatedOut', nz: 'corrugatedOut', py: 'concreteOut', ny: 'concreteOut' });
-  B.cylinder('brick', [-32, 0, -30], 1.6, 32, { segs: 20 });
+  for (const b of SILHOUETTES.slice(0, 4)) {
+    const k = b.mat;
+    B.box(b.min, b.max, { px: k, nx: k, pz: k, nz: k, py: 'concreteOut', ny: k === 'brick' ? 'brick' : 'concreteOut' });
+  }
+  B.cylinder('brick', [-32, 0, -30], 1.6, 32, { segs: 20 });   // chimney (bake occluder: SILHOUETTES[4])
   B.cylinder('concreteOut', [22, 0, 30], 0.12, 6.5, { segs: 8 });     // dead yard lamp post
   B.box([21.4, 6.3, 29.9], [22.1, 6.45, 30.1], 'steel');
 
-  const staticGroup = new THREE.Group(); staticGroup.name = 'static';
+  const staticGroup = new THREE.Group(); staticGroup.name = 'static'; staticGroup.userData.static = true;
   for (const [key, geo] of B.build()) {
     const mat = lib.mats[key] || lib.mats.ceiling;
     const mesh = new THREE.Mesh(geo, mat);
@@ -106,7 +130,50 @@ export async function createLevel(ctx, onProgress = () => {}) {
   buildDecals(scene, layout, { floorSpots, puddles, wallSoot, extraction: EXTRACTION });
 
   // ---------------------------------------------------------------- lights, sky, fog
-  const lighting = await setupLighting(ctx, layout, (p) => progress(0.82 + p * 0.12, 'Licht'));
+  progress(0.82, 'Licht');
+  const lighting = await setupLighting(ctx, layout, { sky });
+  const staticSun = createStaticSun(renderer, {
+    dirTravel: SUN_DIR, center: new THREE.Vector3(-2, 0, 4), halfX: 38, halfY: 38,
+    size: (renderer.capabilities.maxTextureSize || 4096) >= 8192 ? 4096 : 2048,
+  });
+  const probes = createReflectionProbes(renderer);
+  progress(0.86, 'Indirektes Licht');
+  const gi = await giP;
+  if (gi) {
+    setVolume(gi);
+    // the volume (clamped to its outdoor border) is the ambient everywhere; dropping the sky environment frees a
+    // texture unit for heavy surface shaders and removes the flat sky ambient / sky reflections indoors
+    scene.environment = null;
+    console.info(`[light] irradiance volume baked in ${gi.ms.toFixed(0)} ms on ${gi.workers} workers; waited ${(performance.now() - tMats).toFixed(0)} ms after textures (${gi.timings})`);
+  }
+  const lum = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  let staticSig = '';
+  // Re-renders everything that depends on static geometry: static sun shadow, lamp shadow, reflection probes.
+  // Call after late-loading static props have been added (or it is detected automatically, see update()).
+  function refreshStaticLighting() {
+    const t0 = performance.now();
+    adoptScene(scene);
+    const hide = [];
+    let nStatic = 0;
+    scene.traverse((o) => {
+      if (!(o.isMesh || o.isPoints || o.isLine || o.isSprite)) return;
+      if (isStatic(o, ctx.camera) && !o.userData.dynamic) {
+        nStatic++;
+        if (o.isMesh && o.castShadow) excludeFromSunCascade(o, lighting.sun.shadow.camera);
+      } else if (o.visible) hide.push(o);
+    });
+    staticSig = signature();
+    const casters = staticSun.render(scene, ctx.camera);
+    const ms = probes.capture(scene, { hide, normAt: gi ? (x, y, z) => lum(gi.sample(x, y, z)) : null });
+    console.info(`[light] static lighting refreshed: ${casters} sun casters, ${nStatic} static objects, probes ${ms.toFixed(0)} ms, total ${(performance.now() - t0).toFixed(0)} ms`);
+  }
+  function signature() {
+    let n = 0, v = 0;
+    scene.traverse((o) => { if (o.isMesh && isStatic(o, ctx.camera)) { n++; v += o.geometry?.id || 0; } });
+    return n + ':' + v;
+  }
+  progress(0.92, 'Reflexionen');
+  refreshStaticLighting();
   progress(0.95, 'Kollision');
 
   // ---------------------------------------------------------------- collision + raycast proxies
@@ -144,6 +211,7 @@ export async function createLevel(ctx, onProgress = () => {}) {
     return 'concrete';
   }
 
+  let scanT = 0, sinceLoad = 0, pendingSig = '', autoRefreshes = 0;
   progress(1, 'Bereit');
   return {
     colliders,
@@ -156,9 +224,28 @@ export async function createLevel(ctx, onProgress = () => {}) {
     coverPoints,
     extraction,
     bounds,
-    update(dt) { lighting.update(dt); },
+    update(dt) {
+      lighting.update(dt);
+      // pick up materials created later with their own onBeforeCompile, and late static props
+      scanT += dt;
+      if (scanT > 1.0) {
+        scanT = 0;
+        const nAdopt = adoptScene(scene);
+        if (nAdopt) console.info(`[light] patched ${nAdopt} late material(s)`);
+        if (sinceLoad < 60 && autoRefreshes < 3) {
+          const sig = signature();
+          if (sig !== staticSig) {
+            if (sig === pendingSig) { console.info('[light] static geometry changed (' + staticSig + ' -> ' + sig + ')'); autoRefreshes++; refreshStaticLighting(); }
+            pendingSig = sig;
+          } else pendingSig = '';
+        }
+      }
+      sinceLoad += dt;
+    },
+    refreshStaticLighting,
     // extras (not in contract)
     sun: lighting.sun,
+    lighting, gi, probes, staticSun, lightUniforms: LP,
     layout,
   };
 }
