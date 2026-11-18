@@ -1,6 +1,7 @@
 // Geometry batching with world-scale UVs and baked grime/AO vertex colours.
 // All static geometry is accumulated per material key and turned into one BufferGeometry per key.
 import * as THREE from 'three';
+import { buildLayout } from './layout.js';
 
 // ---- small deterministic noise helpers
 export function rng(seed = 1) {
@@ -206,6 +207,30 @@ export class Batcher {
     else for (let i = 0; i < pos.count; i++) b.idx.push(base + i);
   }
 
+  // Planar-mapped polygon (3 or 4 world-space points, counter-clockwise seen from the front), world-scale UVs
+  // chosen from the dominant normal axis with the same conventions as box faces.
+  poly(key, pts, o = {}) {
+    const b = this.bucket(key);
+    const sc = (o.uvScale ?? 1) / (this.scales[key] ?? 2);
+    const [p0, p1, , ] = pts;
+    const p2 = pts[pts.length - 1];
+    const ax = [p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]], bx = [p2[0] - p0[0], p2[1] - p0[1], p2[2] - p0[2]];
+    let n = [ax[1] * bx[2] - ax[2] * bx[1], ax[2] * bx[0] - ax[0] * bx[2], ax[0] * bx[1] - ax[1] * bx[0]];
+    const l = Math.hypot(n[0], n[1], n[2]) || 1; n = n.map((v) => v / l);
+    const an = [Math.abs(n[0]), Math.abs(n[1]), Math.abs(n[2])];
+    const f = an[1] >= an[0] && an[1] >= an[2] ? (n[1] > 0 ? FACES.py : FACES.ny)
+      : an[0] >= an[2] ? (n[0] > 0 ? FACES.px : FACES.nx) : (n[2] > 0 ? FACES.pz : FACES.nz);
+    const base = b.pos.length / 3;
+    for (const p of pts) {
+      b.pos.push(p[0], p[1], p[2]); b.nor.push(n[0], n[1], n[2]);
+      b.uv.push((p[0] * f.r[0] + p[1] * f.r[1] + p[2] * f.r[2]) * sc, (p[0] * f.v[0] + p[1] * f.v[1] + p[2] * f.v[2]) * sc);
+      const c = o.color || this.grime(p[0], p[1], p[2], n[0], n[1], n[2], o.base ?? 0);
+      const t = o.tint || 1;
+      b.col.push(c[0] * t, c[1] * t, c[2] * t);
+    }
+    for (let i = 1; i < pts.length - 1; i++) b.idx.push(base, base + i, base + i + 1);
+  }
+
   // Build one BufferGeometry per bucket.
   build() {
     const out = new Map();
@@ -233,8 +258,253 @@ function splits(len, seg) {
   return out;
 }
 
+// ------------------------------------------------------------------------------------------------ windows
+// Industrial steel window: outer frame + mullion grid in the middle of the wall thickness. Shared by the frame
+// geometry (below) and the breakable glass panes (decals.js), so both line up exactly.
+export const WIN_FRAME = 0.05, WIN_BAR = 0.032, WIN_DEPTH = 0.05;
+export function windowGrid(w) {
+  const alongX = w.normal === 'z';
+  const a0 = alongX ? w.min[0] : w.min[2], a1 = alongX ? w.max[0] : w.max[2];
+  const y0 = w.min[1], y1 = w.max[1];
+  const plane = alongX ? (w.min[2] + w.max[2]) / 2 : (w.min[0] + w.max[0]) / 2;
+  const t0 = alongX ? w.min[2] : w.min[0], t1 = alongX ? w.max[2] : w.max[0];
+  const nx = Math.max(1, Math.round((a1 - a0) / 0.6)), ny = Math.max(1, Math.round((y1 - y0) / 0.5));
+  const ia0 = a0 + WIN_FRAME, ia1 = a1 - WIN_FRAME, iy0 = y0 + WIN_FRAME, iy1 = y1 - WIN_FRAME;
+  const pw = (ia1 - ia0 - (nx - 1) * WIN_BAR) / nx, ph = (iy1 - iy0 - (ny - 1) * WIN_BAR) / ny;
+  const panes = [];
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+    const s0 = ia0 + i * (pw + WIN_BAR), v0 = iy0 + j * (ph + WIN_BAR);
+    panes.push({ i, j, a0: s0, a1: s0 + pw, y0: v0, y1: v0 + ph });
+  }
+  return { alongX, a0, a1, y0, y1, plane, t0, t1, nx, ny, pw, ph, panes };
+}
+
+// Map (along, y, across) -> world xyz for a wall running along x (alongX) or along z.
+const wpt = (alongX, a, y, t) => (alongX ? [a, y, t] : [t, y, a]);
+const wbox = (B, alongX, a0, a1, y0, y1, t0, t1, mat, o) => {
+  const [aa, ab] = a0 < a1 ? [a0, a1] : [a1, a0], [ta, tb] = t0 < t1 ? [t0, t1] : [t1, t0];
+  if (ab - aa < 1e-4 || y1 - y0 < 1e-4 || tb - ta < 1e-4) return;
+  B.box(wpt(alongX, aa, y0, ta), wpt(alongX, ab, y1, tb), mat, o);
+};
+// Quad given in (along, y, across) coordinates; flipped if its normal does not point along `want` (world).
+function wquad(B, key, alongX, pts, want, o) {
+  let P = pts.map((p) => wpt(alongX, p[0], p[1], p[2]));
+  const a = P[1].map((v, k) => v - P[0][k]), b = P[P.length - 1].map((v, k) => v - P[0][k]);
+  const n = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  if (n[0] * want[0] + n[1] * want[1] + n[2] * want[2] < 0) P = P.reverse();
+  B.poly(key, P, o);
+}
+
+const FOOT = { min: [-24, -18], max: [20, 16] };
+const insideBuilding = (x, z) => x > FOOT.min[0] && x < FOOT.max[0] && z > FOOT.min[1] && z < FOOT.max[1];
+const faceKey = (mat, f) => (typeof mat === 'string' ? mat : mat?.[f]);
+
+// Architectural detail merged into the static batches (no extra draw calls): cement fillets along every wall base,
+// pillar plinths and capitals, steel window frames with mullions, sills and lintels, steel door frames, corner guards
+// and beams over the big openings, floor drains, rubble piles and loose chunks along the walls.
+export function addArchitecturalDetail(B, layout, seed = 99) {
+  const R = rng(seed);
+  const rr = (a, b) => a + (b - a) * R();
+  const { solids, doors, windows } = layout;
+  const blockers = solids.filter((s) => s.collide && s.kind !== 'wall' && s.max[1] - s.min[1] > 0.1);
+  const blocked = (x, z, m = 0.15) => blockers.some((s) => x > s.min[0] - m && x < s.max[0] + m && z > s.min[2] - m && z < s.max[2] + m);
+  const nearDoor = (x, z, m = 0.7) => doors.some((d) => Math.abs(x - d.center[0]) < (d.normal === 'z' ? d.width / 2 + m : 0.6 + m)
+    && Math.abs(z - d.center[1]) < (d.normal === 'x' ? d.width / 2 + m : 0.6 + m));
+
+  // ---- wall faces standing on the ground
+  const faces = [];
+  for (const s of solids) {
+    if (!s.visual || (s.kind !== 'wall' && s.kind !== 'pillar') || s.min[1] > 0.02 || s.max[1] - s.min[1] < 1.0) continue;
+    for (const f of ['px', 'nx', 'pz', 'nz']) {
+      const key = faceKey(s.mat, f);
+      if (!key || key.startsWith('corrugated')) continue;
+      const alongX = f === 'pz' || f === 'nz';
+      const sgn = f[0] === 'p' ? 1 : -1;
+      const c = alongX ? (sgn > 0 ? s.max[2] : s.min[2]) : (sgn > 0 ? s.max[0] : s.min[0]);
+      const a0 = alongX ? s.min[0] : s.min[2], a1 = alongX ? s.max[0] : s.max[2];
+      if (a1 - a0 < 0.3) continue;
+      faces.push({ s, f, key, alongX, sgn, c, a0, a1, h: s.max[1] - s.min[1] });
+    }
+  }
+  // cement fillet (45 deg chamfer) along the base: breaks the ruler-straight wall/floor line, catches dirt
+  for (const F of faces) {
+    const k = F.s.kind === 'pillar' ? 0 : 0.05;
+    if (!k) continue;
+    const want = F.alongX ? [0, 0.7, F.sgn * 0.7] : [F.sgn * 0.7, 0.7, 0];
+    const t0 = F.c + F.sgn * 0.001, t1 = F.c + F.sgn * k;
+    wquad(B, 'ceiling', F.alongX, [[F.a0, 0.002, t1], [F.a1, 0.002, t1], [F.a1, k, t0], [F.a0, k, t0]], want);
+  }
+  // office skirting board on painted office walls
+  for (const F of faces) {
+    if (F.key !== 'wallOffice') continue;
+    const t1 = F.c + F.sgn * 0.016;
+    wbox(B, F.alongX, F.a0, F.a1, 0.05, 0.13, F.c, t1, 'dark', { tint: 0.8 });
+  }
+
+  // ---- pillars: plinth with chamfered top, haunched capital with bearing plate
+  for (const s of solids) {
+    if (s.kind !== 'pillar') continue;
+    const [x0, , z0] = s.min, [x1, top, z1] = s.max, e = 0.09;
+    B.box([x0 - e, 0, z0 - e], [x1 + e, 0.2, z1 + e], 'ceiling', { skip: ['ny'] });
+    const ring = (yA, eA, yB, eB, key) => {
+      const P = (x, z, y) => [x, y, z];
+      const sides = [
+        [[x0 - eA, z1 + eA], [x1 + eA, z1 + eA], [x1 + eB, z1 + eB], [x0 - eB, z1 + eB], [0, 0, 1]],
+        [[x1 + eA, z0 - eA], [x0 - eA, z0 - eA], [x0 - eB, z0 - eB], [x1 + eB, z0 - eB], [0, 0, -1]],
+        [[x1 + eA, z1 + eA], [x1 + eA, z0 - eA], [x1 + eB, z0 - eB], [x1 + eB, z1 + eB], [1, 0, 0]],
+        [[x0 - eA, z0 - eA], [x0 - eA, z1 + eA], [x0 - eB, z1 + eB], [x0 - eB, z0 - eB], [-1, 0, 0]],
+      ];
+      for (const [a, b, c, d, n] of sides) {
+        let pts = [P(a[0], a[1], yA), P(b[0], b[1], yA), P(c[0], c[1], yB), P(d[0], d[1], yB)];
+        const u = pts[1].map((v, k) => v - pts[0][k]), w = pts[3].map((v, k) => v - pts[0][k]);
+        const nn = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
+        if (nn[0] * n[0] + nn[2] * n[2] < 0) pts = pts.reverse();
+        B.poly(key, pts);
+      }
+    };
+    ring(0.2, e, 0.27, 0.0, 'ceiling');                 // plinth chamfer
+    if (top > 5) {
+      ring(top - 0.75, 0.0, top - 0.5, 0.13, 'ceiling'); // haunch
+      B.box([x0 - 0.13, top - 0.5, z0 - 0.13], [x1 + 0.13, top - 0.12, z1 + 0.13], 'ceiling', { skip: ['py'] });
+      B.box([x0 - 0.17, top - 0.12, z0 - 0.17], [x1 + 0.17, top - 0.09, z1 + 0.17], 'rust', { tint: 0.6 });
+    }
+  }
+
+  // ---- windows: frames + mullions, sills, lintels
+  for (const w of windows) {
+    const G = windowGrid(w);
+    const { alongX, a0, a1, y0, y1, plane } = G;
+    const d0 = plane - WIN_DEPTH / 2, d1 = plane + WIN_DEPTH / 2;
+    const fm = 'rust', fo = { tint: 0.55 };
+    wbox(B, alongX, a0, a1, y0, y0 + WIN_FRAME, d0, d1, fm, fo);
+    wbox(B, alongX, a0, a1, y1 - WIN_FRAME, y1, d0, d1, fm, fo);
+    wbox(B, alongX, a0, a0 + WIN_FRAME, y0 + WIN_FRAME, y1 - WIN_FRAME, d0, d1, fm, fo);
+    wbox(B, alongX, a1 - WIN_FRAME, a1, y0 + WIN_FRAME, y1 - WIN_FRAME, d0, d1, fm, fo);
+    const b0 = plane - 0.018, b1 = plane + 0.018;
+    for (let i = 1; i < G.nx; i++) { const s = a0 + WIN_FRAME + i * G.pw + (i - 1) * WIN_BAR; wbox(B, alongX, s, s + WIN_BAR, y0 + WIN_FRAME, y1 - WIN_FRAME, b0, b1, fm, fo); }
+    for (let j = 1; j < G.ny; j++) { const s = y0 + WIN_FRAME + j * G.ph + (j - 1) * WIN_BAR; wbox(B, alongX, a0 + WIN_FRAME, a1 - WIN_FRAME, s, s + WIN_BAR, b0, b1, fm, fo); }
+    // putty/glazing beads on the outside of the bars are implied by the glass texture; sills + lintels:
+    for (const side of [-1, 1]) {
+      const face = side > 0 ? G.t1 : G.t0;
+      const probe = wpt(alongX, (a0 + a1) / 2, 1, face + side * 0.6);
+      const outside = !insideBuilding(probe[0], probe[2]);
+      const sillKey = outside ? 'concreteOut' : 'ceiling';
+      if (y0 > 0.3) {
+        wbox(B, alongX, a0 - 0.06, a1 + 0.06, y0 - 0.06, y0 + 0.008, face, face + side * (outside ? 0.07 : 0.035), sillKey);
+        // sill top inside the reveal, sloping down to the outside face
+        const tIn = side > 0 ? d1 : d0;
+        wquad(B, sillKey, alongX, [[a0, y0 + 0.012, tIn], [a1, y0 + 0.012, tIn], [a1, y0 + 0.004, face], [a0, y0 + 0.004, face]], [0, 1, 0]);
+      }
+      wbox(B, alongX, a0 - 0.14, a1 + 0.14, y1, y1 + 0.2, face, face + side * 0.012, outside ? 'concreteOut' : 'ceiling');
+    }
+  }
+
+  // ---- doors: steel frames (Zarge) on normal doors, corner guards + beams on the big openings
+  for (const d of doors) {
+    const alongX = d.axis === 'x';
+    const [a0, a1] = d.a, h = d.height;
+    const big = d.width > 2.2 || d.shutter;
+    for (const side of [-1, 1]) {
+      const face = side > 0 ? d.t1 : d.t0;
+      if (!big) {
+        const o = { tint: 0.5 }, p = face + side * 0.018;
+        wbox(B, alongX, a0 - 0.05, a0, 0, h + 0.05, face, p, 'paintGrey', o);
+        wbox(B, alongX, a1, a1 + 0.05, 0, h + 0.05, face, p, 'paintGrey', o);
+        wbox(B, alongX, a0, a1, h, h + 0.05, face, p, 'paintGrey', o);
+      } else {
+        const g = 0.008;
+        wbox(B, alongX, a0 - 0.08, a0, 0, 1.25, face, face + side * g, 'yellow');
+        wbox(B, alongX, a1, a1 + 0.08, 0, 1.25, face, face + side * g, 'yellow');
+        wbox(B, alongX, a0 - 0.3, a1 + 0.3, h, h + 0.32, face, face + side * 0.05, 'rust', { tint: 0.6 });
+      }
+    }
+    if (!big) {   // reveal lining
+      const o = { tint: 0.45 };
+      wbox(B, alongX, a0, a0 + 0.012, 0, h, d.t0 - 0.018, d.t1 + 0.018, 'paintGrey', o);
+      wbox(B, alongX, a1 - 0.012, a1, 0, h, d.t0 - 0.018, d.t1 + 0.018, 'paintGrey', o);
+      wbox(B, alongX, a0, a1, h - 0.012, h, d.t0 - 0.018, d.t1 + 0.018, 'paintGrey', o);
+    } else {      // corner guards wrapping into the reveal
+      for (const t of [d.t0, d.t1]) {
+        const s = t === d.t0 ? 1 : -1;
+        wbox(B, alongX, a0, a0 + 0.008, 0, 1.25, t, t + s * 0.08, 'yellow');
+        wbox(B, alongX, a1 - 0.008, a1, 0, 1.25, t, t + s * 0.08, 'yellow');
+      }
+    }
+  }
+
+  // ---- floor drains (steel grating over a dark channel)
+  const drain = (x0, z0, x1, z1) => {
+    const alongX = Math.abs(x1 - x0) > Math.abs(z1 - z0);
+    const a0 = alongX ? x0 : z0, a1 = alongX ? x1 : z1, c = alongX ? (z0 + z1) / 2 : (x0 + x1) / 2, w = 0.15;
+    wbox(B, alongX, a0, a1, 0.0, 0.0015, c - w, c + w, 'rubber', { color: [0.25, 0.25, 0.25] });
+    wbox(B, alongX, a0 - 0.03, a1 + 0.03, 0.0, 0.007, c - w - 0.03, c - w, 'rust', { tint: 0.6 });
+    wbox(B, alongX, a0 - 0.03, a1 + 0.03, 0.0, 0.007, c + w, c + w + 0.03, 'rust', { tint: 0.6 });
+    for (let a = a0; a < a1 - 0.01; a += 0.045) wbox(B, alongX, a, a + 0.012, 0.0, 0.006, c - w, c + w, 'dark', { tint: 0.8 });
+  };
+  drain(-11.6, 14.9, -6.4, 14.9);
+  drain(-11.4, -15.4, -11.4, -10.6);
+  drain(13.0, 21.0, 13.0, 24.8);   // yard gully beside the van
+
+  // ---- rubble piles along wall bases + loose chunks
+  const chunk = (cx, cy, cz, r, key) => {
+    const ry = r * rr(0.45, 0.8), a = rr(0, Math.PI * 2), ca = Math.cos(a), sa = Math.sin(a);
+    const v = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]].map(([x, y, z]) => {
+      const j = rr(0.7, 1.25), lx = x * r * j, lz = z * r * j * rr(0.7, 1.1);
+      return [cx + lx * ca - lz * sa, cy + y * ry * j, cz + lx * sa + lz * ca];
+    });
+    const T = [[0, 2, 4], [4, 2, 1], [1, 2, 5], [5, 2, 0], [4, 3, 0], [1, 3, 4], [5, 3, 1], [0, 3, 5]];
+    for (const [i, j, k] of T) {
+      const A = v[i], Bv = v[j], C = v[k];
+      const u = Bv.map((q, n) => q - A[n]), w = C.map((q, n) => q - A[n]);
+      const n = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
+      const out = [A[0] + Bv[0] + C[0] - 3 * cx, A[1] + Bv[1] + C[1] - 3 * cy, A[2] + Bv[2] + C[2] - 3 * cz];
+      B.poly(key, n[0] * out[0] + n[1] * out[1] + n[2] * out[2] >= 0 ? [A, Bv, C] : [A, C, Bv], { tint: rr(0.7, 1.0) });
+    }
+  };
+  const brickBit = (x, z, y) => {
+    const m = new THREE.Matrix4().compose(new THREE.Vector3(x, y, z),
+      new THREE.Quaternion().setFromEuler(new THREE.Euler(rr(-0.4, 0.4), rr(0, Math.PI), rr(-0.4, 0.4))), new THREE.Vector3(1, 1, 1));
+    const l = rr(0.06, 0.22);
+    B.boxXf([-l / 2, -0.032, -0.05], [l / 2, 0.032, 0.05], 'brick', m, { tint: rr(0.6, 0.9) });
+  };
+  const inner = faces.filter((F) => F.s.kind === 'wall' && F.h > 2.4 && F.key !== 'wallOffice');
+  const totalLen = inner.reduce((s, F) => s + (F.a1 - F.a0), 0);
+  let piles = 0;
+  for (let tries = 0; tries < 400 && piles < 46; tries++) {
+    let t = R() * totalLen, F = inner[0];
+    for (const G of inner) { if (t < G.a1 - G.a0) { F = G; break; } t -= G.a1 - G.a0; }
+    if (F.a1 - F.a0 < 1.2) continue;
+    const a = rr(F.a0 + 0.5, F.a1 - 0.5);
+    const p = wpt(F.alongX, a, 0, F.c + F.sgn * 0.35);
+    if (Math.abs(p[0]) > 40 || blocked(p[0], p[2], 0.25) || nearDoor(p[0], p[2])) continue;
+    const inside = insideBuilding(p[0], p[2]);
+    if (!inside && !(p[2] > 16 && p[2] < 25.8 && p[0] > -23.8 && p[0] < 19.8)) continue;
+    piles++;
+    const n = 6 + Math.floor(R() * 16), spread = rr(0.35, 0.9);
+    for (let i = 0; i < n; i++) {
+      const off = Math.abs(R() + R() - 1) * 0.55, al = (R() - 0.5) * 2 * spread;
+      const q = wpt(F.alongX, a + al, 0, F.c + F.sgn * (0.05 + off));
+      if (blocked(q[0], q[2], 0.05)) continue;
+      const r = (0.03 + R() * R() * 0.11) * (1 - off * 0.6);
+      if (R() < 0.3 && F.key.startsWith('brick')) brickBit(q[0], q[2], 0.03);
+      else chunk(q[0], r * 0.25, q[2], r, R() < 0.25 && F.key.startsWith('brick') ? 'brick' : 'ceiling');
+    }
+  }
+  // loose chunks and pebbles kicked across the floors
+  for (let i = 0; i < 160; i++) {
+    const x = rr(-23.5, 19.5), z = rr(-17.5, 25.5);
+    if (blocked(x, z, 0.1) || (!insideBuilding(x, z) && z < 16)) continue;
+    chunk(x, 0.004, z, rr(0.012, 0.045), 'ceiling');
+  }
+}
+
 // Ground grid (1 m cells) with per-cell material choice and floor AO.
+// Also adds the architectural detail layer once for the static world batch (needs the layout).
 export function groundGrid(batcher, min, max, y, matAt, cell = 1) {
+  if (!batcher._detail) {
+    batcher._detail = true;
+    try { addArchitecturalDetail(batcher, buildLayout()); } catch (e) { console.warn('[world] detail pass failed', e); }
+  }
   const nx = Math.round((max[0] - min[0]) / cell), nz = Math.round((max[1] - min[1]) / cell);
   // One quad per cell is too many vertices to share across materials, so emit per-material rows.
   for (let j = 0; j < nz; j++) {
