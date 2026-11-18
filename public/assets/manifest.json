@@ -1,0 +1,112 @@
+{
+  "source": "Poly Haven (polyhaven.com), all assets CC0",
+  "generated": "2026-11-18T18:02:04.140Z",
+  "resolution": "2k",
+  "textures": {
+    "floor": {
+      "id": "concrete_floor_worn_001",
+      "use": "main hall concrete floor",
+      "maps": {
+        "diff": "textures/floor/concrete_floor_worn_001_diff_2k.jpg",
+        "nor": "textures/floor/concrete_floor_worn_001_nor_2k.jpg",
+        "arm": "textures/floor/concrete_floor_worn_001_arm_2k.jpg"
+      }
+    },
+    "wall": {
+      "id": "peeling_painted_wall",
+      "use": "interior painted/peeling walls",
+      "maps": {
+        "diff": "textures/wall/peeling_painted_wall_diff_2k.jpg",
+        "nor": "textures/wall/peeling_painted_wall_nor_2k.jpg",
+        "arm": "textures/wall/peeling_painted_wall_arm_2k.jpg"
+      }
+    },
+    "brick": {
+      "id": "factory_brick",
+      "use": "exterior brick facade",
+      "maps": {
+        "diff": "textures/brick/factory_brick_diff_2k.jpg",
+        "nor": "textures/brick/factory_brick_nor_2k.jpg",
+        "arm": "textures/brick/factory_brick_arm_2k.jpg"
+      }
+    },
+    "rust": {
+      "id": "rusty_metal_sheet",
+      "use": "machinery, doors, tanks",
+      "maps": {
+        "diff": "textures/rust/rusty_metal_sheet_diff_2k.jpg",
+        "nor": "textures/rust/rusty_metal_sheet_nor_2k.jpg",
+        "arm": "textures/rust/rusty_metal_sheet_arm_2k.jpg"
+      }
+    },
+    "corrugated": {
+      "id": "rusty_corrugated_iron",
+      "use": "roof sheets, fences, shed walls",
+      "maps": {
+        "diff": "textures/corrugated/rusty_corrugated_iron_diff_2k.jpg",
+        "nor": "textures/corrugated/rusty_corrugated_iron_nor_2k.jpg",
+        "arm": "textures/corrugated/rusty_corrugated_iron_arm_2k.jpg"
+      }
+    },
+    "plate": {
+      "id": "metal_plate",
+      "use": "catwalk, floor plates",
+      "maps": {
+        "diff": "textures/plate/metal_plate_diff_2k.jpg",
+        "nor": "textures/plate/metal_plate_nor_2k.jpg",
+        "arm": "textures/plate/metal_plate_arm_2k.jpg"
+      }
+    },
+    "wood": {
+      "id": "weathered_brown_planks",
+      "use": "crates, pallets, boards",
+      "maps": {
+        "diff": "textures/wood/weathered_brown_planks_diff_2k.jpg",
+        "nor": "textures/wood/weathered_brown_planks_nor_2k.jpg",
+        "arm": "textures/wood/weathered_brown_planks_arm_2k.jpg"
+      }
+    },
+    "asphalt": {
+      "id": "worn_asphalt",
+      "use": "outdoor yard",
+      "maps": {
+        "diff": "textures/asphalt/worn_asphalt_diff_2k.jpg",
+        "nor": "textures/asphalt/worn_asphalt_nor_2k.jpg",
+        "arm": "textures/asphalt/worn_asphalt_arm_2k.jpg"
+      }
+    },
+    "ceiling": {
+      "id": "concrete_wall_008",
+      "use": "ceilings, pillars, raw concrete",
+      "maps": {
+        "diff": "textures/ceiling/concrete_wall_008_diff_2k.jpg",
+        "nor": "textures/ceiling/concrete_wall_008_nor_2k.jpg",
+        "arm": "textures/ceiling/concrete_wall_008_arm_2k.jpg"
+      }
+    },
+    "paint": {
+      "id": "green_metal_rust",
+      "use": "painted machine housings, lockers",
+      "maps": {
+        "diff": "textures/paint/green_metal_rust_diff_2k.jpg",
+        "nor": "textures/paint/green_metal_rust_nor_2k.jpg",
+        "arm": "textures/paint/green_metal_rust_arm_2k.jpg"
+      }
+    },
+    "lino": {
+      "id": "old_linoleum_flooring_01",
+      "use": "office / locker room floors",
+      "maps": {
+        "diff": "textures/lino/old_linoleum_flooring_01_diff_2k.jpg",
+        "nor": "textures/lino/old_linoleum_flooring_01_nor_2k.jpg",
+        "arm": "textures/lino/old_linoleum_flooring_01_arm_2k.jpg"
+      }
+    }
+  },
+  "hdri": {
+    "id": "hanger_exterior_cloudy",
+    "use": "overcast IBL + visible sky",
+    "file": "hdri/hanger_exterior_cloudy_2k.hdr"
+  },
+  "totalBytes": 87072866
+}
