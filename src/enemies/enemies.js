@@ -81,7 +81,7 @@ export function createEnemies(ctx) {
 
   function makeEnemy(spawn, index) {
     const weaponType = Math.random() < (spawn.type === 'guard' ? 0.5 : 0.35) ? 'rifle' : 'pistol';
-    const ch = createCharacter({ weaponType, look: randomLook(index + ((Math.random() * 5) | 0)) });
+    const ch = createCharacter({ weaponType, renderer: ctx.renderer, look: randomLook(index + ((Math.random() * 5) | 0)) });
     const anim = new Animator(ch);
     const heading = spawnYawToHeading(spawn.yaw);
     const home = (spawn.position || new THREE.Vector3()).clone();

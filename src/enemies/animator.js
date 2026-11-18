@@ -347,7 +347,7 @@ export class Animator {
       _fk1.setFromEuler(_eulX);
       _eulX.set(-(elbowRun + Math.max(0, -sw) * 0.5 + (holdingPistol ? 0.25 : 0)), 0, 0, 'XYZ');
       _fk2.setFromEuler(_eulX);
-      _eulX.set(holdingPistol ? 1.0 : 0.1, 0, 0, 'XYZ');
+      _eulX.set(holdingPistol ? -0.1 : 0.1, 0, 0, 'XYZ');
       _fk3.setFromEuler(_eulX);
       if (w > 0.001) {
         // IK target (wrist position + hand orientation) from the weapon frame
@@ -357,7 +357,7 @@ export class Animator {
           _hq.copy(_wq).multiply(W.supportQuat);
         } else {
           _T.copy(W.rightWrist).multiplyScalar(s).applyQuaternion(_wq).add(_wp);
-          _hq.copy(_wq);
+          _hq.copy(_wq); if (W.rightQuat) _hq.multiply(W.rightQuat);
         }
         _S.setFromMatrixPosition(ua.matrixWorld);
         const out = side * lerp(0.75, 1.05, raise * (left ? 0.4 : 1));
