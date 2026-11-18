@@ -35,7 +35,7 @@ export const TUNING = {
   },
   hearing: {
     footstepRange: 18,    // metres at player.noise == 1
-    wallMul: 0.5,         // hearing radius multiplier when the line is blocked
+    wallMul: 0.3,         // hearing radius multiplier when the line is blocked (walls of the big site keep fights local)
     gunshotRadius: 15,    // alertNoise() radius >= this is treated as gunfire
   },
 
@@ -71,7 +71,8 @@ export const TUNING = {
 
   // ---- squad ----------------------------------------------------------------------------
   ally: {
-    radius: 12,                          // allies this close (or with LOS to the spotter) get alerted
+    radius: 7,                           // allies this close (or with LOS to the spotter) get alerted
+    gunfireRadius: 10,                   // idle colleagues this close to an enemy that fires join the fight
     delayMin: 0.6, delayMax: 1.4,
     shoutDelayMin: 0.15, shoutDelayMax: 0.45,
     reportError: 1.5,                    // metres of error in the position passed on

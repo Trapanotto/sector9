@@ -33,8 +33,10 @@ export function createEnemies(ctx) {
       if (!c?.lineOfSight) return false;
       try { return c.lineOfSight(a, b); } catch { return false; }
     },
+    // Floors can be stacked (basement, upper storey, catwalks): the fallback height every caller passes is the
+    // reference height the level picks the floor for (highest floor at or below it + step tolerance).
     ground(x, z, fallback = 0) {
-      const g = ctx.level?.groundHeight?.(x, z);
+      const g = ctx.level?.groundHeight?.(x, z, Number.isFinite(fallback) ? fallback : 0);
       return Number.isFinite(g) ? g : fallback;
     },
     schedule(delay, fn) { timers.push({ t: W.time + delay, fn }); },
@@ -60,7 +62,7 @@ export function createEnemies(ctx) {
       for (const o of list) {
         if (o === src || !o.alive || o.state === 'combat' || o.pendingJoin) continue;
         const d = o.position.distanceTo(src.position);
-        if (d > 22) continue;
+        if (d > (T.ally.gunfireRadius ?? 22)) continue;
         o.pendingJoin = true;
         W.schedule(rand(0.4, 1.0) + d * 0.03, () => {
           o.pendingJoin = false;
@@ -117,6 +119,27 @@ export function createEnemies(ctx) {
       hit: createHitShapes(), ragdoll: null,
       takeDamage(amount, part, dir, point) { damage(e, amount, part, dir, point); },
     };
+    // floor lookups for feet IK / ragdoll at this enemy's own height (stacked floors)
+    e.groundFn = (x, z) => W.ground(x, z, e.position.y + 0.3);
+    // set-ups from the spawn data: a sleeper does not look around until woken (noise, damage, the player close by
+    // or running nearby); a timed patrol stands still until its start delay has passed
+    if (spawn.asleep) {
+      e.asleep = true;
+      e.senseTimer = 1e9;
+      const wake = () => {
+        if (!e.alive || !e.asleep) return;
+        const P = W.pinfo;
+        const d = P.ok ? Math.hypot(P.pos.x - e.position.x, P.pos.z - e.position.z) : Infinity;
+        const heard = P.ok && P.noise * T.hearing.footstepRange * 0.45 > d;
+        if (e.state !== 'idle' || e.alert > 0 || e.health < T.health || d < 2.2 || heard) { e.asleep = false; e.senseTimer = 0.2; return; }
+        W.schedule(0.25, wake);
+      };
+      W.schedule(0.5, wake);
+    }
+    if (spawn.startDelay > 0 && e.state === 'patrol') {
+      e.state = 'idle';
+      W.schedule(spawn.startDelay, () => { if (e.alive && e.state === 'idle') e.state = 'patrol'; });
+    }
     anim.teleport(e.position, heading);
     ctx.scene?.add(ch.root);
     animate(e, 1 / 60);
@@ -128,7 +151,7 @@ export function createEnemies(ctx) {
     e.anim.update(dt, {
       aimYaw: e.aimYaw, aimPitch: e.aimPitch, lookYaw: e.lookYaw, lookPitch: e.lookPitch,
       raise: e.wantRaise, crouch: e.wantCrouch, reload: e.reloadT,
-      strafe: e.state === 'combat' || e.state === 'search', ground: W.groundFn,
+      strafe: e.state === 'combat' || e.state === 'search', ground: e.groundFn || W.groundFn,
     });
     e.ch.getEye(e.eye);
     updateHitShapes(e.ch, e.hit);
@@ -155,7 +178,7 @@ export function createEnemies(ctx) {
     e.moving = false;
     api.aliveCount = list.filter((x) => x.alive).length;
     const fwd = new THREE.Vector3(Math.sin(e.anim.lowerYaw), 0, Math.cos(e.anim.lowerYaw));
-    const rd = new Ragdoll(e.ch, { ground: W.groundFn, colliders: ctx.level?.colliders || [] });
+    const rd = new Ragdoll(e.ch, { ground: e.groundFn || W.groundFn, colliders: ctx.level?.colliders || [] });
     rd.onImpact = (k) => ctx.audio?.play?.('body_fall', { position: e.position.clone(), volume: 0.5 + 0.5 * k });
     rd.onSettle = (p) => { e.position.copy(p); ctx.fx?.bloodPool?.(p.clone()); };
     rd.start({ dir, part, point, bodyVel: e.anim.vel, forward: fwd, scene: ctx.scene });

@@ -5,11 +5,10 @@
 import * as THREE from 'three';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { FIXTURES, WORK_LAMP, H } from './layout.js';
+import { FIXTURES, WORK_LAMP, H, ZONES, insideBuilding, zoneIndexAt } from './layout.js';
 import { ASSET_BASE, makeCanvas } from './materials.js';
 import { rng } from './geometry.js';
-import { LP, MAX_TUBES } from './lightShader.js';
-import { REFL_ZONES } from './lightProbes.js';
+import { LP, MAX_TUBES, MAX_FOG } from './lightShader.js';
 
 export const SUN_DIR = new THREE.Vector3(0.42, -0.72, -0.55).normalize(); // direction the light travels
 // Hazy sun through the overcast. Exterior light (sun + sky) is set high against the interiors so that, as in real
@@ -192,21 +191,31 @@ function beamMesh(pos, tgt, angle, len, color, strength) {
   return mesh;
 }
 
-// Room box (from the reflection zones) a fixture lives in; its light is clipped to it (tube lights cast no shadows).
+// Room box (layout ZONES) a fixture lives in; its light is clipped to it (tube lights cast no shadows).
 function zoneBox(p) {
-  for (let i = REFL_ZONES.length - 1; i >= 1; i--) {
-    const z = REFL_ZONES[i];
-    if (p[0] >= z.min[0] && p[0] <= z.max[0] && p[2] >= z.min[2] && p[2] <= z.max[2] && p[1] <= z.max[1] + 0.2) return z;
-  }
-  return REFL_ZONES[0];
+  const i = zoneIndexAt(p[0], p[1] - 0.05, p[2], 0.15);
+  const z = ZONES[i];
+  const b = z.boxes.find((q) => p[0] >= q.min[0] - 0.2 && p[0] <= q.max[0] + 0.2 && p[2] >= q.min[2] - 0.2 && p[2] <= q.max[2] + 0.2) || z.boxes[0];
+  return { min: b.min, max: b.max, zone: i };
 }
 
 // ------------------------------------------------------------------------------------------------ setup
-export async function setupLighting(ctx, layout, { sky } = {}) {
+export async function setupLighting(ctx, layout, { sky, culler } = {}) {
   const { renderer, scene } = ctx;
   const R = rng(4242);
   if (!sky) await loadSky(renderer, scene);
   scene.fog = new THREE.FogExp2(0x8a8f94, 0.0105);
+  // haze density per zone (halls dense, offices clear, basement damp)
+  {
+    let n = 0;
+    LP.lpFogOut.value = ZONES[0].fog ?? 0.75;
+    for (const z of ZONES.slice(1)) for (const b of z.boxes) {
+      if (n >= MAX_FOG) break;
+      LP.lpFogMin.value[n].set(b.min[0], b.min[1] - 1, b.min[2]); LP.lpFogMax.value[n].set(b.max[0], b.max[1], b.max[2]);
+      LP.lpFogK.value[n] = z.fog ?? 1; n++;
+    }
+    LP.lpFogCount.value = n;
+  }
 
   const root = new THREE.Group(); root.name = 'lighting';
   root.userData.static = true;
@@ -265,6 +274,7 @@ export async function setupLighting(ctx, layout, { sky } = {}) {
     head.castShadow = false;
     root.add(g);
   }
+  const lampZone = zoneIndexAt(WORK_LAMP.pos[0], WORK_LAMP.pos[1], WORK_LAMP.pos[2]);
   const beam = beamMesh(lampPos.clone().addScaledVector(lampTgt.clone().sub(lampPos).normalize(), 0.1), lampTgt, LAMP.angle * 0.8, 9,
     new THREE.Color(LAMP.color), 0.05);
   root.add(beam);
@@ -275,7 +285,8 @@ export async function setupLighting(ctx, layout, { sky } = {}) {
   const deadMat = new THREE.MeshStandardMaterial({ color: 0x8c8e8a, roughness: 0.35 });
   const chainMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.6, metalness: 0.8 });
   const fixtures = [];
-  let nt = 0;
+  const emergMat = new THREE.MeshStandardMaterial({ color: 0x220806, emissive: 0xff2a12, emissiveIntensity: 2.2, roughness: 0.4 });
+  const housingRed = new THREE.MeshStandardMaterial({ color: 0x2a2b2d, roughness: 0.6, metalness: 0.5 });
   for (const f of FIXTURES) {
     const len = f.len;
     const housing = new THREE.BoxGeometry(len + 0.1, 0.07, 0.2).translate(0, 0.035, 0);
@@ -285,50 +296,83 @@ export async function setupLighting(ctx, layout, { sky } = {}) {
     ]);
     const grp = new THREE.Group();
     grp.position.set(...f.pos);
-    const alongZ = Math.abs(f.pos[0] - 9.4) < 0.01 || f.pos[2] > 100;   // corridor tubes run along z
+    const alongZ = f.axis ? f.axis === 'z' : Math.abs(f.pos[0] - 9.4) < 0.01;   // corridor tubes run along z
     if (alongZ) grp.rotation.y = Math.PI / 2;
-    const hm = new THREE.Mesh(housing, housingMat); hm.castShadow = true;
-    let mat = f.state === 'dead' ? deadMat : onMat;
-    if (f.state === 'flicker' || f.tint) mat = onMat.clone();
-    if (f.tint) mat.emissive.set(f.tint);
-    const tm = new THREE.Mesh(tubes, mat);
+    const emerg = f.state === 'emerg';
+    const hm = new THREE.Mesh(emerg ? new THREE.BoxGeometry(len + 0.06, 0.09, 0.14).translate(0, 0.045, 0) : housing, emerg ? housingRed : housingMat); hm.castShadow = true;
+    let mat = f.state === 'dead' ? deadMat : emerg ? emergMat : onMat;
+    if (f.state === 'flicker' || f.state === 'weld' || f.tint) mat = mat.clone();
+    if (f.tint && !emerg) mat.emissive.set(f.tint);
+    const tm = new THREE.Mesh(emerg ? new THREE.BoxGeometry(len, 0.05, 0.1).translate(0, -0.01, 0) : tubes, mat);
+    if (f.state === 'weld') { hm.visible = false; tm.scale.set(0.2, 2, 2); }
+    if (f.state === 'fire') { hm.visible = false; tm.visible = false; }
     if (f.state === 'dead' && R() < 0.6) { tm.rotation.z = 0.25; tm.position.y = -0.06; }   // a tube hanging loose
-    grp.add(hm, tm);
     if (f.hang) {
-      const top = f.pos[2] < -6 ? H.bay : H.hall;
+      // chains merged into the housing (one draw call per fixture body)
+      const top = f.top ?? (f.pos[2] < -6 ? H.bay : H.hall);
       const L = top - f.pos[1];
-      for (const dx of [-len / 2 + 0.1, len / 2 - 0.1]) {
-        const c = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, L, 4), chainMat);
-        c.position.set(dx, L / 2 + 0.07, 0); grp.add(c);
-      }
+      const parts = [hm.geometry];
+      for (const dx of [-len / 2 + 0.1, len / 2 - 0.1]) parts.push(new THREE.CylinderGeometry(0.006, 0.006, L, 4).translate(dx, L / 2 + 0.07, 0));
+      hm.geometry = mergeGeometries(parts.map((g) => g.index ? g.toNonIndexed() : g));
     }
-    root.add(grp);
-    let tube = -1, power = 0;
-    if (f.state !== 'dead' && nt < MAX_TUBES) {
-      tube = nt++;
+    grp.add(hm, tm);
+    void chainMat;
+    if (culler) culler.addAt(grp, new THREE.Vector3(f.pos[0], f.pos[1] - 0.3, f.pos[2])); else root.add(grp);
+    // analytic tube light: every lit fixture has a slot description; the MAX_TUBES nearest in visible zones are
+    // uploaded each frame (see update)
+    let light = null, power = 0;
+    if (f.state !== 'dead') {
       const z = zoneBox(f.pos);
       const hang = !!f.hang;
-      power = hang ? 34 : 11;
-      LP.lpTubeA.value[tube].set(f.pos[0], f.pos[1] - 0.02, f.pos[2], len / 2);
-      LP.lpTubeB.value[tube].set(alongZ ? 0 : 1, 0, alongZ ? 1 : 0, hang ? 15 : 7.5);
-      const col = new THREE.Color(f.tint ?? 0xe9eef5);
-      LP.lpTubeC.value[tube].set(col.r * power, col.g * power, col.b * power, hang ? 0.12 : 0.35);
-      LP.lpTubeMin.value[tube].set(z.min[0] - 0.1, z.min[1] - 0.1, z.min[2] - 0.1);
-      LP.lpTubeMax.value[tube].set(z.max[0] + 0.1, z.max[1] + 0.1, z.max[2] + 0.1);
+      power = f.power ?? (hang ? 34 : 11);
+      light = {
+        a: [f.pos[0], f.pos[1] - 0.02, f.pos[2], len / 2], b: [alongZ ? 0 : 1, 0, alongZ ? 1 : 0, f.range ?? (hang ? 15 : 7.5)],
+        up: hang ? 0.12 : f.state === 'weld' || f.state === 'fire' ? 0.9 : 0.35, min: z.min, max: z.max, zone: z.zone,
+      };
     }
-    fixtures.push({ f, grp, mat, tube, power, col: new THREE.Color(f.tint ?? 0xe9eef5), baseE: mat.emissiveIntensity ?? 0, level: 1, timer: R() * 2, phase: R() * 10 });
+    fixtures.push({ f, grp, mat, light, power, col: new THREE.Color(f.tint ?? 0xe9eef5), baseE: mat.emissiveIntensity ?? 0, level: 1, timer: R() * 2, phase: R() * 10 });
     if (!f.hang) { grp.updateMatrix(); grp.matrixAutoUpdate = false; }
   }
-  LP.lpTubeCount.value = nt;
+  const lit = fixtures.filter((x) => x.light);
+  const slots = [];
+  function assignTubes(camPos) {
+    // candidates: fixtures in visible zones (or near the camera), nearest first
+    const vis = culler?.visible;
+    slots.length = 0;
+    for (const fx of lit) {
+      const L = fx.light;
+      const dx = L.a[0] - camPos.x, dy = L.a[1] - camPos.y, dz = L.a[2] - camPos.z, d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if (vis && !vis[L.zone] && d > L.b[3] + 2) continue;
+      fx.dist = d - L.b[3] * 0.5;
+      slots.push(fx);
+    }
+    slots.sort((p, q) => p.dist - q.dist);
+    if (slots.length > MAX_TUBES) slots.length = MAX_TUBES;
+    slots.forEach((fx, i) => {
+      const L = fx.light;
+      fx.tube = i;
+      LP.lpTubeA.value[i].set(L.a[0], L.a[1], L.a[2], L.a[3]);
+      LP.lpTubeB.value[i].set(L.b[0], L.b[1], L.b[2], L.b[3]);
+      LP.lpTubeMin.value[i].set(L.min[0] - 0.1, L.min[1] - 0.1, L.min[2] - 0.1);
+      LP.lpTubeMax.value[i].set(L.max[0] + 0.1, L.max[1] + 0.1, L.max[2] + 0.1);
+    });
+    for (const fx of lit) if (!slots.includes(fx)) fx.tube = -1;
+    LP.lpTubeCount.value = slots.length;
+  }
+  const camTmp = new THREE.Vector3();
+  assignTubes(camTmp.set(-9, 1.6, 24));
 
   // ---- daylight shafts + dust in them
   const V = (x, y, z) => new THREE.Vector3(x, y, z);
   const openings = [];
+  // high windows in sun-facing outer walls (south +z, west -x for this sun direction) and the roof openings
   for (const w of layout.windows) {
     if (w.glass === undefined) continue;
     const [x0, y0, z0] = w.min, [x1, y1, z1] = w.max;
-    if (w.normal === 'z' && z1 >= 15.9 && y0 >= 4) openings.push([V(x0, y1, z1), V(x1, y1, z1), V(x1, y0, z1), V(x0, y0, z1)]);
-    if (w.normal === 'x' && x0 <= -23.9 && y0 >= 4) openings.push([V(x0, y1, z1), V(x0, y1, z0), V(x0, y0, z0), V(x0, y0, z1)]);
+    if (y0 < 4) continue;
+    const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+    if (w.normal === 'z' && !insideBuilding(cx, z1 + 0.5) && insideBuilding(cx, z0 - 0.5) && -SUN_DIR.z > 0.1) openings.push([V(x0, y1, z1), V(x1, y1, z1), V(x1, y0, z1), V(x0, y0, z1)]);
+    if (w.normal === 'x' && !insideBuilding(x0 - 0.5, cz) && insideBuilding(x1 + 0.5, cz) && SUN_DIR.x > 0.1) openings.push([V(x0, y1, z1), V(x0, y1, z0), V(x0, y0, z0), V(x0, y0, z1)]);
   }
   for (const h of layout.roofHoles) {
     const y = h.max[1];
@@ -339,7 +383,7 @@ export async function setupLighting(ctx, layout, { sky } = {}) {
   const shafts = new THREE.Mesh(shaftGeometry(openings, layout.solids), shaftMat);
   shafts.renderOrder = 5; shafts.frustumCulled = false; shafts.userData.dynamic = true;
   root.add(shafts);
-  const dust = dustPoints(openings, 1800, R);
+  const dust = dustPoints(openings, 2600, R);
   dust.renderOrder = 6; dust.userData.dynamic = true;
   dust.material.uniforms.uColor.value.copy(sunLin).multiplyScalar(0.22);
   root.add(dust);
@@ -357,24 +401,41 @@ export async function setupLighting(ctx, layout, { sky } = {}) {
     // cascade follows the player (or the camera before the player exists)
     const p = ctx.player?.position || cam?.position;
     if (p) { tmpV.copy(p); tmpV.y = Math.max(0, tmpV.y); placeSun(tmpV); }
+    if (cam) assignTubes(cam.getWorldPosition(camTmp));
     for (const fx of fixtures) {
       if (fx.f.hang) fx.grp.rotation.x = Math.sin(time * 0.6 + fx.phase) * 0.012;
-      if (fx.f.state !== 'flicker') continue;
-      fx.timer -= dt;
-      if (fx.timer <= 0) {
-        const r = R();
-        if (r < 0.5) { fx.level = 1; fx.timer = 0.4 + R() * 3.5; }
-        else if (r < 0.8) { fx.level = R() * 0.25; fx.timer = 0.03 + R() * 0.12; }
-        else if (r < 0.93) { fx.level = 0.55; fx.timer = 0.05 + R() * 0.3; }
-        else { fx.level = 0; fx.timer = 0.8 + R() * 2.5; }
+      const st = fx.f.state;
+      let k = 1;
+      if (st === 'flicker') {
+        fx.timer -= dt;
+        if (fx.timer <= 0) {
+          const r = R();
+          if (r < 0.5) { fx.level = 1; fx.timer = 0.4 + R() * 3.5; }
+          else if (r < 0.8) { fx.level = R() * 0.25; fx.timer = 0.03 + R() * 0.12; }
+          else if (r < 0.93) { fx.level = 0.55; fx.timer = 0.05 + R() * 0.3; }
+          else { fx.level = 0; fx.timer = 0.8 + R() * 2.5; }
+        }
+        const hum = fx.level > 0.5 ? 0.93 + 0.07 * Math.sin(time * 190 + fx.phase) : 1;
+        k = fx.level * hum;
+      } else if (st === 'weld') {
+        // arc welding: bursts of hard flicker separated by pauses
+        fx.timer -= dt;
+        if (fx.timer <= 0) { fx.on = !fx.on; fx.timer = fx.on ? 1.5 + R() * 4 : 1.2 + R() * 5; }
+        k = fx.on ? (R() < 0.25 ? 0.15 : 0.6 + 0.6 * R()) : 0;
+      } else if (st === 'fire') {
+        k = 0.55 + 0.25 * Math.sin(time * 9.1 + fx.phase) * Math.sin(time * 5.3) + 0.2 * R();
+      } else if (st === 'emerg') {
+        k = 0.75 + 0.25 * Math.sin(time * 2.1 + fx.phase);
+        if (R() < 0.004) fx.drop = 0.12;
+        if (fx.drop > 0) { fx.drop -= dt; k *= 0.15; }
       }
-      const hum = fx.level > 0.5 ? 0.93 + 0.07 * Math.sin(time * 190 + fx.phase) : 1;
-      const k = fx.level * hum;
-      fx.mat.emissiveIntensity = fx.baseE * k;
-      if (fx.tube >= 0) LP.lpTubeC.value[fx.tube].set(fx.col.r * fx.power * k, fx.col.g * fx.power * k, fx.col.b * fx.power * k, LP.lpTubeC.value[fx.tube].w);
+      if (st === 'flicker' || st === 'weld' || st === 'emerg') fx.mat.emissiveIntensity = fx.baseE * k;
+      if (fx.tube >= 0) LP.lpTubeC.value[fx.tube].set(fx.col.r * fx.power * k, fx.col.g * fx.power * k, fx.col.b * fx.power * k, fx.light.up);
     }
     spot.intensity = LAMP.intensity * (0.985 + 0.015 * Math.sin(time * 120));
+    // the lamp's shadow map only needs re-rendering while its room can be seen
+    if (culler) spot.shadow.autoUpdate = !!culler.visible[lampZone];
   }
 
-  return { update, sun, spot, root, fixtures, shafts, dust, beam };
+  return { update, sun, spot, root, fixtures, shafts, dust, beam, lampZone };
 }

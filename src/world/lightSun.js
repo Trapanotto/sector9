@@ -82,17 +82,23 @@ export function createStaticSun(renderer, { dirTravel, center, halfX, halfY, siz
 }
 
 // Static casters skip the per-frame sun cascade (they are in the static map); they still cast for other lights.
-export function excludeFromSunCascade(o, sunShadowCamera) {
-  if (o.userData.__lpSunSkip) return;
-  o.userData.__lpSunSkip = true;
+export function excludeFromSunCascade(o, sunShadowCamera) { excludeFromShadowCamera(o, sunShadowCamera); }
+// Generic: the object draws nothing into the given shadow camera's map (three filters shadow casters by the viewing
+// camera's layers, not the shadow camera's, so the draw range is zeroed for that pass instead).
+export function excludeFromShadowCamera(o, shadowCamera) {
+  const set = o.userData.__lpShadowSkip || (o.userData.__lpShadowSkip = new Set());
+  if (set.has(shadowCamera)) return;
+  const first = set.size === 0;
+  set.add(shadowCamera);
+  if (!first) return;
   const prevB = o.onBeforeShadow, prevA = o.onAfterShadow;
   let saved = -1;
   o.onBeforeShadow = function (r, obj, cam, shadowCam, geometry, depthMat, group) {
-    if (shadowCam === sunShadowCamera) { saved = geometry.drawRange.count; geometry.drawRange.count = 0; }
+    if (set.has(shadowCam)) { saved = geometry.drawRange.count; geometry.drawRange.count = 0; }
     prevB.call(this, r, obj, cam, shadowCam, geometry, depthMat, group);
   };
   o.onAfterShadow = function (r, obj, cam, shadowCam, geometry, depthMat, group) {
-    if (shadowCam === sunShadowCamera && saved !== -1) { geometry.drawRange.count = saved; saved = -1; }
+    if (saved !== -1) { geometry.drawRange.count = saved; saved = -1; }
     prevA.call(this, r, obj, cam, shadowCam, geometry, depthMat, group);
   };
 }

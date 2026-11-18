@@ -1,6 +1,6 @@
 // Converts the layout's solid boxes into the occluder/albedo description used by the irradiance bake.
 // Pure data (no three.js) so it also runs in Node (scripts/bake-bench.mjs).
-import { FOOTPRINT } from './layout.js';
+import { BUILDINGS, HOLES, ZONES, GI_GRID, floorMatAt, H } from './layout.js';
 
 const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
 const rgb = (r, g, b, k = 1) => [lin(r) * k, lin(g) * k, lin(b) * k];
@@ -28,6 +28,7 @@ export const ALBEDO = {
   paintRed: rgb(150, 66, 52, 0.8),
   yellow: rgb(190, 150, 50, 0.8),
   barrel: rgb(110, 76, 56, 0.8),
+  earth: rgb(70, 64, 58, 0.8),
 };
 
 const PROP_MAT = {
@@ -35,8 +36,52 @@ const PROP_MAT = {
   cabinets: 'paintGrey', workbench: 'wood', generator: 'paint', vending: 'paintRed', desk: 'wood', filing: 'paintGrey',
   shelf: 'steel', lockers: 'paintBlue', bench: 'wood', console: 'paintGrey', table: 'wood', rack: 'paintBlue',
   forklift: 'yellow', container: 'rust', trailer: 'paintGrey', dumpster: 'paint', van: 'paintGrey', barrier: 'concreteOut',
+  counter: 'paintGrey', pump: 'paintBlue', boiler: 'paintRed', furnace: 'rust', ladle: 'rust', weldbooth: 'paintRed',
+  firebarrel: 'rust', barrierarm: 'paintGrey', wagon: 'rust', flatcar: 'wood', floodlight: 'steel',
 };
 const FACE_KEYS = ['px', 'nx', 'py', 'ny', 'pz', 'nz'];   // matches kernel face order (+x,-x,+y,-y,+z,-z)
+
+// Ground, slab and earth as a set of boxes: the ground slab (y -0.4..0) everywhere except floor openings, earth
+// below it except the basement rooms, casting pits open down to their floor.
+function groundBoxes(layout) {
+  const X0 = GI_GRID.x0 - 12, X1 = GI_GRID.x1 + 12, Z0 = GI_GRID.z0 - 12, Z1 = GI_GRID.z1 + 12, Y0 = GI_GRID.y0 - 1.2;
+  const base = ZONES.filter((z) => ['tunnel', 'pump', 'boiler'].includes(z.name)).flatMap((z) => z.boxes.map((b) => [b.min[0], b.max[0], b.min[2], b.max[2]]));
+  for (const d of layout.doors) {
+    if ((d.y || 0) > -1) continue;
+    const h = d.width / 2;
+    base.push(d.normal === 'z' ? [d.center[0] - h, d.center[0] + h, d.t0, d.t1] : [d.t0, d.t1, d.center[1] - h, d.center[1] + h]);
+  }
+  const holes = HOLES.map((h) => [h.x0, h.x1, h.z0, h.z1]);
+  const pits = HOLES.filter((h) => h.name.startsWith('pit')).map((h) => [h.x0, h.x1, h.z0, h.z1]);
+  const xs = new Set([X0, X1]), zs = new Set([Z0, Z1]);
+  for (const r of [...base, ...holes, ...BUILDINGS.map((b) => [b.min[0], b.max[0], b.min[1], b.max[1]])]) { xs.add(r[0]); xs.add(r[1]); zs.add(r[2]); zs.add(r[3]); }
+  for (let v = Math.ceil(X0); v <= X1; v += 4) xs.add(v);       // material changes (lino rooms) resolve on a 4 m grid
+  for (let v = Math.ceil(Z0); v <= Z1; v += 4) zs.add(v);
+  const XS = [...xs].sort((a, b) => a - b), ZS = [...zs].sort((a, b) => a - b);
+  const inR = (rs, x, z) => rs.some((r) => x > r[0] && x < r[1] && z > r[2] && z < r[3]);
+  const out = [];
+  for (let j = 0; j < ZS.length - 1; j++) {
+    let run = null;
+    const flush = () => { if (run) { out.push(run); run = null; } };
+    for (let i = 0; i < XS.length - 1; i++) {
+      const x = (XS[i] + XS[i + 1]) / 2, z = (ZS[j] + ZS[j + 1]) / 2;
+      const hole = inR(holes, x, z), air = inR(base, x, z), pit = inR(pits, x, z);
+      const slab = hole ? null : (floorMatAt(x, z) || 'floor');
+      const sig = `${slab}|${air}|${pit}`;
+      if (run && run.sig === sig && Math.abs(run.x1 - XS[i]) < 1e-9) { run.x1 = XS[i + 1]; continue; }
+      flush();
+      run = { sig, x0: XS[i], x1: XS[i + 1], z0: ZS[j], z1: ZS[j + 1], slab, air, pit };
+    }
+    flush();
+  }
+  const boxes = [];
+  for (const r of out) {
+    if (r.slab) boxes.push({ min: [r.x0, -0.4, r.z0], max: [r.x1, 0, r.z1], mat: { py: r.slab, ny: 'ceiling', px: 'ceiling', nx: 'ceiling', pz: 'ceiling', nz: 'ceiling' } });
+    if (!r.air) boxes.push({ min: [r.x0, H.base, r.z0], max: [r.x1, r.pit ? -1.6 : -0.4, r.z1], mat: r.pit ? 'floor' : 'earth' });
+    boxes.push({ min: [r.x0, Y0, r.z0], max: [r.x1, H.base, r.z1], mat: 'floor' });
+  }
+  return boxes;
+}
 
 /**
  * @param layout buildLayout() result
@@ -55,18 +100,15 @@ export function buildBakeScene(layout, extra = []) {
       alb.push(a[0], a[1], a[2]);
     }
   };
-  // ground (later boxes overwrite earlier voxels)
-  add([-40, -0.6, -40], [40, 0, 40], 'asphalt');
-  add([FOOTPRINT.min[0], -0.6, FOOTPRINT.min[1]], [FOOTPRINT.max[0], 0, FOOTPRINT.max[1]], 'floor');
-  for (const [z0, z1] of [[10.2, 15.6], [4.6, 9.8], [-5.8, -1.4]]) add([11.0, -0.6, z0], [19.6, 0, z1], 'lino');
+  for (const b of groundBoxes(layout)) add(b.min, b.max, b.mat);
 
   const propType = new Map();
   for (const p of layout.props) if (p.min && p.max) propType.set(p.min, p.type);
   for (const s of layout.solids) {
-    if (s.kind === 'rail') continue;               // invisible railing colliders do not block light
+    if (s.kind === 'rail' || s.kind === 'under') continue;   // invisible colliders do not block light
     let mat = s.mat;
     if (s.kind === 'prop') mat = PROP_MAT[propType.get(s.min)] ?? (s.surface === 'metal' ? 'steel' : 'wood');
-    if (s.kind === 'leaf') mat = 'rust';
+    if (s.kind === 'leaf') { if (!s.ray) continue; mat = 'rust'; }   // animated doors start closed: not baked open
     add(s.min, s.max, mat);
   }
   for (const e of extra) add(e.min, e.max, e.mat);

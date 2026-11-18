@@ -4,7 +4,7 @@ import { buildLayout } from '../src/world/layout.js';
 import { buildBakeScene } from '../src/world/bakeGIScene.js';
 import { voxelize, createTracer, PROBE, probeValidity, denoise, fillInvalid } from '../src/world/bakeGIKernel.js';
 
-const rays = +(process.argv[2] || 64);
+const rays = +(process.argv[2] || 28);
 const layout = buildLayout();
 let t = performance.now();
 const { boxes, albedo } = buildBakeScene(layout);
@@ -28,7 +28,7 @@ t = performance.now();
 tracer.traceSlices(zs, rays, 1234);
 console.log('trace ms', (performance.now() - t).toFixed(0));
 const valid = probeValidity(vox);
-for (let it = 0; it < 4; it++) {
+for (let it = 0; it < 3; it++) {
   t = performance.now();
   const sh = tracer.gather(prev);
   denoise(sh, valid, vox, 1);
@@ -42,6 +42,8 @@ const at = (x, y, z) => {
   return [...prev.slice(o, o + 3)].map((v) => v.toFixed(3)).join(' ') + '  up ' + (prev[o + 1] + prev[o + 7]).toFixed(3);
 };
 for (const [name, p] of [['yard', [-9, 1.5, 22]], ['hall door', [-8, 1.5, 13]], ['hall mid', [-6, 1.5, 4]], ['hall corner', [-22, 1.5, 14]],
-  ['under deck', [-20, 1.5, -2]], ['corridor', [9.4, 1.5, 5]], ['office', [15, 1.5, 12.5]], ['storage', [15, 1.5, 2]], ['bay', [-4, 1.5, -11]], ['under hole', [-12.5, 0.5, 5.5]]]) {
+  ['corridor', [9.4, 1.5, 5]], ['office', [15, 1.5, 12.5]], ['bay', [-4, 1.5, -11]], ['gallery', [9.4, 5.0, 5]], ['canteen', [15, 5, 12.5]],
+  ['foundry', [31, 1.5, 0]], ['catwalk', [20.8, 5, 0]], ['tunnel', [20.8, -2.5, -8]], ['boiler', [27, -2.5, 10]], ['siding', [10, 1.5, -24]],
+  ['warehouse', [22, 1.5, -42]], ['rear lot', [-14, 1.5, -44]]]) {
   console.log(name.padEnd(12), at(...p));
 }

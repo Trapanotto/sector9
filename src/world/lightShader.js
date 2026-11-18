@@ -11,7 +11,8 @@
 import * as THREE from 'three';
 
 export const MAX_TUBES = 16;
-export const MAX_REFL = 10;
+export const MAX_REFL = 20;
+export const MAX_FOG = 24;
 export const REFL_CUBE = 128;   // per-face size of each reflection probe
 const REFL_W = 3 * Math.max(REFL_CUBE, 16 * 7), REFL_H = 4 * REFL_CUBE, REFL_MIP = Math.log2(REFL_CUBE);
 
@@ -35,10 +36,9 @@ export const LP = {
   lpTubeC: { value: Array.from({ length: MAX_TUBES }, () => new THREE.Vector4()) },
   lpTubeMin: { value: Array.from({ length: MAX_TUBES }, v3) }, lpTubeMax: { value: Array.from({ length: MAX_TUBES }, v3) },
   lpTubeCount: { value: 0 }, lpTubeFill: { value: 0.16 },
-  // fog
-  lpFogHallMin: { value: new THREE.Vector3(-23.6, -1, -17.6) }, lpFogHallMax: { value: new THREE.Vector3(7.8, 8.0, 15.6) },
-  lpFogRoomMin: { value: new THREE.Vector3(8.2, -1, -5.8) }, lpFogRoomMax: { value: new THREE.Vector3(19.6, 3.2, 15.6) },
-  lpFogMul: { value: new THREE.Vector3(0.75, 1.5, 0.75) },   // outside, halls, offices
+  // fog: density multiplier per zone box (outside default in lpFogOut), set up by lighting.js from layout ZONES
+  lpFogMin: { value: Array.from({ length: MAX_FOG }, v3) }, lpFogMax: { value: Array.from({ length: MAX_FOG }, v3) },
+  lpFogK: { value: new Array(MAX_FOG).fill(1) }, lpFogCount: { value: 0 }, lpFogOut: { value: 0.75 },
   lpFogAlbedo: { value: 0.9 }, lpFogGI: { value: 1.0 },
 };
 
@@ -48,6 +48,7 @@ const PARS = /* glsl */`
 #define LP_PARS
 #define LP_MAX_TUBES ${MAX_TUBES}
 #define LP_MAX_REFL ${MAX_REFL}
+#define LP_MAX_FOG ${MAX_FOG}
 #define LPC_TEXEL_W ${(1 / REFL_W).toFixed(10)}
 #define LPC_TEXEL_H ${(1 / REFL_H).toFixed(10)}
 #define LPC_MAX_MIP ${REFL_MIP.toFixed(1)}
@@ -61,8 +62,8 @@ uniform highp sampler2DShadow lpSunMap; uniform mat4 lpSunMatrix; uniform vec3 l
 uniform float lpSunTexel; uniform float lpSunNBias; uniform float lpSunBias; uniform float lpSunSoft;
 uniform vec4 lpTubeA[ LP_MAX_TUBES ]; uniform vec4 lpTubeB[ LP_MAX_TUBES ]; uniform vec4 lpTubeC[ LP_MAX_TUBES ];
 uniform vec3 lpTubeMin[ LP_MAX_TUBES ]; uniform vec3 lpTubeMax[ LP_MAX_TUBES ]; uniform int lpTubeCount; uniform float lpTubeFill;
-uniform vec3 lpFogHallMin; uniform vec3 lpFogHallMax; uniform vec3 lpFogRoomMin; uniform vec3 lpFogRoomMax;
-uniform vec3 lpFogMul; uniform float lpFogAlbedo; uniform float lpFogGI;
+uniform vec3 lpFogMin[ LP_MAX_FOG ]; uniform vec3 lpFogMax[ LP_MAX_FOG ]; uniform float lpFogK[ LP_MAX_FOG ];
+uniform int lpFogCount; uniform float lpFogOut; uniform float lpFogAlbedo; uniform float lpFogGI;
 
 vec3 lpWorldPos() { return ( vec4( - vViewPosition, 0.0 ) * viewMatrix ).xyz + cameraPosition; }
 vec3 lpToWorld( vec3 v ) { return ( vec4( v, 0.0 ) * viewMatrix ).xyz; }
@@ -306,9 +307,11 @@ const FOG = /* glsl */`
 		vec3 lpFd = lpFp - cameraPosition;
 		float lpFl = length( lpFd );
 		vec3 lpMid = cameraPosition + lpFd * ( min( lpFl * 0.5, 9.0 ) / max( lpFl, 1e-3 ) );
-		float hall = lpInBox( lpMid, lpFogHallMin, lpFogHallMax, 0.6 );
-		float room = lpInBox( lpMid, lpFogRoomMin, lpFogRoomMax, 0.6 );
-		float mul = mix( mix( lpFogMul.x, lpFogMul.y, hall ), lpFogMul.z, room );
+		float mul = lpFogOut;
+		for ( int i = 0; i < lpFogCount; i ++ ) {
+			float w = lpInBox( lpMid, lpFogMin[ i ], lpFogMax[ i ], 0.6 );
+			if ( w > 0.0 ) mul = mix( mul, lpFogK[ i ], w );
+		}
 		#ifdef FOG_EXP2
 			float dens = fogDensity * mul;
 			float fogFactor = 1.0 - exp( - dens * dens * vFogDepth * vFogDepth );

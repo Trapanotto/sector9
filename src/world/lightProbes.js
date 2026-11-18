@@ -4,18 +4,15 @@
 import * as THREE from 'three';
 import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { LP, MAX_REFL, REFL_SIZE } from './lightShader.js';
+import { ZONES } from './layout.js';
 
-// Zone 0 is the outdoor default: it fills whatever weight the interior zones leave.
-export const REFL_ZONES = [
-  { name: 'yard', min: [-30, -0.05, 16.0], max: [26, 40, 32], pos: [-4, 1.7, 20.5] },
-  { name: 'hall', min: [-23.6, 0, -5.8], max: [7.8, 8.0, 15.6], pos: [-5.0, 2.0, 6.5] },
-  { name: 'corridor', min: [8.2, 0, -5.8], max: [10.6, 3.2, 15.6], pos: [9.4, 1.6, 5.0] },
-  { name: 'office', min: [11.0, 0, 10.2], max: [19.6, 3.2, 15.6], pos: [16.2, 1.6, 12.9] },
-  { name: 'lockers', min: [11.0, 0, 4.6], max: [19.6, 3.2, 9.8], pos: [16.6, 1.6, 8.2] },
-  { name: 'storage', min: [11.0, 0, -1.0], max: [19.6, 3.2, 4.2], pos: [13.0, 1.6, 2.0] },
-  { name: 'control', min: [11.0, 0, -5.8], max: [19.6, 3.2, -1.4], pos: [15.0, 1.6, -3.6] },
-  { name: 'bay', min: [-23.6, 0, -17.6], max: [19.6, 7.0, -6.2], pos: [-4.0, 2.2, -11.6] },
-];
+// One probe per layout zone (rooms, halls, basement sections). Zone 0 is the outdoor default: it fills whatever
+// weight the interior zones leave. Multi-box zones use their largest box for the parallax correction.
+const vol = (b) => (b.max[0] - b.min[0]) * (b.max[1] - b.min[1]) * (b.max[2] - b.min[2]);
+export const REFL_ZONES = ZONES.map((z, i) => {
+  const b = i === 0 ? { min: [-60, -0.05, -80], max: [80, 40, 70] } : [...z.boxes].sort((p, q) => vol(q) - vol(p))[0];
+  return { name: z.name, min: b.min, max: b.max, pos: z.probe, zone: i };
+});
 
 export function createReflectionProbes(renderer) {
   const N = Math.min(MAX_REFL, REFL_ZONES.length);
@@ -44,7 +41,7 @@ export function createReflectionProbes(renderer) {
   }
 
   /** Captures all probes. hide: objects to hide during the capture (moving things). normAt(x,y,z) -> luminance. */
-  function capture(scene, { hide = [], normAt = null } = {}) {
+  function capture(scene, { hide = [], normAt = null, culler = null } = {}) {
     const t0 = performance.now();
     const prevOn = LP.lpReflOn.value, prevRT = renderer.getRenderTarget();
     const prevTM = renderer.toneMapping;
@@ -54,6 +51,7 @@ export function createReflectionProbes(renderer) {
     hide.forEach((o) => { o.visible = false; });
     for (let i = 0; i < N; i++) {
       const z = REFL_ZONES[i];
+      if (culler) culler.showOnly(culler.neighbourhood(z.zone, i === 0 ? 1 : 2));
       cubeCam.position.set(...z.pos);
       cubeCam.updateMatrixWorld(true);
       cubeCam.update(renderer, scene);
