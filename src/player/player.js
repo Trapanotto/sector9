@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import * as T from './tuning.js';
-import { Spring, clamp, lerp, smooth01, damp } from './springs.js';
+import { Spring, Follower, clamp, lerp, smooth01, damp } from './springs.js';
 import { createViewmodel } from './viewmodel.js';
 import { createWeapon } from './weapon.js';
-import { depenetrate, moveAxis, rayBoxes, blocked } from './collision.js';
+import { collideCircle, boxGround, rayBoxes, blocked } from './collision.js';
 
 // Bodycam player.
 //
@@ -13,43 +13,70 @@ import { depenetrate, moveAxis, rayBoxes, blocked } from './collision.js';
 //   roll  = rotation.z, positive rolls the top of the image to the LEFT
 //   forward(yaw) = (-sin yaw, 0, -cos yaw), right(yaw) = (cos yaw, 0, -sin yaw)
 //
-// Free aim: the mouse moves an aim offset (aimX, aimY) relative to the camera body (bodyYaw, bodyPitch).
-// Only the part that leaves the dead zone turns the body; the body also slowly recentres on the aim.
-// The rendered camera follows the body through an under-damped spring (lag + overshoot), while the
-// weapon points at the aim direction immediately -> the gun leads, the camera trails.
+// Aim model: the world aim direction (where the barrel points) = camera body + aim offset (aimX, aimY), and it
+// moves EXACTLY with the mouse (1:1, no smoothing, no latency). Free aim only decides how each bit of mouse motion
+// is split between the aim offset (gun moves inside the frame) and the camera body (view turns), using an
+// elliptical soft zone: near the centre all motion moves the gun, toward the rim more and more turns the body,
+// fast motion turns the body earlier. The rendered camera follows the body through a velocity-feed-forward
+// follower (no lag at a constant turn rate, no overshoot); that is the only smoothing in the chain.
 
 const EMPTY = [];
-const UP = new THREE.Vector3(0, 1, 0);
 const DOWN = new THREE.Vector3(0, -1, 0);
+
+// Key bindings: both sets are always active (WASD side and arrow-key side).
+export const KEYS = {
+  fwd: ['KeyW', 'ArrowUp'],
+  back: ['KeyS', 'ArrowDown'],
+  left: ['KeyA', 'ArrowLeft'],
+  right: ['KeyD', 'ArrowRight'],
+  sprint: ['ShiftLeft', 'ShiftRight'],
+  crouch: ['KeyC', 'ControlLeft', 'ControlRight', 'Numpad0'],
+  leanL: ['KeyQ', 'Delete'],
+  leanR: ['KeyE', 'PageDown'],
+  reload: ['KeyR', 'Enter', 'NumpadEnter', 'Numpad1'],
+  light: ['KeyF', 'End', 'NumpadDecimal'],
+};
+
+export const DEFAULT_SETTINGS = {
+  sens: T.SENS_DEFAULT,          // sensitivity (Source-style scale: 0.022 deg per count per unit)
+  adsSens: T.ADS_SENS_DEFAULT,   // multiplier while aimed
+  invertY: false,
+  freeAim: 'standard',           // 'aus' | 'gering' | 'standard' | 'stark'
+  shake: 1,                      // camera shake + head bob amount 0..1
+  fov: T.FOV_HIP,                // hip field of view (vertical, degrees); ADS = fov - FOV_ADS_DELTA
+  aimMode: 'hold',               // 'hold' | 'toggle'
+  crouchMode: 'toggle',          // 'hold' | 'toggle'
+};
 
 export function createPlayer(ctx) {
   const camera = ctx.camera;
   const vm = createViewmodel();
   camera.add(vm.root);
+  const settings = Object.assign({}, DEFAULT_SETTINGS);
 
-  // ---------------------------------------------------------------- springs
-  const camYawS = new Spring(T.CAM_FOLLOW_W, T.CAM_FOLLOW_Z);
-  const camPitchS = new Spring(T.CAM_FOLLOW_W, T.CAM_FOLLOW_Z);
+  // ---------------------------------------------------------------- springs (fixed 600 Hz steps)
+  const camYawF = new Follower(T.CAM_FOLLOW_W), camPitchF = new Follower(T.CAM_FOLLOW_W);
   const kickPitch = new Spring(22, 0.5), kickYaw = new Spring(22, 0.5), kickRoll = new Spring(18, 0.45);
   const jolt = new Spring(14, 0.45);                 // camera vertical jolt (steps, landing, hits)
   const joltX = new Spring(12, 0.5);                 // camera lateral jolt (hits)
   const recRx = new Spring(18, 0.42), recRy = new Spring(18, 0.5), recRz = new Spring(16, 0.45);
   const recBack = new Spring(20, 0.5), recUp = new Spring(20, 0.5);
-  const inertX = new Spring(9, 0.5), inertY = new Spring(9, 0.5);  // weapon rotational inertia on mouse moves
-  const springs = [camYawS, camPitchS, kickPitch, kickYaw, kickRoll, jolt, joltX, recRx, recRy, recRz, recBack, recUp, inertX, inertY];
+  const inertX = new Spring(10, 0.6), inertY = new Spring(10, 0.6);  // visual gun lag (position only)
+  const leanS = new Spring(T.LEAN_RATE, 1);
+  const springs = [kickPitch, kickYaw, kickRoll, jolt, joltX, recRx, recRy, recRz, recBack, recUp, inertX, inertY, leanS];
 
   const weapon = createWeapon(ctx, vm, { jolt: (v) => { recUp.impulse(v); recRx.impulse(v * 2); } });
 
   // ---------------------------------------------------------------- state
   let bodyYaw = 0, bodyPitch = 0, aimX = 0, aimY = 0;
   let vy = 0, grounded = true, feetVis = 0;
-  let crouchAmt = 0, crouchToggle = false;
-  let lean = 0;
+  let crouchAmt = 0, crouchToggle = false, aimToggle = false;
   let adsLin = 0, ads = 0, lowerAmt = 0, sprintAmt = 0;
   let moveF = 0, stepPhase = 0, lastStep = 0, exertion = 0, breathPhase = 0, time = 0;
-  let sprintBlock = 0, fireBuffer = 0;
+  let sprintBlock = 0, shotQueue = 0, shotBufferT = 0, reloadBuffer = 0;
   let sprinting = false;
   let fov = T.FOV_HIP;
+  let lastMouseRad = 0, mouseSpeed = 0;
   // death
   let deathT = 0, deathReported = false, deathLanded = false, deathSide = 1;
   const deathStart = { y: 0, yaw: 0, pitch: 0, roll: 0, x: 0, z: 0, ground: 0 };
@@ -64,6 +91,7 @@ export function createPlayer(ctx) {
   const muzzleW = new THREE.Vector3(), dirW = new THREE.Vector3(), originW = new THREE.Vector3();
   const camFwd = new THREE.Vector3(), probe = new THREE.Vector3(), probeDir = new THREE.Vector3();
   const pivot = new THREE.Vector3(), off = new THREE.Vector3();
+  const nrm = { x: 0, z: 0 };
 
   const player = {
     position: new THREE.Vector3(),
@@ -80,34 +108,50 @@ export function createPlayer(ctx) {
     isAiming: false,
     noise: 0,
     // extras
-    aimDir: new THREE.Vector3(0, 0, -1),   // where the barrel points (world)
+    aimDir: new THREE.Vector3(0, 0, -1),   // where the aim points (world, before weapon sway / recoil)
     get reloading() { return weapon.reloading; },
     get reloadCount() { return weapon.reloadCount; },
     get flashlight() { return weapon.flashlight; },
     get crouching() { return crouchAmt > 0.5; },
     get sprinting() { return sprinting; },
     viewmodel: vm,
+    weapon,
+    settings,
+    keys: KEYS,
+    /** debug / tests: free-aim state */
+    debugAim() { return { bodyYaw, bodyPitch, aimX, aimY, camYaw: camYawF.x, camPitch: camPitchF.x, camYawR, camPitchR, ads }; },
+    /** turn instantly (spawn, teleports, tests) */
+    setLook(yaw, pitch = 0) { bodyYaw = yaw; bodyPitch = pitch; aimX = aimY = 0; mouseSpeed = 0; camYawF.reset(yaw); camPitchF.reset(pitch); for (const s of springs) s.reset(0); },
     update, takeDamage, reset,
   };
 
   const level = () => ctx.level;
   const colliders = () => ctx.level?.colliders || EMPTY;
-  const groundAt = (x, z) => {
+  const levelGround = (x, z) => {
     const g = ctx.level?.groundHeight?.(x, z);
     return Number.isFinite(g) ? g : 0;
   };
+  /** floor under (x, z) for feet at y: level floor or the top of low clutter we can step onto */
+  const groundAt = (x, z, y) => {
+    const g = levelGround(x, z);
+    const b = boxGround(colliders(), x, z, 0.1, y - T.STEP_DOWN - 0.01, y + T.STEP_BOX + 0.01);
+    return b > g ? b : g;
+  };
+  const anyDown = (codes) => { const i = ctx.input; for (const c of codes) if (i.down(c)) return true; return false; };
+  const anyPressed = (codes) => { const i = ctx.input; for (const c of codes) if (i.pressed(c)) return true; return false; };
 
   // ================================================================ reset
   function reset() {
     const sp = level()?.playerSpawn;
     if (sp?.position) player.position.copy(sp.position); else player.position.set(0, 0, 0);
-    player.position.y = groundAt(player.position.x, player.position.z);
+    player.position.y = levelGround(player.position.x, player.position.z);
     bodyYaw = sp?.yaw || 0; bodyPitch = 0; aimX = 0; aimY = 0;
     player.velocity.set(0, 0, 0); vy = 0; grounded = true; feetVis = player.position.y;
-    crouchAmt = 0; crouchToggle = false; lean = 0; adsLin = ads = lowerAmt = sprintAmt = 0;
-    moveF = 0; stepPhase = 0; lastStep = 0; exertion = 0; sprintBlock = 0; fireBuffer = 0; sprinting = false;
+    crouchAmt = 0; crouchToggle = false; aimToggle = false; adsLin = ads = lowerAmt = sprintAmt = 0;
+    moveF = 0; stepPhase = 0; lastStep = 0; exertion = 0; sprintBlock = 0; shotQueue = 0; shotBufferT = 0; reloadBuffer = 0;
+    sprinting = false;
     for (const s of springs) s.reset(0);
-    camYawS.reset(bodyYaw); camPitchS.reset(0);
+    camYawF.reset(bodyYaw); camPitchF.reset(0);
     player.height = T.HEIGHT_STAND;
     player.health = T.MAX_HEALTH; player.alive = true; player.noise = 0; player.isAiming = false;
     deathT = 0; deathReported = false; deathLanded = false;
@@ -122,50 +166,94 @@ export function createPlayer(ctx) {
   }
 
   // ================================================================ look / free aim
-  function look(dx, dy, dt) {
-    const sens = T.SENS * lerp(1, T.ADS_SENS_MUL, ads);
-    aimX -= dx * sens;
-    aimY -= dy * sens;
-    // weapon inertia: the gun lags behind the motion (turn right -> barrel trails left = +yaw)
-    inertX.impulse(dx * 0.004);
-    inertY.impulse(dy * 0.004);
-    applyDeadZone(dt);
+  function zone() {
+    const Z = T.FREE_AIM[settings.freeAim] || T.FREE_AIM.standard;
+    return [lerp(Z.x, Z.xAds, ads), lerp(Z.y, Z.yAds, ads)];
   }
 
-  function applyDeadZone(dt) {
-    const dX = lerp(T.DEAD_X, T.DEAD_X_ADS, ads);
-    const dY = lerp(T.DEAD_Y, T.DEAD_Y_ADS, ads);
-    if (aimX > dX) { bodyYaw += aimX - dX; aimX = dX; }
-    else if (aimX < -dX) { bodyYaw += aimX + dX; aimX = -dX; }
-    if (aimY > dY) { bodyPitch += aimY - dY; aimY = dY; }
-    else if (aimY < -dY) { bodyPitch += aimY + dY; aimY = -dY; }
-    // slow recentre of the camera body onto the aim (world aim direction unchanged)
-    const rate = lerp(T.RECENTER_HIP, T.RECENTER_ADS, ads) + sprintAmt * T.RECENTER_SPRINT;
-    const k = damp(rate, dt);
-    const tx = aimX * k, ty = aimY * k * 0.8;
-    bodyYaw += tx; aimX -= tx;
-    bodyPitch += ty; aimY -= ty;
-    // limits
+  /** Mouse motion (rad) -> world aim 1:1, split between aim offset and body. */
+  function look(dYaw, dPitch, dt) {
+    const [zx, zy] = zone();
+    const mag = Math.hypot(dYaw, dPitch);
+    lastMouseRad = mag;
+    // visual weapon lag (translation only, so the barrel still points exactly at the aim)
+    inertX.impulse(dYaw * T.INERTIA_POS);
+    inertY.impulse(-dPitch * T.INERTIA_POS);
+    if (zx < 1e-5 || zy < 1e-5) {
+      bodyYaw += aimX + dYaw; aimX = 0;
+      bodyPitch += aimY + dPitch; aimY = 0;
+      return;
+    }
+    if (mag > 0) {
+      const flick = T.FLICK_MAX * smooth01((mouseSpeed - T.FLICK_LO) / (T.FLICK_HI - T.FLICK_LO));
+      // sub-steps of <= 0.1 deg so the split is the same whatever the frame rate
+      const n = Math.min(96, Math.max(1, Math.ceil(mag / 0.0018)));
+      const sx = dYaw / n, sy = dPitch / n;
+      const ex = sx / zx, ey = sy / zy, el = Math.hypot(ex, ey);
+      const rc = 1 - Math.exp(-T.RECENTER_MOUSE * mag / n);   // camera catches up while the mouse moves
+      for (let i = 0; i < n; i++) {
+        const qx = aimX / zx, qy = aimY / zy, r = Math.hypot(qx, qy);
+        const ux = r > 1e-4 ? qx / r : ex / el, uy = r > 1e-4 ? qy / r : ey / el;
+        const radial = ex * ux + ey * uy;
+        let bx = 0, by = 0;
+        if (radial > 0) {
+          const b = Math.max(smooth01((r - T.ZONE_INNER) / (1 - T.ZONE_INNER)), flick);
+          bx = radial * b * ux * zx; by = radial * b * uy * zy;
+        }
+        bodyYaw += bx; bodyPitch += by;
+        aimX += sx - bx; aimY += sy - by;
+        const tx = aimX * rc, ty = aimY * rc * 0.8;
+        bodyYaw += tx; aimX -= tx; bodyPitch += ty; aimY -= ty;
+      }
+    }
+  }
+
+  /** Keeps the aim offset inside the zone, recentres the body, applies pitch limits. World aim is unchanged. */
+  function settleAim(dt) {
+    const [zx, zy] = zone();
+    if (zx < 1e-5 || zy < 1e-5) { bodyYaw += aimX; bodyPitch += aimY; aimX = aimY = 0; }
+    else {
+      const r = Math.hypot(aimX / zx, aimY / zy);
+      if (r > 1) {   // zone shrank (ADS) or recoil climbed past the rim: the overflow turns the body
+        const k = 1 - 1 / r;
+        bodyYaw += aimX * k; aimX -= aimX * k;
+        bodyPitch += aimY * k; aimY -= aimY * k;
+      }
+      const hs = Math.hypot(player.velocity.x, player.velocity.z);
+      const rate = (T.RECENTER_MOVE * hs + T.RECENTER_ADS * ads + T.RECENTER_SPRINT * sprintAmt) * dt;
+      const f = 1 - Math.exp(-rate);
+      const tx = aimX * f, ty = aimY * f * 0.8;
+      bodyYaw += tx; aimX -= tx;
+      bodyPitch += ty; aimY -= ty;
+    }
     if (bodyPitch > T.PITCH_LIMIT) { aimY += bodyPitch - T.PITCH_LIMIT; bodyPitch = T.PITCH_LIMIT; }
     if (bodyPitch < -T.PITCH_LIMIT) { aimY += bodyPitch + T.PITCH_LIMIT; bodyPitch = -T.PITCH_LIMIT; }
     const wp = bodyPitch + aimY;
     if (wp > T.AIM_PITCH_LIMIT) aimY = T.AIM_PITCH_LIMIT - bodyPitch;
     if (wp < -T.AIM_PITCH_LIMIT) aimY = -T.AIM_PITCH_LIMIT - bodyPitch;
+    // keep yaw bounded (long sessions spinning in one direction), shifting everything that holds a yaw
+    if (Math.abs(bodyYaw) > 64 * Math.PI) {
+      const s = -Math.round(bodyYaw / (2 * Math.PI)) * 2 * Math.PI;
+      bodyYaw += s; camYawF.shift(s);
+    }
   }
 
   // ================================================================ movement
   function move(dt, active) {
     const input = ctx.input;
     const pos = player.position, vel = player.velocity;
-    const k = (c) => active && input.down(c);
-    const fwdIn = (k('KeyW') ? 1 : 0) - (k('KeyS') ? 1 : 0);
-    const strIn = (k('KeyD') ? 1 : 0) - (k('KeyA') ? 1 : 0);
+    const k = (codes) => active && anyDown(codes);
+    const fwdIn = (k(KEYS.fwd) ? 1 : 0) - (k(KEYS.back) ? 1 : 0);
+    const strIn = (k(KEYS.right) ? 1 : 0) - (k(KEYS.left) ? 1 : 0);
 
-    // crouch: C toggles, Ctrl holds
-    if (active && input.pressed('KeyC')) crouchToggle = !crouchToggle;
-    const holdCrouch = k('ControlLeft') || k('ControlRight');
-    const shift = k('ShiftLeft') || k('ShiftRight');
-    const wantSprint = shift && fwdIn > 0 && sprintBlock <= 0 && !holdCrouch && !(active && input.mouse.right);
+    // crouch: hold or toggle (setting), every crouch key behaves the same
+    const crouchKey = k(KEYS.crouch);
+    if (settings.crouchMode === 'hold') crouchToggle = false;
+    else if (active && anyPressed(KEYS.crouch)) crouchToggle = !crouchToggle;
+    const holdCrouch = settings.crouchMode === 'hold' && crouchKey;
+    const shift = k(KEYS.sprint);
+    const aimHeld = active && (settings.aimMode === 'toggle' ? aimToggle : input.mouse.right);
+    const wantSprint = shift && fwdIn > 0 && sprintBlock <= 0 && !holdCrouch && !aimHeld;
     if (wantSprint && crouchToggle) crouchToggle = false;
     let wantCrouch = (crouchToggle || holdCrouch) ? 1 : 0;
     const boxes = colliders();
@@ -178,39 +266,59 @@ export function createPlayer(ctx) {
     sprinting = wantSprint && crouchAmt < 0.5;
     sprintAmt += ((sprinting ? 1 : 0) - sprintAmt) * damp(5, dt);
 
-    // wish velocity relative to the camera body heading
+    // wish velocity relative to the camera body heading (WASD + arrows combined never exceed 1)
     const sy = Math.sin(bodyYaw), cy = Math.cos(bodyYaw);
-    let wx = -sy * fwdIn + cy * strIn, wz = -cy * fwdIn - sy * strIn;
+    const sIn = strIn * (fwdIn === 0 ? T.STRAFE_MUL : 1);
+    let wx = -sy * fwdIn + cy * sIn, wz = -cy * fwdIn - sy * sIn;
     const wl = Math.hypot(wx, wz);
     let speed = sprinting ? T.SPRINT_SPEED : crouchAmt > 0.5 ? T.CROUCH_SPEED : ads > 0.5 ? T.ADS_SPEED : T.WALK_SPEED;
     if (fwdIn < 0) speed *= T.BACK_MUL;
-    if (wl > 0) { wx = wx / wl * speed; wz = wz / wl * speed; }
-    const rate = wl > 0 ? (sprinting ? T.SPRINT_ACCEL : T.ACCEL) : T.FRICTION;
+    if (wl > 0) { const s = speed * Math.min(1, wl) / wl; wx *= s; wz *= s; }
+    let rate = T.FRICTION;
+    if (wl > 0) rate = sprinting ? T.SPRINT_ACCEL : (wx * vel.x + wz * vel.z < 0 ? T.TURN_ACCEL : T.ACCEL);
     const a = damp(grounded ? rate : rate * 0.15, dt);
     vel.x += (wx - vel.x) * a;
     vel.z += (wz - vel.z) * a;
+    if (wl === 0 && Math.hypot(vel.x, vel.z) < 0.02) { vel.x = 0; vel.z = 0; }
 
-    // horizontal collision, per axis with sliding; ground rises above STEP_UP act as walls
-    const y0 = pos.y + 0.05, y1 = pos.y + player.height;
-    depenetrate(pos, T.RADIUS, y0, y1, boxes);
-    let ox = pos.x;
-    if (moveAxis(pos, 0, vel.x * dt, T.RADIUS, y0, y1, boxes)) vel.x = 0;
-    if (groundAt(pos.x, pos.z) - pos.y > T.STEP_UP) { pos.x = ox; vel.x = 0; }
-    const oz = pos.z;
-    if (moveAxis(pos, 2, vel.z * dt, T.RADIUS, y0, y1, boxes)) vel.z = 0;
-    if (groundAt(pos.x, pos.z) - pos.y > T.STEP_UP) { pos.z = oz; vel.z = 0; }
+    // horizontal: circle against the colliders in sub-steps, sliding along contact normals. Low boxes (top within
+    // STEP_BOX of the feet) are not walls but steps (see groundAt).
+    const y0 = pos.y + T.STEP_BOX + 0.01, y1 = pos.y + player.height;
+    collideCircle(pos, T.RADIUS, y0, y1, boxes, null);
+    const travel = Math.hypot(vel.x, vel.z) * dt;
+    const n = Math.min(8, Math.max(1, Math.ceil(travel / (T.RADIUS * 0.5))));
+    for (let i = 0; i < n; i++) {
+      const ox = pos.x, oz = pos.z;
+      pos.x += vel.x * dt / n; pos.z += vel.z * dt / n;
+      if (collideCircle(pos, T.RADIUS, y0, y1, boxes, nrm)) {
+        const l = Math.hypot(nrm.x, nrm.z);
+        if (l > 1e-6) {
+          const nx = nrm.x / l, nz = nrm.z / l, vn = vel.x * nx + vel.z * nz;
+          if (vn < 0) { vel.x -= nx * vn; vel.z -= nz * vn; }
+        }
+      }
+      // a level floor rise higher than a step acts like a wall: keep the axis that still works
+      if (levelGround(pos.x, pos.z) - pos.y > T.STEP_UP) {
+        const nx = pos.x, nz = pos.z;
+        pos.x = nx; pos.z = oz;
+        if (levelGround(pos.x, pos.z) - pos.y > T.STEP_UP) {
+          pos.x = ox; pos.z = nz; vel.x = 0;
+          if (levelGround(pos.x, pos.z) - pos.y > T.STEP_UP) { pos.z = oz; vel.z = 0; }
+        } else vel.z = 0;
+      }
+    }
     const bounds = level()?.bounds;
     if (bounds) {
-      ox = pos.x;
+      let o = pos.x;
       pos.x = clamp(pos.x, bounds.min.x + T.RADIUS, bounds.max.x - T.RADIUS);
-      if (pos.x !== ox) vel.x = 0;
-      const z0 = pos.z;
+      if (pos.x !== o) vel.x = 0;
+      o = pos.z;
       pos.z = clamp(pos.z, bounds.min.z + T.RADIUS, bounds.max.z - T.RADIUS);
-      if (pos.z !== z0) vel.z = 0;
+      if (pos.z !== o) vel.z = 0;
     }
 
-    // vertical: floor from level.groundHeight, smooth step-up via feetVis, gravity otherwise
-    const g = groundAt(pos.x, pos.z);
+    // vertical: floor (level + steppable clutter), smooth step-up via feetVis, gravity otherwise
+    const g = groundAt(pos.x, pos.z, pos.y);
     if (pos.y > g + 1e-3) {
       if (grounded && pos.y - g <= T.STEP_DOWN) { pos.y = g; vy = 0; }
       else {
@@ -227,8 +335,8 @@ export function createPlayer(ctx) {
     if (Math.abs(pos.y - feetVis) > 1.0) feetVis = pos.y;
     else feetVis += (pos.y - feetVis) * damp(grounded ? 14 : 40, dt);
 
-    // lean (Q/E) limited by walls on each side
-    const leanIn = active && !sprinting ? (k('KeyE') ? 1 : 0) - (k('KeyQ') ? 1 : 0) : 0;
+    // lean (Q/E or Delete/PageDown) limited by walls on each side; critically damped spring, always returns
+    const leanIn = active && !sprinting ? (k(KEYS.leanR) ? 1 : 0) - (k(KEYS.leanL) ? 1 : 0) : 0;
     const camH = lerp(T.CAM_STAND, T.CAM_CROUCH, crouchAmt);
     probe.set(pos.x, feetVis + camH, pos.z);
     probeDir.set(cy, 0, -sy);
@@ -236,9 +344,10 @@ export function createPlayer(ctx) {
     const limR = clamp((rayBoxes(probe, probeDir, reach, 0, boxes) - T.LEAN_MARGIN) / T.LEAN_DIST, 0, 1);
     probeDir.negate();
     const limL = clamp((rayBoxes(probe, probeDir, reach, 0, boxes) - T.LEAN_MARGIN) / T.LEAN_DIST, 0, 1);
-    const leanTarget = leanIn > 0 ? leanIn * limR : leanIn * limL;
-    lean += (leanTarget - lean) * damp(T.LEAN_RATE, dt);
-    lean = clamp(lean, -limL, limR);
+    leanS.target = leanIn > 0 ? leanIn * limR : leanIn * limL;
+    leanS.update(dt);
+    if (leanS.x > limR) { leanS.x = limR; leanS.v = Math.min(0, leanS.v); }
+    if (leanS.x < -limL) { leanS.x = -limL; leanS.v = Math.max(0, leanS.v); }
   }
 
   function land(speed) {
@@ -247,7 +356,7 @@ export function createPlayer(ctx) {
     kickPitch.impulse(-speed * 0.12);
     recUp.impulse(-speed * 0.12);
     ctx.audio?.play?.('land', { volume: clamp(speed / 6, 0.3, 1) });
-    ctx.pipeline?.addTrauma?.(clamp(speed * 0.05, 0.05, 0.4));
+    ctx.pipeline?.addTrauma?.(clamp(speed * 0.05, 0.05, 0.4) * settings.shake);
     player.noise = Math.max(player.noise, clamp(speed / 6, 0.3, 0.8));
   }
 
@@ -286,51 +395,65 @@ export function createPlayer(ctx) {
   let bobS = 0, bobAs = 0, bobA = 0, bobX = 0, bobY = 0, bobRoll = 0;
 
   function poseCamera(dt) {
-    camYawS.target = bodyYaw; camPitchS.target = bodyPitch;
-    camYawS.update(dt); camPitchS.update(dt);
-    if (camYawS.x - bodyYaw > T.CAM_LAG_MAX) camYawS.x = bodyYaw + T.CAM_LAG_MAX;
-    if (camYawS.x - bodyYaw < -T.CAM_LAG_MAX) camYawS.x = bodyYaw - T.CAM_LAG_MAX;
-    if (camPitchS.x - bodyPitch > T.CAM_LAG_MAX) camPitchS.x = bodyPitch + T.CAM_LAG_MAX;
-    if (camPitchS.x - bodyPitch < -T.CAM_LAG_MAX) camPitchS.x = bodyPitch - T.CAM_LAG_MAX;
+    if (settings.freeAim === 'aus') { camYawF.reset(bodyYaw); camPitchF.reset(bodyPitch); }   // conventional
+    else {
+      const w = lerp(T.CAM_FOLLOW_W, T.CAM_FOLLOW_W_ADS, ads);
+      camYawF.omega = w; camPitchF.omega = w;
+      camYawF.target = bodyYaw; camPitchF.target = bodyPitch;
+      camYawF.update(dt); camPitchF.update(dt);
+      // never let the camera swing past the body (overshoot after a hard stop fights the player)
+      for (const [F, tgt] of [[camYawF, bodyYaw], [camPitchF, bodyPitch]]) {
+        const ahead = (F.x - tgt) * Math.sign(F.v);
+        if (ahead > T.CAM_OVERSHOOT_MAX) { F.x = F._x = tgt + Math.sign(F.v) * T.CAM_OVERSHOOT_MAX; F.v *= 0.2; }
+      }
+      const lim = T.CAM_LAG_MAX;
+      if (camYawF.x - bodyYaw > lim) { camYawF.x = camYawF._x = bodyYaw + lim; camYawF.v = 0; }
+      if (camYawF.x - bodyYaw < -lim) { camYawF.x = camYawF._x = bodyYaw - lim; camYawF.v = 0; }
+      if (camPitchF.x - bodyPitch > lim) { camPitchF.x = camPitchF._x = bodyPitch + lim; camPitchF.v = 0; }
+      if (camPitchF.x - bodyPitch < -lim) { camPitchF.x = camPitchF._x = bodyPitch - lim; camPitchF.v = 0; }
+    }
     kickPitch.update(dt); kickYaw.update(dt); kickRoll.update(dt); jolt.update(dt); joltX.update(dt);
+    const sh = clamp(settings.shake, 0, 1.5);
 
     // step-synchronised bob (one step per PI of phase); |sin| gives the cusp of each footfall
     bobS = Math.sin(stepPhase);
     bobAs = Math.abs(bobS) - 0.637;
     bobA = Math.min(moveF, 1.6);
     const sp = sprintAmt, cr = 1 - 0.45 * crouchAmt, ad = 1 - 0.45 * ads;
-    bobY = bobAs * lerp(T.BOB_V_WALK, T.BOB_V_SPRINT, sp) * bobA * cr * ad;
-    bobX = bobS * lerp(T.BOB_X_WALK, T.BOB_X_SPRINT, sp) * bobA * cr * ad;
-    bobRoll = bobS * lerp(T.BOB_ROLL_WALK, T.BOB_ROLL_SPRINT, sp) * bobA * ad;
-    const bobPitch = bobAs * lerp(T.BOB_PITCH_WALK, T.BOB_PITCH_SPRINT, sp) * bobA * ad;
-    const bobYaw = bobS * lerp(T.BOB_YAW_WALK, T.BOB_YAW_SPRINT, sp) * bobA * ad;
+    bobY = bobAs * lerp(T.BOB_V_WALK, T.BOB_V_SPRINT, sp) * bobA * cr * ad * sh;
+    bobX = bobS * lerp(T.BOB_X_WALK, T.BOB_X_SPRINT, sp) * bobA * cr * ad * sh;
+    bobRoll = bobS * lerp(T.BOB_ROLL_WALK, T.BOB_ROLL_SPRINT, sp) * bobA * ad * sh;
+    const bobPitch = bobAs * lerp(T.BOB_PITCH_WALK, T.BOB_PITCH_SPRINT, sp) * bobA * ad * sh;
+    const bobYaw = bobS * lerp(T.BOB_YAW_WALK, T.BOB_YAW_SPRINT, sp) * bobA * ad * sh;
 
     // breathing (idle stronger, faster after sprinting)
-    const bAmp = lerp(1, 1.9, exertion) * (1 - 0.6 * Math.min(moveF, 1));
+    const bAmp = lerp(1, 1.9, exertion) * (1 - 0.6 * Math.min(moveF, 1)) * sh;
     const br = Math.sin(breathPhase);
     const breathPitch = br * 0.0035 * bAmp;
     const breathY = br * 0.003 * bAmp;
 
     const sy = Math.sin(bodyYaw), cy = Math.cos(bodyYaw);
     const vRight = player.velocity.x * cy - player.velocity.z * sy;
+    const lean = leanS.x;
 
-    camYawR = camYawS.x + kickYaw.x + bobYaw;
-    camPitchR = camPitchS.x + kickPitch.x + bobPitch + breathPitch;
-    camRollR = -lean * T.LEAN_ROLL + bobRoll + kickRoll.x - vRight * T.STRAFE_ROLL;
+    camYawR = camYawF.x + (kickYaw.x + bobYaw) * sh;
+    camPitchR = camPitchF.x + kickPitch.x * sh + bobPitch + breathPitch;
+    camRollR = -lean * T.LEAN_ROLL + bobRoll + kickRoll.x * sh - vRight * T.STRAFE_ROLL * sh;
     camera.rotation.set(camPitchR, camYawR, camRollR);
 
     const camH = lerp(T.CAM_STAND, T.CAM_CROUCH, crouchAmt);
-    const lat = lean * T.LEAN_DIST + bobX + joltX.x;
+    const lat = lean * T.LEAN_DIST + bobX + joltX.x * sh;
     const p = player.position;
     camera.position.set(
       p.x + cy * lat,
-      feetVis + camH + bobY + breathY + jolt.x - Math.abs(lean) * 0.05,
+      feetVis + camH + bobY + breathY + jolt.x * sh - Math.abs(lean) * 0.05,
       p.z - sy * lat);
     player.eye.copy(camera.position);
     player.yaw = bodyYaw;
     player.pitch = bodyPitch;
 
-    const targetFov = lerp(T.FOV_HIP, T.FOV_ADS, ads);
+    const hipFov = clamp(Number(settings.fov) || T.FOV_HIP, 60, 120);
+    const targetFov = lerp(hipFov, hipFov - T.FOV_ADS_DELTA, ads);
     if (Math.abs(targetFov - fov) > 0.01) {
       fov = targetFov;
       camera.fov = fov;
@@ -342,8 +465,9 @@ export function createPlayer(ctx) {
   function poseViewmodel(dt) {
     recRx.update(dt); recRy.update(dt); recRz.update(dt); recBack.update(dt); recUp.update(dt);
     inertX.update(dt); inertY.update(dt);
-    inertX.x = clamp(inertX.x, -0.12, 0.12);
-    inertY.x = clamp(inertY.x, -0.10, 0.10);
+    inertX.x = clamp(inertX.x, -0.022, 0.022);
+    inertY.x = clamp(inertY.x, -0.018, 0.018);
+    const lean = leanS.x;
 
     // aim orientation in world, relative to the rendered camera
     const gunRoll = -lean * T.LEAN_ROLL * 0.85 + bobRoll * 0.4;
@@ -358,22 +482,25 @@ export function createPlayer(ctx) {
     off.set(lerp(T.OFF_HIP[0], 0, ads), lerp(T.OFF_HIP[1], -vm.sightY, ads), lerp(T.OFF_HIP[2], -T.ADS_DIST, ads));
     off.applyQuaternion(qRel).add(pivot);
 
-    // camera-space additive motion: weapon bob (lags against the camera bob), low-ready, reload
+    // camera-space additive motion: weapon bob (lags against the camera bob), inertia, low-ready, reload
     const ga = bobA * (1 - 0.7 * ads);
     const sp = sprintAmt;
     const an = weapon.anim;
-    off.x += (bobS * lerp(0.007, 0.016, sp) - bobX * 0.35) * ga + T.LOW_POS[0] * lowerAmt + an.px;
-    off.y += (bobAs * lerp(0.010, 0.022, sp) - bobY * 0.4) * ga + T.LOW_POS[1] * lowerAmt + an.py;
+    const ia = 1 - 0.6 * ads;
+    off.x += (bobS * lerp(0.007, 0.016, sp) - bobX * 0.35) * ga + T.LOW_POS[0] * lowerAmt + an.px + inertX.x * ia;
+    off.y += (bobAs * lerp(0.010, 0.022, sp) - bobY * 0.4) * ga + T.LOW_POS[1] * lowerAmt + an.py + inertY.x * ia;
     off.z += T.LOW_POS[2] * lowerAmt + an.pz;
 
-    // gun-local additive rotation: hip cant, low-ready, reload, recoil, inertia, breathing/tremor, bob sway
+    // gun-local additive rotation: hip cant, low-ready, reload, recoil, breathing/tremor, bob sway; the lag roll
+    // of the inertia does not change where the barrel points
     const br = Math.sin(breathPhase), br2 = Math.sin(breathPhase * 0.5 + 1.3);
-    const swayAmp = lerp(1, 2.0, exertion) * (1 - 0.6 * ads);
+    const conv = settings.freeAim === 'aus' ? 0.5 : 1;
+    const swayAmp = lerp(1, 2.0, exertion) * (1 - 0.6 * ads) * conv;
     const trem = (Math.sin(time * 7.3) + 0.6 * Math.sin(time * 11.1 + 2) + 0.8 * Math.sin(time * 3.1 + 0.5)) * 0.0011 * swayAmp;
     eExtra.set(
-      T.HIP_ROT[0] * hip + T.LOW_ROT[0] * lowerAmt + an.rx + recRx.x + inertY.x + br * 0.009 * swayAmp + trem + bobAs * 0.02 * ga,
-      T.HIP_ROT[1] * hip + T.LOW_ROT[1] * lowerAmt + an.ry + recRy.x + inertX.x + br2 * 0.006 * swayAmp + trem * 0.7 + bobS * lerp(0.01, 0.03, sp) * ga,
-      T.HIP_ROT[2] * hip + T.LOW_ROT[2] * lowerAmt + an.rz + recRz.x + bobS * lerp(0.015, 0.05, sp) * ga,
+      T.HIP_ROT[0] * hip + T.LOW_ROT[0] * lowerAmt + an.rx + recRx.x + br * 0.009 * swayAmp + trem + bobAs * 0.02 * ga,
+      T.HIP_ROT[1] * hip + T.LOW_ROT[1] * lowerAmt + an.ry + recRy.x + br2 * 0.006 * swayAmp + trem * 0.7 + bobS * lerp(0.01, 0.03, sp) * ga,
+      T.HIP_ROT[2] * hip + T.LOW_ROT[2] * lowerAmt + an.rz + recRz.x + bobS * lerp(0.015, 0.05, sp) * ga - inertX.x * 2.2 * ia,
       'YXZ');
     qExtra.setFromEuler(eExtra);
     vm.root.quaternion.copy(qRel).multiply(qExtra);
@@ -381,6 +508,36 @@ export function createPlayer(ctx) {
     // recoil translation along the gun's own axes (back = +Z, up = +Y)
     vA.set(0, recUp.x, recBack.x).applyQuaternion(vm.root.quaternion);
     vm.root.position.copy(off).add(vA);
+
+    // hand layer inputs (micro motion, lowered / sprint / lean / near-wall poses)
+    vm.setPose?.({
+      dt, time, breath: br, exertion, lower: lowerAmt, sprint: sprintAmt, ads, lean,
+      move: Math.min(1, moveF), crouch: crouchAmt, recoil: recRx.x,
+    });
+  }
+
+  // ================================================================ sky visibility (viewmodel lighting)
+  // The sky environment map lights everything equally, indoors too; for the hands that reads as a grey glow under
+  // a roof. A few upward rays per frame (round robin) estimate how much open sky is above / around the camera.
+  const SKY_DIRS = [[0, 1, 0], [0.5, 0.8, 0], [-0.5, 0.8, 0], [0, 0.8, 0.5], [0, 0.8, -0.5], [0.6, 0.55, 0.55], [-0.6, 0.55, -0.55], [0.6, 0.55, -0.55], [-0.6, 0.55, 0.55]]
+    .map((d) => new THREE.Vector3(...d).normalize());
+  const skyHits = new Float32Array(SKY_DIRS.length).fill(1);
+  let skyIdx = 0, skyVis = 1, skyInit = false;
+  function updateSky(dt) {
+    const w = ctx.combat?.worldHit;
+    if (!w) return;
+    const n = skyInit ? 2 : SKY_DIRS.length;
+    for (let i = 0; i < n; i++) {
+      skyIdx = (skyIdx + 1) % SKY_DIRS.length;
+      skyHits[skyIdx] = w(player.eye, SKY_DIRS[skyIdx], 40) ? 0 : 1;
+    }
+    let s = 0;
+    for (let i = 0; i < skyHits.length; i++) s += skyHits[i] * (i === 0 ? 2 : 1);
+    const target = s / (skyHits.length + 1);
+    skyVis = skyInit ? skyVis + (target - skyVis) * damp(2.5, dt) : target;
+    skyInit = true;
+    vm.setEnvironment(skyVis, ctx.scene?.environment);
+    player.skyVisibility = skyVis;
   }
 
   // ================================================================ shooting
@@ -416,11 +573,12 @@ export function createPlayer(ctx) {
       .addScaledVector(vA.set(re[8], re[9], re[10]).normalize(), 0.25).normalize();
     ctx.fx?.shell?.(pos, vC.clone());
     ctx.audio?.play?.('shot');
-    ctx.pipeline?.addTrauma?.(0.3);
+    ctx.pipeline?.addTrauma?.(0.3 * settings.shake);
     ctx.pipeline?.flash?.(0.75);
     player.noise = 1;
 
     weapon.onShot();
+    vm.onShot?.();
 
     // recoil: gun kicks up and back on springs, camera gets a smaller sharp kick, aim walks up
     const k = lerp(1, 0.65, ads) * (1 - 0.15 * crouchAmt);
@@ -449,26 +607,57 @@ export function createPlayer(ctx) {
     const active = !!input?.locked;
 
     if (sprintBlock > 0) sprintBlock -= dt;
-    if (fireBuffer > 0) fireBuffer -= dt;
+    if (shotBufferT > 0) shotBufferT -= dt; else shotQueue = 0;
+    if (reloadBuffer > 0) reloadBuffer -= dt;
 
-    // ---- discrete actions
+    // ---- discrete actions (buffered so a press slightly too early still happens)
     if (active) {
-      if (input.pressed('KeyF')) weapon.toggleFlashlight(T.FLASH_INTENSITY);
-      if (input.pressed('KeyR') && weapon.startReload()) { /* reload started */ }
-      if (input.mouse.leftPressed) { fireBuffer = 0.22; if (sprinting) sprintBlock = 0.45; }
-    }
+      if (anyPressed(KEYS.light)) { weapon.toggleFlashlight(T.FLASH_INTENSITY); vm.onLightToggle?.(); }
+      if (anyPressed(KEYS.reload)) {
+        reloadBuffer = T.RELOAD_BUFFER;
+        if (sprinting && weapon.canReload()) sprintBlock = 0.45;   // reloading drops out of the sprint
+      }
+      const clicks = input.mouse.leftClicks || (input.mouse.leftPressed ? 1 : 0);
+      if (clicks > 0) {
+        shotQueue = Math.min(2, shotQueue + clicks);
+        shotBufferT = T.FIRE_BUFFER;
+        if (sprinting) sprintBlock = 0.45;
+      }
+      if (settings.aimMode === 'toggle' && input.mouse.rightPressed) aimToggle = !aimToggle;
+      if (input.mouse.rightPressed && weapon.reloading) weapon.cancelReload();   // aim cancels an early reload
+    } else aimToggle = false;
+    if (settings.aimMode !== 'toggle') aimToggle = false;
 
     // ---- movement first (sprint state feeds ADS / lowering)
     move(dt, active);
+    if (sprinting) {
+      aimToggle = false;
+      if (weapon.reloading) weapon.cancelReload();   // only possible before the magazine is released
+    }
+    if (reloadBuffer > 0 && !(sprinting && sprintBlock <= 0)) {
+      if (weapon.startReload()) reloadBuffer = 0;
+      else if (!weapon.reloading && !weapon.canReload()) reloadBuffer = 0;   // full or no reserve: nothing to buffer
+    }
 
     // ---- ADS / lowering
-    const wantAds = active && input.mouse.right && !sprinting && !weapon.reloading;
+    const aimHeld = settings.aimMode === 'toggle' ? aimToggle : input.mouse.right;
+    const wantAds = active && aimHeld && !sprinting && !weapon.reloading;
     player.isAiming = wantAds;
     adsLin = clamp(adsLin + (wantAds ? 1 : -1) * dt / T.ADS_TIME, 0, 1);
     ads = smooth01(adsLin);
 
-    // ---- look (after ADS so the dead zone uses the current ADS amount)
-    if (active && md) look(md.dx, md.dy, dt); else applyDeadZone(dt);
+    // ---- look: mouse -> world aim 1:1 (after ADS so the zone and multiplier use the current ADS amount)
+    lastMouseRad = 0;
+    let dYaw = 0, dPitch = 0;
+    if (active && md && (md.dx || md.dy)) {
+      const sens = T.SENS_UNIT * clamp(Number(settings.sens) || T.SENS_DEFAULT, 0.05, 20) *
+        lerp(1, clamp(Number(settings.adsSens) || 1, 0.1, 3), ads);
+      dYaw = -md.dx * sens; dPitch = -md.dy * sens * (settings.invertY ? -1 : 1);
+    }
+    // mouse speed, low-passed with a fixed time constant (so the estimate barely depends on the frame rate)
+    mouseSpeed += (Math.hypot(dYaw, dPitch) / dt - mouseSpeed) * damp(T.FLICK_FILTER, dt);
+    if (dYaw || dPitch) look(dYaw, dPitch, dt);
+    settleAim(dt);
 
     stepCycle(dt);
     weapon.update(dt);
@@ -484,14 +673,17 @@ export function createPlayer(ctx) {
     const hit = ctx.combat?.worldHit?.(player.eye, player.aimDir, T.WALL_CHECK);
     if (hit) wallLower = clamp((T.WALL_CHECK - hit.distance) / (T.WALL_CHECK - T.WALL_FULL), 0, 1);
     const lowerTarget = weapon.reloading ? 0 : Math.max(sprintAmt > 0.3 && sprinting ? 1 : 0, wallLower);
-    lowerAmt += (lowerTarget - lowerAmt) * damp(lowerTarget > lowerAmt ? 7 : 9, dt);
+    const raiseRate = Math.log(1 / 0.3) / T.SPRINT_RAISE;
+    lowerAmt += (lowerTarget - lowerAmt) * damp(lowerTarget > lowerAmt ? 7 : raiseRate, dt);
 
     poseViewmodel(dt);
+    updateSky(dt);
 
-    // ---- trigger (semi-auto, buffered briefly so a click during sprint/raise still fires)
-    if (fireBuffer > 0 && weapon.cooldown <= 0 && !weapon.reloading && lowerAmt < 0.3) {
-      fireBuffer = 0;
+    // ---- trigger: semi-auto, every click counts (queued up to 2, each kept for FIRE_BUFFER seconds)
+    if (shotQueue > 0 && weapon.cooldown <= 0 && !weapon.reloading && lowerAmt < 0.3) {
+      shotQueue--;
       if (weapon.chambered) fire(); else weapon.dryFire();
+      if (shotQueue > 0) shotBufferT = Math.max(shotBufferT, T.FIRE_INTERVAL + 0.05);
     }
 
     player.noise = Math.max(0, player.noise - dt * 1.6);
@@ -503,7 +695,7 @@ export function createPlayer(ctx) {
     amount = Number(amount) || 0;
     player.health = Math.max(0, player.health - amount);
     ctx.pipeline?.damage?.(clamp(amount / 60, 0.25, 1));
-    ctx.pipeline?.addTrauma?.(0.45);
+    ctx.pipeline?.addTrauma?.(0.45 * Math.max(0.3, settings.shake));
     ctx.audio?.play?.('hurt');
 
     // flinch away from the shot: dir is the bullet travel direction (shooter -> player)
@@ -531,7 +723,7 @@ export function createPlayer(ctx) {
     deathStart.x = camera.position.x;
     deathStart.z = camera.position.z;
     deathStart.yaw = camYawR; deathStart.pitch = camPitchR; deathStart.roll = camRollR;
-    deathStart.ground = groundAt(player.position.x, player.position.z);
+    deathStart.ground = levelGround(player.position.x, player.position.z);
     player.velocity.set(0, 0, 0);
     ctx.pipeline?.setDead?.(true);
     ctx.audio?.play?.('death');

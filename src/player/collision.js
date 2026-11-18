@@ -59,6 +59,62 @@ export function moveAxis(pos, axis, d, r, y0, y1, boxes) {
 }
 
 /**
+ * Circle (radius r in XZ, vertical extent y0..y1) against the colliders: pushes pos out of every box it overlaps
+ * along the shortest way out. Rounded body: box corners deflect the player around them instead of snagging.
+ * Writes the summed contact normal into nOut ({x, z}, not normalised) and returns the number of contacts.
+ */
+export function collideCircle(pos, r, y0, y1, boxes, nOut) {
+  let contacts = 0;
+  if (nOut) { nOut.x = 0; nOut.z = 0; }
+  for (let pass = 0; pass < 4; pass++) {
+    let moved = false;
+    for (let i = 0; i < boxes.length; i++) {
+      const b = boxes[i];
+      if (b.max.y <= y0 || b.min.y >= y1) continue;
+      if (pos.x + r <= b.min.x || pos.x - r >= b.max.x || pos.z + r <= b.min.z || pos.z - r >= b.max.z) continue;
+      const cx = pos.x < b.min.x ? b.min.x : pos.x > b.max.x ? b.max.x : pos.x;
+      const cz = pos.z < b.min.z ? b.min.z : pos.z > b.max.z ? b.max.z : pos.z;
+      let nx = pos.x - cx, nz = pos.z - cz;
+      const d2 = nx * nx + nz * nz;
+      let push;
+      if (d2 > 1e-12) {
+        const d = Math.sqrt(d2);
+        if (d >= r) continue;
+        nx /= d; nz /= d; push = r - d + EPS;
+      } else {
+        // centre inside the box: leave through the nearest face
+        const a = pos.x - b.min.x, bb = b.max.x - pos.x, c = pos.z - b.min.z, e = b.max.z - pos.z;
+        const m = Math.min(a, bb, c, e);
+        nx = m === a ? -1 : m === bb ? 1 : 0; nz = m === c ? -1 : m === e ? 1 : 0;
+        if (nx && nz) nz = 0;
+        push = m + r + EPS;
+      }
+      pos.x += nx * push; pos.z += nz * push;
+      if (nOut) { nOut.x += nx; nOut.z += nz; }
+      contacts++; moved = true;
+    }
+    if (!moved) break;
+  }
+  return contacts;
+}
+
+/**
+ * Highest collider top under a small disc around (x, z) within [yMin, yMax] (low clutter the player can stand
+ * on). Returns -Infinity when there is none.
+ */
+export function boxGround(boxes, x, z, r, yMin, yMax) {
+  let best = -Infinity;
+  for (let i = 0; i < boxes.length; i++) {
+    const b = boxes[i];
+    const t = b.max.y;
+    if (t < yMin || t > yMax || t <= best) continue;
+    if (x + r <= b.min.x || x - r >= b.max.x || z + r <= b.min.z || z - r >= b.max.z) continue;
+    best = t;
+  }
+  return best;
+}
+
+/**
  * Ray (origin o, unit dir d) against colliders inflated by `inflate`. Returns the nearest hit distance,
  * or maxDist when nothing is hit. A ray starting inside a box returns 0.
  */
