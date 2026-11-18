@@ -23,10 +23,10 @@ export const TUNING = {
 
   // ---- exposure (auto-exposure behaviour)
   exposureKey: 0.12,         // middle grey target
-  adaptAmount: 0.72,         // 1 = fully normalise every scene, <1 keeps dark rooms darker
+  adaptAmount: 0.85,         // 1 = fully normalise every scene, <1 keeps dark rooms darker
   refLum: 0.30,              // scene luminance treated as "daylight reference" (gain 1)
   exposureMin: 0.08,
-  exposureMax: 9.0,
+  exposureMax: 12.0,
   adaptTauUp: 0.30,          // s, AE time constant when the scene gets brighter (fast clamp-down)
   adaptTauDown: 0.85,        // s, when the scene gets darker (slow open-up)
   aeDamping: 0.55,           // <1 = AE overshoots and settles (visible hunting)
