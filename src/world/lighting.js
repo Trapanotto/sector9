@@ -12,7 +12,10 @@ import { LP, MAX_TUBES } from './lightShader.js';
 import { REFL_ZONES } from './lightProbes.js';
 
 export const SUN_DIR = new THREE.Vector3(0.42, -0.72, -0.55).normalize(); // direction the light travels
-export const SUN = { color: 0xe6ebf2, intensity: 2.6 };
+// Hazy sun through the overcast. Exterior light (sun + sky) is set high against the interiors so that, as in real
+// footage, openings burn out from inside and the building reads black from the yard until the exposure adapts.
+export const SUN = { color: 0xeaedf2, intensity: 4.6 };
+export const SKY_GAIN = 1.5;   // HDRI radiance multiplier (background, bake and fallback environment)
 export const LAMP = { color: 0xffd2a0, intensity: 100, angle: 0.68, penumbra: 0.55, range: 26 };
 
 export async function loadSky(renderer, scene) {
@@ -38,8 +41,8 @@ export async function loadSky(renderer, scene) {
   pmrem.dispose();
   scene.background = bg;
   scene.environment = env;
-  scene.backgroundIntensity = 1.0;
-  scene.environmentIntensity = 1.0;
+  scene.backgroundIntensity = SKY_GAIN;
+  scene.environmentIntensity = SKY_GAIN;
   return { bg, env };
 }
 
@@ -332,13 +335,13 @@ export async function setupLighting(ctx, layout, { sky } = {}) {
     openings.push([V(h.min[0], y, h.min[2]), V(h.max[0], y, h.min[2]), V(h.max[0], y, h.max[2]), V(h.min[0], y, h.max[2])]);
   }
   const sunLin = new THREE.Color(SUN.color).multiplyScalar(SUN.intensity);
-  const shaftMat = shaftMaterial(sunLin, 0.006);
+  const shaftMat = shaftMaterial(sunLin, 0.0035);
   const shafts = new THREE.Mesh(shaftGeometry(openings, layout.solids), shaftMat);
   shafts.renderOrder = 5; shafts.frustumCulled = false; shafts.userData.dynamic = true;
   root.add(shafts);
   const dust = dustPoints(openings, 1800, R);
   dust.renderOrder = 6; dust.userData.dynamic = true;
-  dust.material.uniforms.uColor.value.copy(sunLin).multiplyScalar(0.4);
+  dust.material.uniforms.uColor.value.copy(sunLin).multiplyScalar(0.22);
   root.add(dust);
 
   // ---- per-frame animation

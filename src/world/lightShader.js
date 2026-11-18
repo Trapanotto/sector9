@@ -18,9 +18,9 @@ const REFL_W = 3 * Math.max(REFL_CUBE, 16 * 7), REFL_H = 4 * REFL_CUBE, REFL_MIP
 const v3 = () => new THREE.Vector3();
 export const LP = {
   // irradiance volume
-  lpGIR: { value: null }, lpGIG: { value: null }, lpGIB: { value: null },
+  lpGI: { value: null }, lpGIClampLo: { value: v3() }, lpGIClampHi: { value: v3() },
   lpGIScale: { value: v3() }, lpGIOffset: { value: v3() }, lpGIMin: { value: v3() }, lpGIMax: { value: v3() },
-  lpGIOn: { value: 0 }, lpGIBias: { value: 0.32 }, lpGIGain: { value: 1.4 }, lpSkyGain: { value: 1.0 },
+  lpGIOn: { value: 0 }, lpGIBias: { value: 0.32 }, lpGIGain: { value: 1.0 }, lpSkyGain: { value: 1.0 },
   // reflection probes
   lpRefl: { value: null }, lpReflCount: { value: 0 }, lpReflOn: { value: 0 }, lpSpecGain: { value: 1.0 },
   lpReflMin: { value: Array.from({ length: MAX_REFL }, v3) }, lpReflMax: { value: Array.from({ length: MAX_REFL }, v3) },
@@ -51,7 +51,7 @@ const PARS = /* glsl */`
 #define LPC_TEXEL_W ${(1 / REFL_W).toFixed(10)}
 #define LPC_TEXEL_H ${(1 / REFL_H).toFixed(10)}
 #define LPC_MAX_MIP ${REFL_MIP.toFixed(1)}
-uniform highp sampler3D lpGIR; uniform highp sampler3D lpGIG; uniform highp sampler3D lpGIB;
+uniform highp sampler3D lpGI; uniform vec3 lpGIClampLo; uniform vec3 lpGIClampHi;
 uniform vec3 lpGIScale; uniform vec3 lpGIOffset; uniform vec3 lpGIMin; uniform vec3 lpGIMax;
 uniform float lpGIOn; uniform float lpGIBias; uniform float lpGIGain; uniform float lpSkyGain;
 uniform highp sampler2DArray lpRefl; uniform int lpReflCount; uniform float lpReflOn; uniform float lpSpecGain;
@@ -68,14 +68,14 @@ vec3 lpWorldPos() { return ( vec4( - vViewPosition, 0.0 ) * viewMatrix ).xyz + c
 vec3 lpToWorld( vec3 v ) { return ( vec4( v, 0.0 ) * viewMatrix ).xyz; }
 float lpLum( vec3 c ) { return dot( c, vec3( 0.2126, 0.7152, 0.0722 ) ); }
 
-float lpGIWeight( vec3 P ) {
-	vec3 d = max( lpGIMin - P, P - lpGIMax );
-	return lpGIOn * ( 1.0 - smoothstep( 0.0, 1.5, max( d.x, max( d.y, d.z ) ) ) );
-}
+float lpGIWeight( vec3 P ) { return lpGIOn; }
 // Fetch the three channel vectors (c0, c1) of the irradiance volume around P (biased along N).
+// Positions outside the volume clamp to its border probes (all outdoors), so no sky-environment fallback is needed.
+vec3 lpGIUVW( vec3 P ) { return clamp( P * lpGIScale + lpGIOffset, lpGIClampLo, lpGIClampHi ); }
 void lpGIFetch( vec3 P, vec3 N, out vec4 r, out vec4 g, out vec4 b ) {
-	vec3 uvw = ( P + N * lpGIBias ) * lpGIScale + lpGIOffset;
-	r = texture( lpGIR, uvw ); g = texture( lpGIG, uvw ); b = texture( lpGIB, uvw );
+	vec3 uvw = lpGIUVW( P + N * lpGIBias );
+	uvw.z *= 1.0 / 3.0;
+	r = texture( lpGI, uvw ); g = texture( lpGI, uvw + vec3( 0.0, 0.0, 1.0 / 3.0 ) ); b = texture( lpGI, uvw + vec3( 0.0, 0.0, 2.0 / 3.0 ) );
 }
 vec3 lpSHEval( vec4 r, vec4 g, vec4 b, vec3 N ) {
 	vec4 n4 = vec4( 1.0, N );
@@ -163,8 +163,8 @@ vec3 lpBoxDir( vec3 P, vec3 R, vec3 bmin, vec3 bmax, vec3 c ) {
 vec3 lpLocalRadiance( vec3 P, vec3 R, float rough, float localLum ) {
 	vec3 acc = vec3( 0.0 );
 	float wsum = 0.0;
-	for ( int i = 1; i < LP_MAX_REFL; i ++ ) {
-		if ( i >= lpReflCount ) break;
+	// uniform (non-constant) loop bounds keep ANGLE/D3D from unrolling these loops (huge compile times)
+	for ( int i = 1; i < lpReflCount; i ++ ) {
 		vec3 dmin = P - lpReflMin[ i ], dmax = lpReflMax[ i ] - P;
 		float inside = min( min( min( dmin.x, dmin.y ), dmin.z ), min( min( dmax.x, dmax.y ), dmax.z ) );
 		float w = smoothstep( - lpReflFade, lpReflFade, inside ) * ( 1.0 - wsum );
@@ -227,8 +227,7 @@ float lpLocalLum = lpLum( vec3( lpSr.x, lpSg.x, lpSb.x ) );
 #endif
 
 #if defined( RE_Direct )
-	for ( int i = 0; i < LP_MAX_TUBES; i ++ ) {
-		if ( i >= lpTubeCount ) break;
+	for ( int i = 0; i < lpTubeCount; i ++ ) {
 		vec4 ta = lpTubeA[ i ], tb = lpTubeB[ i ], tc = lpTubeC[ i ];
 		vec3 tcen = ta.xyz - lpP;
 		float dc = length( tcen );
@@ -319,8 +318,8 @@ const FOG = /* glsl */`
 		vec3 lpFc = fogColor;
 		float lpFw = lpGIWeight( lpMid ) * lpFogGI;
 		if ( lpFw > 0.0 ) {
-			vec3 uvw = lpMid * lpGIScale + lpGIOffset;
-			vec3 c0 = vec3( texture( lpGIR, uvw ).x, texture( lpGIG, uvw ).x, texture( lpGIB, uvw ).x );
+			vec3 uvw = lpGIUVW( lpMid ); uvw.z *= 1.0 / 3.0;
+			vec3 c0 = vec3( texture( lpGI, uvw ).x, texture( lpGI, uvw + vec3( 0.0, 0.0, 1.0 / 3.0 ) ).x, texture( lpGI, uvw + vec3( 0.0, 0.0, 2.0 / 3.0 ) ).x );
 			lpFc = mix( fogColor, c0 * ( RECIPROCAL_PI * lpFogAlbedo * lpGIGain ), lpFw );
 		}
 		gl_FragColor.rgb = mix( gl_FragColor.rgb, lpFc, fogFactor );
@@ -385,7 +384,9 @@ export function adoptScene(root) {
 
 export function setVolume(gi) {
   const P = gi.grid;
-  LP.lpGIR.value = gi.textures[0]; LP.lpGIG.value = gi.textures[1]; LP.lpGIB.value = gi.textures[2];
+  LP.lpGI.value = gi.textures[0];
+  LP.lpGIClampLo.value.set(0.5 / P.nx, 0.5 / P.ny, 0.5 / P.nz);
+  LP.lpGIClampHi.value.set(1 - 0.5 / P.nx, 1 - 0.5 / P.ny, 1 - 0.5 / P.nz);
   const size = [P.nx * P.s, P.ny * P.s, P.nz * P.s];
   LP.lpGIScale.value.set(1 / size[0], 1 / size[1], 1 / size[2]);
   LP.lpGIOffset.value.set((-P.x0 / P.s + 0.5) / P.nx, (-P.y0 / P.s + 0.5) / P.ny, (-P.z0 / P.s + 0.5) / P.nz);

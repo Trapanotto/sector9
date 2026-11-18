@@ -5,7 +5,7 @@ import { VOX, PROBE, voxelize, createTracer, probeValidity, denoise, fillInvalid
 import { buildBakeScene } from './bakeGIScene.js';
 
 // Down-sample an equirect HDR texture into a small lat-long radiance table (linear RGB, three's equirect convention).
-export function skyTable(tex, TW = 64, TH = 32) {
+export function skyTable(tex, gain = 1, TW = 64, TH = 32) {
   const data = new Float32Array(TW * TH * 3);
   const img = tex?.image;
   if (!img?.data || !img.width) {
@@ -31,38 +31,39 @@ export function skyTable(tex, TW = 64, TH = 32) {
       data[o * 3] += get(i); data[o * 3 + 1] += get(i + 1); data[o * 3 + 2] += get(i + 2); cnt[o]++;
     }
   }
-  for (let o = 0; o < TW * TH; o++) if (cnt[o]) { data[o * 3] /= cnt[o]; data[o * 3 + 1] /= cnt[o]; data[o * 3 + 2] /= cnt[o]; }
+  for (let o = 0; o < TW * TH; o++) if (cnt[o]) { const k = gain / cnt[o]; data[o * 3] *= k; data[o * 3 + 1] *= k; data[o * 3 + 2] *= k; }
   return { w: TW, h: TH, data };
 }
 
+// One RGBA half-float 3D texture holding the three colour channels stacked along z (R: z 0..nz, G: nz..2nz,
+// B: 2nz..3nz), texel = (c0, c1.x, c1.y, c1.z). One sampler keeps the texture-unit budget of heavy materials low.
 function makeTextures(sh) {
   const { nx, ny, nz } = PROBE, n = nx * ny * nz;
   const toHalf = THREE.DataUtils.toHalfFloat;
-  const tex = [];
+  const d = new Uint16Array(n * 4 * 3);
   for (let c = 0; c < 3; c++) {
-    const d = new Uint16Array(n * 4);
+    const base = c * n * 4;
     for (let i = 0; i < n; i++) {
-      const o = i * 12;
-      d[i * 4] = toHalf(sh[o + c]);
-      d[i * 4 + 1] = toHalf(sh[o + 3 + c * 3]);
-      d[i * 4 + 2] = toHalf(sh[o + 4 + c * 3]);
-      d[i * 4 + 3] = toHalf(sh[o + 5 + c * 3]);
+      const o = i * 12, q = base + i * 4;
+      d[q] = toHalf(sh[o + c]);
+      d[q + 1] = toHalf(sh[o + 3 + c * 3]);
+      d[q + 2] = toHalf(sh[o + 4 + c * 3]);
+      d[q + 3] = toHalf(sh[o + 5 + c * 3]);
     }
-    const t = new THREE.Data3DTexture(d, nx, ny, nz);
-    t.format = THREE.RGBAFormat; t.type = THREE.HalfFloatType;
-    t.minFilter = t.magFilter = THREE.LinearFilter;
-    t.wrapS = t.wrapT = t.wrapR = THREE.ClampToEdgeWrapping;
-    t.unpackAlignment = 1; t.generateMipmaps = false;
-    t.needsUpdate = true;
-    tex.push(t);
   }
-  return tex;
+  const t = new THREE.Data3DTexture(d, nx, ny, nz * 3);
+  t.format = THREE.RGBAFormat; t.type = THREE.HalfFloatType;
+  t.minFilter = t.magFilter = THREE.LinearFilter;
+  t.wrapS = t.wrapT = t.wrapR = THREE.ClampToEdgeWrapping;
+  t.unpackAlignment = 1; t.generateMipmaps = false;
+  t.needsUpdate = true;
+  return [t];
 }
 
 /**
  * @param opts { layout, extra, sky (skyTable), sun: {dir: towards-sun Vector3-like, color: [r,g,b] linear * intensity},
  *               lamp: {pos, dir, angle, penumbra, range, color: [r,g,b] * intensity} | null, rays, bounces }
- * @returns Promise<{ textures: Data3DTexture[3], sh: Float32Array, ms: number, sample(x,y,z)->[r,g,b] c0 }>
+ * @returns Promise<{ textures: [Data3DTexture] (channels stacked along z), sh: Float32Array, ms: number, sample(x,y,z)->[r,g,b] c0 }>
  */
 export async function bakeIrradianceVolume(opts) {
   const t0 = performance.now();

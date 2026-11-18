@@ -9,7 +9,7 @@ import { loadMaterials, makeCanvas } from './materials.js';
 import { Batcher, makeGrime, groundGrid, rng } from './geometry.js';
 import { buildProps, buildInstanced } from './props.js';
 import { buildDecals } from './decals.js';
-import { setupLighting, loadSky, linColor, SUN, SUN_DIR, LAMP } from './lighting.js';
+import { setupLighting, loadSky, linColor, SUN, SUN_DIR, LAMP, SKY_GAIN } from './lighting.js';
 import { installLightPatch, adoptScene, setVolume, LP } from './lightShader.js';
 import { bakeIrradianceVolume, skyTable } from './lightGI.js';
 import { createReflectionProbes } from './lightProbes.js';
@@ -59,7 +59,7 @@ export async function createLevel(ctx, onProgress = () => {}) {
   const sky = await loadSky(renderer, scene);
   const lampDir = new THREE.Vector3(...WORK_LAMP.target).sub(new THREE.Vector3(...WORK_LAMP.pos)).normalize();
   const giP = bakeIrradianceVolume({
-    layout, extra: SILHOUETTES, sky: skyTable(sky.bg),
+    layout, extra: SILHOUETTES, sky: skyTable(sky.bg, SKY_GAIN),
     sun: { dir: SUN_DIR.clone().negate().toArray(), color: linColor(SUN.color, SUN.intensity) },
     lamp: { pos: WORK_LAMP.pos, dir: lampDir.toArray(), angle: LAMP.angle, penumbra: LAMP.penumbra, range: LAMP.range, color: linColor(LAMP.color, LAMP.intensity) },
   }).catch((e) => { console.warn('[light] irradiance bake failed:', e); return null; });
@@ -141,6 +141,9 @@ export async function createLevel(ctx, onProgress = () => {}) {
   const gi = await giP;
   if (gi) {
     setVolume(gi);
+    // the volume (clamped to its outdoor border) is the ambient everywhere; dropping the sky environment frees a
+    // texture unit for heavy surface shaders and removes the flat sky ambient / sky reflections indoors
+    scene.environment = null;
     console.info(`[light] irradiance volume baked in ${gi.ms.toFixed(0)} ms on ${gi.workers} workers; waited ${(performance.now() - tMats).toFixed(0)} ms after textures (${gi.timings})`);
   }
   const lum = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
@@ -208,7 +211,7 @@ export async function createLevel(ctx, onProgress = () => {}) {
     return 'concrete';
   }
 
-  let scanT = 0, sinceLoad = 0, pendingSig = '';
+  let scanT = 0, sinceLoad = 0, pendingSig = '', autoRefreshes = 0;
   progress(1, 'Bereit');
   return {
     colliders,
@@ -227,10 +230,14 @@ export async function createLevel(ctx, onProgress = () => {}) {
       scanT += dt;
       if (scanT > 1.0) {
         scanT = 0;
-        adoptScene(scene);
-        if (sinceLoad < 60) {
+        const nAdopt = adoptScene(scene);
+        if (nAdopt) console.info(`[light] patched ${nAdopt} late material(s)`);
+        if (sinceLoad < 60 && autoRefreshes < 3) {
           const sig = signature();
-          if (sig !== staticSig) { if (sig === pendingSig) refreshStaticLighting(); pendingSig = sig; } else pendingSig = '';
+          if (sig !== staticSig) {
+            if (sig === pendingSig) { console.info('[light] static geometry changed (' + staticSig + ' -> ' + sig + ')'); autoRefreshes++; refreshStaticLighting(); }
+            pendingSig = sig;
+          } else pendingSig = '';
         }
       }
       sinceLoad += dt;
