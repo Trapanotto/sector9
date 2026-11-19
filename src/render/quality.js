@@ -9,6 +9,7 @@
 // headroom, never above the detected ceiling.
 
 export const TIERS = ['minimal', 'low', 'medium', 'high'];
+export const MIN_SCALE = 0.35;
 
 export function gpuInfo() {
   let renderer = '', vendor = '', webgl2 = false, float = false, tex3d = false;
@@ -81,12 +82,14 @@ export function createAutoQuality({ apply, ceiling = 'high', start = 'medium' })
     },
     /** call once per rendered frame with the real frame time (ms); paused / hidden frames must not be fed */
     sample(ms) {
-      if (!(ms > 0) || ms > 500) return;
+      if (!(ms > 0) || ms > 4000) return;           // (seconds-long frames are real on software renderers)
       st.frames++;
       st.sinceChange += ms / 1000;
       if (st.sinceChange < 0.6) return;                 // let a change settle (shader compiles, RT reallocation)
       st.win.push(ms); if (st.win.length > 45) st.win.shift();
-      if (st.win.length < 20) return;
+      // enough data: 20 frames, or 1.5 s worth when frames are very slow
+      if (st.win.length < 20 && st.win.reduce((a, b) => a + b, 0) < 1500) return;
+      if (st.win.length < 4) return;
       const sorted = st.win.slice().sort((a, b) => a - b);
       const med = sorted[Math.floor(sorted.length * 0.5)];
       const tgt = target(st.tier);
@@ -96,7 +99,8 @@ export function createAutoQuality({ apply, ceiling = 'high', start = 'medium' })
       const verySlow = med > tgt * 2;
       if (st.slowT > (verySlow ? 1.0 : 1.8)) {
         if (st.mode === 'auto' && i > 0) set(TIERS[Math.max(0, i - (verySlow ? 2 : 1))], 1);
-        else if (st.scale > 0.5) set(st.tier, Math.max(0.5, st.scale * (verySlow ? 0.75 : 0.87)));
+        // below the lowest tier: render scale, down to 35 % (never sit at a single-digit frame rate if avoidable)
+        else if (st.scale > MIN_SCALE) set(st.tier, Math.max(MIN_SCALE, st.scale * (med > tgt * 4 ? 0.6 : verySlow ? 0.75 : 0.87)));
         return;
       }
       if (st.mode === 'auto' && st.fastT > 8 && st.sinceChange > 20) {

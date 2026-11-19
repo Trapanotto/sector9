@@ -557,7 +557,7 @@ export function createPipeline(ctx) {
   let renderScale = 1;
   function setQuality(q, scale = renderScale) {
     if (!QUALITY[q]) return;
-    renderScale = Math.min(1, Math.max(0.4, scale));
+    renderScale = Math.min(1, Math.max(0.3, scale));
     const tierChanged = q !== qualityName;
     qualityName = q;
     Q = QUALITY[q];
@@ -730,7 +730,7 @@ export function createPipeline(ctx) {
     const now = performance.now();
     const ms = now - lastNow;
     lastNow = now;
-    if (ms > 250 || document.hidden) return;
+    if (ms > 4000 || document.hidden) return;
     const dtS = ms / 1000;
     if (grace > 0) { grace -= dtS; return; }
     const st = ctx.game?.state;

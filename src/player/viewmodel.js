@@ -223,7 +223,8 @@ export function createViewmodel() {
     const names = ['index', 'middle', 'ring', 'pinky'];
     for (let i = 0; i < 4; i++) {
       const fid = idle ? bump(fidgetT, 0.1 + i * 0.07, 0.25 + i * 0.07, 0.5 + i * 0.07) * 0.22 : 0;
-      const c = hand.supportCurl + 0.02 * Math.sin(time * 1.1 + i * 0.9) * (hand.busy ? 0 : 1) + 0.015 * br - regrip - fid;
+      let c = hand.supportCurl + 0.02 * Math.sin(time * 1.1 + i * 0.9) * (hand.busy ? 0 : 1) + 0.015 * br - regrip - fid;
+      if (!hand.busy) c = Math.min(c, 1);   // on the grip never tighter than sculpted (would sink into the strong hand)
       hands.support.setFinger(names[i], c, 0, 0, 0);
     }
     const light = bump(lightT, 0, 0.12, 0.34);
