@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { FLASH_DISTANCE, FLASH_ANGLE, FLASH_PENUMBRA } from './tuning.js';
+import { FLASH_DISTANCE, FLASH_ANGLE, FLASH_PENUMBRA, SHOULDER, ELBOW_POLE } from './tuning.js';
 import { createVmMaterials } from './vmMaterials.js';
 import {
   buildPistol, buildMag, GRIP_ANGLE as GA, BORE_Y, SLIDE_TOP, SLIDE_HALF_W, SIGHT_H, REAR_Z, FRONT_Z, MAG_ORIGIN, LIGHT_Y,
 } from './vmPistol.js';
-import { buildHands } from './vmHands.js';
+import { buildHands, FOREARM_L, UPPER_ARM_L } from './vmHands.js';
 
 // First-person viewmodel: procedural striker-fired pistol + gloved two-handed grip + sleeves + watch.
 // Geometry lives in vmPistol.js / vmHands.js (built once at load), materials in vmMaterials.js.
@@ -71,6 +71,56 @@ export function createViewmodel() {
   root.traverse((o) => {
     if (o.isMesh) { o.castShadow = false; o.receiveShadow = true; o.frustumCulled = false; }
   });
+
+  // ---------------------------------------------------------------- arms (two-bone IK from chest-fixed shoulders)
+  // The root's local matrix is camera space (the root is a child of the camera). Shoulders sit just below and
+  // behind the chest camera; each forearm runs from the hand's wrist to the IK elbow, the upper arm on to the
+  // shoulder. Solved after the root and hand groups have their final pose for the frame (updateMatrixWorld hook),
+  // so recoil, reload, lean, ADS and dev inspection poses all get matching arms.
+  const arms = hands.arms;
+  for (const a of [arms.strong, arms.support]) root.add(a.forearm, a.upper);
+  const _m = new THREE.Matrix4(), _mi = new THREE.Matrix4(), _b = new THREE.Matrix4();
+  const vW = new THREE.Vector3(), vD = new THREE.Vector3(), vS = new THREE.Vector3(), vE = new THREE.Vector3();
+  const vP = new THREE.Vector3(), vX = new THREE.Vector3(), vY = new THREE.Vector3(), vZ = new THREE.Vector3();
+  function placeFrame(obj, origin, z, yHint) {
+    vY.copy(yHint).addScaledVector(z, -yHint.dot(z)).normalize();
+    vX.crossVectors(vY, z);
+    _b.makeBasis(vX, vY, z).setPosition(origin);
+    obj.matrix.multiplyMatrices(_mi, _b);
+    obj.matrix.decompose(obj.position, obj.quaternion, obj.scale);
+    obj.updateMatrixWorld(true);
+  }
+  const UP = new THREE.Vector3(0, 1, 0);
+  function solveArm(a, group, side) {
+    _m.multiplyMatrices(root.matrix, group.matrix);
+    vW.copy(a.wrist).applyMatrix4(_m);
+    vD.copy(a.dorsal).transformDirection(_m);
+    vS.set(SHOULDER[0] * side, SHOULDER[1], SHOULDER[2]);
+    vZ.subVectors(vW, vS);
+    const L1 = UPPER_ARM_L, L2 = FOREARM_L;
+    const D = Math.min(L1 + L2 - 1e-4, Math.max(Math.abs(L1 - L2) + 1e-3, vZ.length()));
+    vZ.normalize();
+    const along = (L1 * L1 - L2 * L2 + D * D) / (2 * D), h = Math.sqrt(Math.max(0, L1 * L1 - along * along));
+    vP.set(ELBOW_POLE[0] * side, ELBOW_POLE[1], ELBOW_POLE[2]);
+    vP.addScaledVector(vZ, -vP.dot(vZ)).normalize();
+    vE.copy(vS).addScaledVector(vZ, along).addScaledVector(vP, h);
+    // forearm: wrist -> elbow, back of the wrist toward the back of the hand (a little toward camera-up)
+    vZ.subVectors(vE, vW).normalize();
+    vD.multiplyScalar(0.7).addScaledVector(UP, 0.3);
+    placeFrame(a.forearm, vW, vZ, vD);
+    // upper arm: elbow -> shoulder
+    vZ.subVectors(vS, vE).normalize();
+    placeFrame(a.upper, vE, vZ, UP);
+    a.elbow = a.elbow || new THREE.Vector3();
+    a.elbow.copy(vE);
+  }
+  const baseUMW = root.updateMatrixWorld.bind(root);
+  root.updateMatrixWorld = function (force) {
+    baseUMW(force);
+    _mi.copy(root.matrix).invert();
+    solveArm(arms.strong, strong, 1);
+    solveArm(arms.support, support, -1);
+  };
 
   // ---------------------------------------------------------------- attachment points
   const muzzle = new THREE.Object3D();

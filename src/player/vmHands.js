@@ -119,7 +119,8 @@ const FINGER = {
   ring: { L: [0.0450, 0.0280, 0.0230], w: [0.0085, 0.0078, 0.0072, 0.0065], h: [0.0077, 0.0071, 0.0065, 0.0058] },
   pinky: { L: [0.0360, 0.0220, 0.0200], w: [0.0074, 0.0069, 0.0064, 0.0058], h: [0.0068, 0.0064, 0.0059, 0.0053] },
 };
-const THUMB = { w: [0.0135, 0.0108, 0.0099, 0.0092], h: [0.0120, 0.0094, 0.0086, 0.0078] };
+// thumb base is the thenar mass (fuses with the palm instead of reading as a separate tube from behind)
+const THUMB = { w: [0.0165, 0.0112, 0.0099, 0.0090], h: [0.0150, 0.0096, 0.0086, 0.0078] };
 const NAMES = ['index', 'middle', 'ring', 'pinky'];
 
 function strongSpec() {
@@ -143,7 +144,9 @@ function strongSpec() {
     wrist: [0.0040, -0.0790, 0.0905],
     armDir: norm([0.40, -0.18, 1]),
     dorsal: norm([0.62, 0.30, 0.72]),
-    thumb: [[-0.0040, -0.0230, 0.0420], [-0.0222, -0.0030, 0.0205], [-0.0272, 0.0062, -0.0100], [-0.0288, 0.0082, -0.0348]],
+    // metacarpal runs forward-down from the web along the left of the frame (not splayed out sideways, which read
+    // as a thumb sticking up out of the hand from the camera); distal part lies on the support thumb, along the bore
+    thumb: [[-0.0105, -0.0285, 0.0420], [-0.0208, -0.0052, 0.0185], [-0.0262, 0.0042, -0.0105], [-0.0278, 0.0062, -0.0350]],
     thumbDorsal: norm([-0.55, 0.8, 0.15]),
     fingers,
     palmBulge: 0.004,           // thick palm pad on the backstrap
@@ -500,7 +503,7 @@ function thumbWeb(B, spec, body, mcps) {
     const c = sampleAt(cl, s);
     const U = ortho(up, c.t), S = cross(c.t, U);
     const u = s / tot;
-    const w = 0.0072 * (1 - 0.25 * Math.sin(u * Math.PI)), h = 0.0050;
+    const w = 0.0095 * (1 - 0.2 * Math.sin(u * Math.PI)), h = 0.0066;
     const ring = [];
     const wb = sstep(0.3, 0.9, u);
     const [si, sw] = skinOf([[0, 1 - wb], [13, wb]]);
@@ -516,10 +519,10 @@ function thumbWeb(B, spec, body, mcps) {
 }
 
 // ---------------------------------------------------------------- sleeve (long-sleeved top) with folds + watch slot
-function sleeve(wrist, armDir, upHint, seed, pinch) {
+function sleeve(wrist, armDir, upHint, seed, pinch, L = 0.46) {
   const f = norm(armDir);
   const u = ortho(upHint, f), s = cross(f, u);
-  const NR = 26, start = 0.034, L = 0.46;
+  const NR = 26, start = 0.034;
   const tSamples = [];
   for (let i = 0; i <= 26; i++) { const a = i / 26; tSamples.push(start + L * a * a * 0.55 + L * a * 0.45); }
   const radius = (t) => 0.0352 + 0.020 * Math.min(1, (t - start) / 0.22) + 0.004 * Math.max(0, (t - 0.3) / 0.2);
@@ -714,7 +717,7 @@ function buildHand(spec, opts) {
   digit(B, T, tUps, THUMB, [13, 14, 15], { around: 16, baseLen: 0.010, step: 0.0028 });
   for (let k = 0; k < 3; k++) bonesInfo[13 + k] = { joint: T[k], parent: k === 0 ? 0 : 12 + k };
   thumbWeb(B, spec, body, mcps);
-  gauntlet(B, spec, body.F);
+  // the gauntlet belongs to the forearm (it follows the IK-driven forearm, see buildArm)
   const geom = B.geometry();
   return { geom, bonesInfo, body };
 }
@@ -842,18 +845,55 @@ export function buildHands(mats, strongGroup, supportGroup) {
     }
   }
 
-  // ---- sleeves (+ watch over the left sleeve)
-  const watchT = 0.072;
-  const sl1 = new THREE.Mesh(sleeve(sSpec.wrist, sSpec.armDir, [0, 1, 0], 0.7, null), mats.sleeve);
-  const sl2 = new THREE.Mesh(sleeve(pSpec.wrist, pSpec.armDir, [0, 1, 0], 2.3, { t: watchT, w: 0.012 }), mats.sleeve);
-  for (const m of [sl1, sl2]) { m.frustumCulled = false; m.castShadow = false; m.receiveShadow = true; }
-  strongGroup.add(sl1);
-  supportGroup.add(sl2);
-  const w = watch(pSpec.wrist, pSpec.armDir, [0, 1, 0], pSpec.dorsal, watchT, mats);
-  supportGroup.add(w);
+  // ---- arms: gauntlet + forearm sleeve (+ watch on the left) and upper arm, posed every frame by two-bone IK
+  // from a shoulder fixed to the chest camera (viewmodel.solveArms), so the forearms always run toward a
+  // plausible elbow and enter the frame from the lower corners instead of hanging straight down from the gun.
+  const strongArm = buildArm(sSpec, mats, mats.glove, 0.7, null);
+  const supportArm = buildArm(pSpec, mats, mats.gloveSupport || mats.glove, 2.3, { t: WATCH_T, w: 0.012 });
 
   return {
     setTrigger, strongMesh, supportMesh, strong: sRig, support: pRig,
+    arms: { strong: strongArm, support: supportArm },
     triangles: (sInfo.geom.index.count + pInfo.geom.index.count) / 3,
+  };
+}
+
+const WATCH_T = 0.072;
+export const FOREARM_L = 0.255;     // wrist -> elbow
+export const UPPER_ARM_L = 0.30;    // elbow -> shoulder
+
+// Canonical arm frame: wrist at the origin, forearm along +Z (toward the elbow), +Y = back of the wrist.
+function buildArm(spec, mats, gloveMat, seed, pinch) {
+  const forearm = new THREE.Group();
+  forearm.name = 'forearm';
+  const sl = new THREE.Mesh(sleeve([0, 0, 0], [0, 0, 1], [0, 1, 0], seed, pinch, FOREARM_L + 0.012), mats.sleeve);
+  forearm.add(sl);
+  const gb = new Builder();
+  gauntlet(gb, { wrist: [0, 0, 0], armDir: [0, 0, 1], dorsal: [0, 1, 0] }, null);
+  const gg = gb.geometry();
+  gg.setAttribute('aOcc', new THREE.BufferAttribute(new Float32Array(gg.attributes.position.count * 2).fill(0.08), 2));
+  gg.deleteAttribute('skinIndex'); gg.deleteAttribute('skinWeight');
+  forearm.add(new THREE.Mesh(gg, gloveMat));
+  if (pinch) forearm.add(watch([0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 0], WATCH_T, mats));
+
+  // upper arm: origin at the elbow, +Z toward the shoulder; a rounded elbow cap closes the joint
+  const upper = new THREE.Group();
+  upper.name = 'upperArm';
+  const R0 = 0.054, R1 = 0.062, L = UPPER_ARM_L + 0.02;
+  const tube = new THREE.CylinderGeometry(R1, R0, L, 26, 8, true);
+  tube.rotateX(Math.PI / 2);          // axis along Z, the R0 end at -L/2
+  tube.translate(0, 0, L / 2 - 0.012);
+  const cap = new THREE.SphereGeometry(R0 * 1.01, 26, 12);
+  for (const g of [tube, cap]) {
+    const uv = g.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 2.6, 1.2 + uv.getY(i) * (g === tube ? L / 0.11 : 0.6));
+  }
+  upper.add(new THREE.Mesh(tube, mats.sleeve), new THREE.Mesh(cap, mats.sleeve));
+  for (const g of [forearm, upper]) g.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; o.castShadow = false; o.receiveShadow = true; } });
+  return {
+    forearm, upper,
+    wrist: new THREE.Vector3(...spec.wrist),       // hand-group local
+    dorsal: new THREE.Vector3(...spec.dorsal),     // hand-group local
+    armDir: new THREE.Vector3(...spec.armDir),     // hand-group local: forearm direction the hand was sculpted for
   };
 }

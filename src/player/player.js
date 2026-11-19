@@ -94,6 +94,7 @@ export function createPlayer(ctx) {
   const nrm = { x: 0, z: 0 };
 
   const player = {
+    tuning: T,                  // dev access (pose arrays are mutable for live tuning)
     position: new THREE.Vector3(),
     velocity: new THREE.Vector3(),
     height: T.HEIGHT_STAND,

@@ -23,6 +23,15 @@ export async function start(x = -9, z = 24, yaw = 0) {
   await wait(1200);
 }
 
+/** wait for loading, start with frozen AI and an invulnerable player; exposes window.dev / window.T */
+export async function boot(x, z, yaw) {
+  for (let i = 0; i < 300 && (!window.__ctx || window.__ctx.game.state === 'loading'); i++) await wait(100);
+  await start(x, z, yaw);
+  ctx().player.takeDamage = () => {};
+  window.T = ctx().player.tuning;
+  return ctx().game.state;
+}
+
 /** run fn right after the next pipeline.render (the drawing buffer is still valid then) */
 export function afterRender(fn) {
   const pl = ctx().pipeline;
@@ -72,6 +81,40 @@ export function snap(w = 480, crop = null) {
     el.style.width = `${cv.width}px`;
     el.onload = () => res();
   }));
+}
+
+/**
+ * Render several states into one overlay image (cols per row, 1280 CSS px wide). Each entry is either a viewmodel
+ * inspect pose array or an async function that sets up the state; crop is [u0, v0, u1, v1] of the canvas.
+ */
+export async function grid(states, crop = [0, 0, 1, 1], cols = 2) {
+  const cnv = ctx().renderer.domElement;
+  const out = document.createElement('canvas');
+  const rows = Math.ceil(states.length / cols);
+  const cw = Math.round(1280 / cols);
+  const ch = Math.round(cw * ((crop[3] - crop[1]) * cnv.height) / ((crop[2] - crop[0]) * cnv.width));
+  out.width = cw * cols; out.height = ch * rows;
+  const g = out.getContext('2d');
+  for (let i = 0; i < states.length; i++) {
+    const s = states[i];
+    if (typeof s === 'function') await s(); else inspect(s);
+    await wait(250);
+    await new Promise((r) => afterRender(() => {
+      g.drawImage(cnv, crop[0] * cnv.width, crop[1] * cnv.height, (crop[2] - crop[0]) * cnv.width, (crop[3] - crop[1]) * cnv.height,
+        (i % cols) * cw, Math.floor(i / cols) * ch, cw, ch);
+      r();
+    }));
+  }
+  let el = document.getElementById('__devsnap');
+  if (!el) {
+    el = document.createElement('img'); el.id = '__devsnap';
+    el.style.cssText = 'position:fixed;left:0;top:0;z-index:99999;pointer-events:none;';
+    document.body.appendChild(el);
+  }
+  el.src = out.toDataURL();
+  el.style.width = '1280px';
+  await new Promise((r) => { el.onload = r; });
+  return [out.width, out.height];
 }
 
 /** Override the viewmodel pose (camera space position + YXZ euler) for close inspection; null restores. */
