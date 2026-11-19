@@ -457,6 +457,7 @@ export function createEngine(ac, ctx, opts = {}) {
    * o: { position, send, nearDist (non-positional send scale), tone (dB lowshelf), startDelay, noDelay, bus, zone }
    */
   function voice(cls, o = {}) {
+    if (cls === 'voice') return null;   // HOTFIX no voices: radio, shouts, grunts and all other vocal sounds are disabled
     const C = CLASS[cls];
     let live = 0; for (const v of voices) if (!v.stolen) live++;
     if (live >= T.maxVoices && !steal(C.prio)) { dropped++; return null; }
