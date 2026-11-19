@@ -11,6 +11,7 @@ import { createGame } from './game/game.js';
 import { prewarmBodies } from './enemies/character.js';
 import { gpuInfo, detectTier, TIERS } from './render/quality.js';
 import { setTextureBudget, setSurfaceQuality } from './world/materials.js';
+import { adoptScene } from './world/lightShader.js';
 
 const ui = document.getElementById('ui');
 // favicon (inline: no extra request, and no 404 for /favicon.ico on the public site)
@@ -59,6 +60,8 @@ try {
 // weak GPUs render at device pixel ratio 1 (the pipeline also scales its internal resolution per tier)
 renderer.setPixelRatio(Math.min(devicePixelRatio, low ? 1 : 1.5));
 renderer.setSize(innerWidth, innerHeight);
+// shader error checks force a synchronous wait for every program link: development builds only
+renderer.debug.checkShaderErrors = !!import.meta.env?.DEV;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -99,6 +102,38 @@ async function boot() {
   ctx.enemies = createEnemies(ctx);
   window.__boot = { player: Math.round(tPlayer), enemies: Math.round(performance.now() - t), total: Math.round(performance.now()) };
   console.info("[boot]", JSON.stringify(window.__boot));
+  // Compile the programs of everything created after the level (characters, arms and pistol, effects) while the
+  // loading screen is up. compile only sees visible objects, so hidden ones (arms on the menu, culled zones) are
+  // shown for the duration. Without this the first seconds of play froze for up to 10 s on a cold shader cache.
+  ctx.game.setLoading(0.995, 'Shader'); await yieldFrame();
+  {
+    // materials with their own onBeforeCompile (arms, characters, decals) get the lighting patch wrapped in here;
+    // the level otherwise adopts them up to a second later, which changed their program keys after the warm-up
+    adoptScene(scene);
+    const hidden = [];
+    scene.traverse((o) => { if (!o.visible && (o.isMesh || o.isGroup || o.isBone || o.isObject3D)) { hidden.push(o); o.visible = true; } });
+    const rt = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType });
+    const prev = renderer.getRenderTarget();
+    renderer.setRenderTarget(rt);
+    const t0 = performance.now();
+    try { await renderer.compileAsync(scene, camera); } catch (e) { console.warn('[boot] shader warm-up skipped', e?.message || e); }
+    // one off-screen draw of everything (no frustum culling): uploads every texture and lets the driver build its
+    // draw-time shader variants (ANGLE / D3D11 does this per input layout) now instead of on entering a new zone
+    ctx.game.setLoading(0.998, 'Shader'); await yieldFrame();
+    const fc = [];
+    scene.traverse((o) => { if ((o.isMesh || o.isPoints || o.isSprite) && o.frustumCulled) { fc.push(o); o.frustumCulled = false; } });
+    try { renderer.render(scene, camera); } catch (e) { console.warn('[boot] warm-up draw skipped', e?.message || e); }
+    for (const o of fc) o.frustumCulled = true;
+    renderer.setRenderTarget(prev);
+    rt.dispose();
+    for (const o of hidden) o.visible = false;
+    // and the real frame path once (post-processing passes, the arms' own projection pass), behind the loading
+    // screen: on a cold shader cache this took 2.5 s on the first menu frame and ~11 s on the first frame of play
+    const vmRoot = ctx.player.viewmodel?.root;
+    if (vmRoot) vmRoot.visible = true;
+    try { ctx.pipeline.render(1 / 60); ctx.pipeline.render(1 / 60); } catch (e) { console.warn('[boot] warm-up frame failed', e?.message || e); }
+    console.info(`[boot] late shaders compiled in ${(performance.now() - t0).toFixed(0)} ms`);
+  }
   ctx.game.setLoading(1, 'Bereit'); await yieldFrame();
   ctx.game.ready();                           // loading done -> main menu
 
