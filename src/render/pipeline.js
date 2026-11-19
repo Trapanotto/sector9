@@ -3,6 +3,8 @@ import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import * as SH from './shaders.js';
 import { createOSD } from './osd.js';
+import { createAutoQuality } from './quality.js';
+import { applySurfaceQuality } from '../world/materials.js';
 
 // =============================================================================================
 // Tunables. Everything that shapes the "chest-mounted action camera" look lives here.
@@ -155,20 +157,29 @@ export const TUNING = {
 };
 
 export const QUALITY = {
+  // integrated / software GPUs: ~60 % resolution, no AO / DOF / flare / temporal NR, 3-level bloom, 1 motion-blur
+  // tap, no per-frame shadow maps (static baked sun shadow only), cheap surface shader, 512 px textures
+  minimal: {
+    scale: 0.6, maxHeight: 600, ao: false, aoScale: 0.5, aoSamples: 8, pdSamples: 8,
+    bloomLevels: 3, mbSamples: 1, fxaa: true, dofTaps: 0, ghosts: 0, streakTaps: 0, astig: false,
+    flare: false, tnr: false, shadows: 'off', surfCheap: true,
+  },
   low: {
     scale: 0.7, maxHeight: 720, ao: false, aoScale: 0.5, aoSamples: 8, pdSamples: 8,
     bloomLevels: 4, mbSamples: 6, fxaa: true, dofTaps: 0, ghosts: 2, streakTaps: 4, astig: false,
+    flare: false, tnr: true, shadows: 'small', surfCheap: true,
   },
   medium: {
     scale: 0.85, maxHeight: 900, ao: true, aoScale: 0.5, aoSamples: 8, pdSamples: 8,
     bloomLevels: 5, mbSamples: 8, fxaa: true, dofTaps: 14, ghosts: 3, streakTaps: 6, astig: false,
+    flare: true, tnr: true, shadows: 'full', surfCheap: false,
   },
   high: {
     scale: 1.0, maxHeight: 1080, ao: true, aoScale: 0.5, aoSamples: 16, pdSamples: 12,
     bloomLevels: 6, mbSamples: 12, fxaa: true, dofTaps: 28, ghosts: 5, streakTaps: 8, astig: true,
+    flare: true, tnr: true, shadows: 'full', surfCheap: false,
   },
 };
-const QUALITY_ORDER = ['low', 'medium', 'high'];
 
 const GTAO_PARAMS = { radius: 0.45, distanceExponent: 1.6, thickness: 0.6, distanceFallOff: 0.7, scale: 1.0 };
 const PD_PARAMS = { lumaPhi: 10, depthPhi: 2.5, normalPhi: 4, radius: 5, radiusExponent: 1.5, rings: 2.6 };
@@ -492,6 +503,7 @@ export function createPipeline(ctx) {
     lastDbW = dbSize.x; lastDbH = dbSize.y;
     let h = Math.max(2, Math.round(dbSize.y * Q.scale));
     if (h > Q.maxHeight) h = Q.maxHeight;
+    h = Math.max(2, Math.round(h * renderScale));
     const aspect = dbSize.x / Math.max(1, dbSize.y);
     ih = h;
     iw = Math.max(2, Math.round(h * aspect));
@@ -528,10 +540,31 @@ export function createPipeline(ctx) {
     applySize();
   }
 
-  function setQuality(q) {
+  // per-frame shadow maps by tier: 'full' as authored, 'small' halves the maps, 'off' disables them (the static
+  // baked sun shadow of the lighting module still applies). Changing castShadow recompiles lit materials once.
+  const shadowOrig = new Map();
+  function applyShadows(mode) {
+    scene.traverse((o) => {
+      if (!o.isLight || !o.shadow) return;
+      if (!shadowOrig.has(o)) shadowOrig.set(o, { cast: o.castShadow, size: o.shadow.mapSize.clone() });
+      const or = shadowOrig.get(o);
+      const cast = mode !== 'off' && or.cast;
+      const size = mode === 'small' ? Math.max(256, or.size.x / 2) : or.size.x;
+      if (o.castShadow !== cast) o.castShadow = cast;
+      if (o.shadow.mapSize.x !== size) { o.shadow.mapSize.set(size, size); o.shadow.map?.dispose(); o.shadow.map = null; }
+    });
+  }
+  let renderScale = 1;
+  function setQuality(q, scale = renderScale) {
     if (!QUALITY[q]) return;
+    renderScale = Math.min(1, Math.max(0.4, scale));
+    const tierChanged = q !== qualityName;
     qualityName = q;
     Q = QUALITY[q];
+    if (tierChanged || !shadowOrig.size) {
+      applyShadows(Q.shadows);
+      applySurfaceQuality(scene, Q.surfCheap);
+    }
     bloomLevels = Math.min(MAX_BLOOM, Q.bloomLevels);
     ensureAO(Q);
     compU.uMBSamples.value = Q.mbSamples;
@@ -684,25 +717,25 @@ export function createPipeline(ctx) {
     finU.uFaceCount.value = n;
   }
 
+  // automatic quality: real frame times while the game or the live menu scene renders in a visible tab
+  const auto = createAutoQuality({
+    start: ctx.hardware?.tier || 'high',
+    ceiling: ctx.hardware?.ceiling || 'high',
+    apply: (tier, scale) => {
+      console.info(`[quality] ${qualityName} @${Math.round(renderScale * 100)}% -> ${tier} @${Math.round(scale * 100)}%`);
+      setQuality(tier, scale);
+    },
+  });
   function monitor() {
     const now = performance.now();
     const ms = now - lastNow;
     lastNow = now;
-    if (ms > 250 || document.hidden) { slowTime = 0; return; }
+    if (ms > 250 || document.hidden) return;
     const dtS = ms / 1000;
     if (grace > 0) { grace -= dtS; return; }
-    const playing = !ctx.game || ctx.game.state === 'playing';
-    if (!playing) { slowTime = Math.max(0, slowTime - dtS); return; }
-    if (ms > T.slowFrameMs) slowTime += dtS;
-    else slowTime = Math.max(0, slowTime - dtS * 0.5);
-    if (slowTime > T.slowFrameSeconds) {
-      const i = QUALITY_ORDER.indexOf(qualityName);
-      if (i > 0) {
-        console.info(`[pipeline] frame time high, quality ${qualityName} -> ${QUALITY_ORDER[i - 1]}`);
-        setQuality(QUALITY_ORDER[i - 1]);
-      }
-      slowTime = 0;
-    }
+    const st = ctx.game?.state;
+    if (st !== 'playing' && st !== 'menu') return;
+    auto.sample(ms);
   }
 
   function syncTuning() {
@@ -889,7 +922,7 @@ export function createPipeline(ctx) {
     compU.uBloomAmt.value = T.bloomStrength;
 
     // ---- lens flare (quarter res)
-    if (T.flare > 0 && bloomLevels >= 3) {
+    if (T.flare > 0 && Q.flare && bloomLevels >= 3) {
       const fs = bloomDown[Math.min(3, bloomLevels - 1)];
       const fu = flareMat.uniforms;
       fu.tSrc.value = fs.texture;
@@ -978,7 +1011,7 @@ export function createPipeline(ctx) {
     // ---- composite -> LDR
     const prevLdr = ldrIdx; ldrIdx ^= 1;
     compU.tPrev.value = ldrRT[prevLdr].texture;
-    compU.uTNR.value = menuAmt > 0.5 ? 0 : T.tnr;
+    compU.uTNR.value = menuAmt > 0.5 || !Q.tnr ? 0 : T.tnr;
     draw(compMat, ldrRT[ldrIdx]);
 
     // ---- encoder -> screen. Rate control: quantiser rises fast with motion/complexity,
@@ -1025,6 +1058,11 @@ export function createPipeline(ctx) {
     get quality() { return qualityName; },
     set quality(q) { setQuality(q); },
     setQuality,
+    /** 'auto' | 'minimal' | 'low' | 'medium' | 'high' (manual tiers still drop the render scale if the frame rate collapses) */
+    setQualityMode(mode) { auto.setMode(mode); },
+    get renderScale() { return renderScale; },
+    get qualityMode() { return auto.state.mode; },
+    get internalSize() { return [iw, ih]; },
     tuning: TUNING,
     /** Snap exposure / white balance / focus to the current scene (e.g. after respawn/teleport). */
     resetExposure() { needReset = true; havePrev = false; },
@@ -1070,6 +1108,6 @@ export function createPipeline(ctx) {
     },
   };
 
-  setQuality('high');
+  setQuality(ctx.hardware?.tier || 'high');
   return api;
 }

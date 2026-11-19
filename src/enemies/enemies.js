@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { TUNING as T } from './tuning.js';
-import { createCharacter, randomLook, createHitShapes, updateHitShapes, raySphere, rayCapsule } from './character.js';
+import { createCharacter, lookFor, createHitShapes, updateHitShapes, raySphere, rayCapsule } from './character.js';
 import { Animator } from './animator.js';
 import { Ragdoll } from './ragdoll.js';
 import { createNav } from './nav.js';
@@ -83,7 +83,8 @@ export function createEnemies(ctx) {
 
   function makeEnemy(spawn, index) {
     const weaponType = Math.random() < (spawn.type === 'guard' ? 0.5 : 0.35) ? 'rifle' : 'pistol';
-    const ch = createCharacter({ weaponType, renderer: ctx.renderer, look: randomLook(index + ((Math.random() * 5) | 0)) });
+    const { look, bulk } = lookFor(index);
+    const ch = createCharacter({ weaponType, renderer: ctx.renderer, look, bulk });
     const anim = new Animator(ch);
     const heading = spawnYawToHeading(spawn.yaw);
     const home = (spawn.position || new THREE.Vector3()).clone();

@@ -9,115 +9,94 @@ export const GAME_TUNING = {
   retryGuard: 0.45,         // ignore retry input this long after the death screen appears
   ammoShowSeconds: 2.2,     // ammo readout after reload / R
   objectiveSeconds: 4.5,    // objective line hold time
-  startRadioDelay: 0.7,
   cameraId: 'BWC-S9-0417',
   caseId: 'AKTE 09-4471',
 };
 
 const CSS = `
-#ui { --s9-bg: rgba(9,10,11,0.88); --s9-fg: #d3d5cf; --s9-mut: #81867f; --s9-line: #2b2f2d;
-  --s9-acc: #c9c3b1; --s9-red: #9b3b31;
+#ui { --s9-fg: #d9dbd5; --s9-mut: #8b8f88; --s9-dim: #5d615c; --s9-line: rgba(217,219,213,.16);
   --s9-mono: ui-monospace, "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", "Courier New", monospace;
   --s9-sans: "Helvetica Neue", "Segoe UI", Arial, sans-serif; }
-#ui > .s9-hidden { display: none !important; }
+#ui .s9-hidden { display: none !important; }
 #ui > .s9-passive { pointer-events: none; }
-#ui .s9-screen { position: absolute; inset: 0; color: var(--s9-fg); font-family: var(--s9-sans);
+#ui .s9-screen { position: absolute; inset: 0; color: var(--s9-fg); font-family: var(--s9-sans); font-size: 13px;
   -webkit-font-smoothing: antialiased; user-select: none; }
-#ui .s9-screen button { font: inherit; }
+#ui .s9-screen button { font: inherit; color: inherit; }
+#ui button:focus-visible, #ui input:focus-visible { outline: 1px solid var(--s9-fg); outline-offset: 3px; }
+#ui .s9-title { font-weight: 600; font-size: 12px; letter-spacing: .55em; color: var(--s9-fg); }
+#ui .s9-line { font-family: var(--s9-mono); font-size: 11px; letter-spacing: .06em; color: var(--s9-mut); line-height: 1.6; }
 
-/* loading */
+/* loading: title, thin progress line, one status word */
 #ui .s9-loading { background: #050506; display: flex; align-items: center; justify-content: center; }
-#ui .s9-load-box { width: min(420px, 80vw); font-family: var(--s9-mono); font-size: 11px; letter-spacing: .12em; color: var(--s9-mut); }
-#ui .s9-load-title { color: var(--s9-fg); font-family: var(--s9-sans); font-weight: 600; font-size: 13px; letter-spacing: .5em; margin-bottom: 18px; }
-#ui .s9-bar { height: 2px; background: var(--s9-line); margin: 10px 0 8px; overflow: hidden; }
-#ui .s9-bar > div { height: 100%; width: 0%; background: var(--s9-acc); transition: width .25s ease-out; }
-#ui .s9-load-row { display: flex; justify-content: space-between; }
+#ui .s9-load-box { width: min(300px, 70vw); }
+#ui .s9-bar { height: 1px; background: var(--s9-line); margin: 22px 0 12px; overflow: hidden; }
+#ui .s9-bar > div { height: 100%; width: 0%; background: var(--s9-fg); transition: width .3s ease-out; }
 
-/* menu */
-#ui .s9-menu { background: linear-gradient(90deg, rgba(6,7,8,.94) 0%, rgba(6,7,8,.86) 38%, rgba(6,7,8,.25) 70%, rgba(6,7,8,.1) 100%);
-  overflow-y: auto; }
-#ui .s9-panel { width: min(560px, calc(100vw - 32px)); box-sizing: border-box; padding: 40px 48px 32px; }
-#ui .s9-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-family: var(--s9-mono); font-size: 10.5px;
-  letter-spacing: .14em; color: var(--s9-mut); border-bottom: 1px solid var(--s9-line); padding-bottom: 10px; text-transform: uppercase; }
-#ui .s9-title { font-family: var(--s9-sans); font-weight: 600; font-size: 54px; letter-spacing: .32em; margin: 34px 0 4px; color: #e2e3de; }
-#ui .s9-sub { font-family: var(--s9-mono); font-size: 11px; letter-spacing: .1em; color: var(--s9-mut); margin-bottom: 26px; }
-#ui .s9-sec { border-top: 1px solid var(--s9-line); padding: 14px 0 12px; }
-#ui .s9-sec h2 { font-family: var(--s9-mono); font-weight: 400; font-size: 10.5px; letter-spacing: .2em; color: var(--s9-mut);
-  margin: 0 0 9px; text-transform: uppercase; }
-#ui .s9-sec p { margin: 0 0 7px; font-size: 13.5px; line-height: 1.55; color: #c4c6c0; max-width: 60ch; }
-#ui .s9-keys { display: grid; grid-template-columns: max-content 1fr max-content 1fr; gap: 5px 14px; font-size: 12.5px; color: #bfc1bb; }
-#ui .s9-keys kbd { font-family: var(--s9-mono); font-size: 11px; color: var(--s9-fg); border: 1px solid var(--s9-line);
-  padding: 1px 6px; border-radius: 2px; background: rgba(255,255,255,.02); white-space: nowrap; justify-self: start; }
-#ui .s9-row { display: flex; align-items: center; gap: 14px; margin: 6px 0; font-size: 12.5px; color: #bfc1bb; }
-#ui .s9-row > span:first-child { width: 110px; }
-#ui .s9-seg { display: inline-flex; border: 1px solid var(--s9-line); }
-#ui .s9-seg button { background: transparent; color: var(--s9-mut); border: 0; border-right: 1px solid var(--s9-line);
-  padding: 5px 12px; font-family: var(--s9-mono); font-size: 11px; letter-spacing: .08em; cursor: pointer; }
-#ui .s9-seg button:last-child { border-right: 0; }
-#ui .s9-seg button.on { background: #d3d5cf; color: #0b0c0d; }
-#ui .s9-seg button:not(.on):hover { color: var(--s9-fg); }
-#ui input[type=range].s9-range { -webkit-appearance: none; appearance: none; width: 180px; height: 2px; background: var(--s9-line); outline: none; }
-#ui input[type=range].s9-range::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 14px; background: var(--s9-fg); border: 0; border-radius: 1px; cursor: pointer; }
-#ui input[type=range].s9-range::-moz-range-thumb { width: 10px; height: 14px; background: var(--s9-fg); border: 0; border-radius: 1px; cursor: pointer; }
-#ui .s9-val { font-family: var(--s9-mono); font-size: 11px; color: var(--s9-mut); width: 52px; }
-#ui .s9-row > span:first-child { width: 150px; flex: none; }
-#ui .s9-row { flex-wrap: wrap; row-gap: 4px; }
-#ui .s9-keys2 { display: grid; grid-template-columns: max-content 1fr; gap: 5px 14px; font-size: 12.5px; color: #bfc1bb; }
-#ui .s9-keys2 kbd { font-family: var(--s9-mono); font-size: 11px; color: var(--s9-fg); border: 1px solid var(--s9-line);
-  padding: 1px 6px; border-radius: 2px; background: rgba(255,255,255,.02); white-space: nowrap; margin-right: 4px; }
-#ui .s9-keys2 > span:nth-child(odd) { white-space: nowrap; }
-#ui .s9-sub2 { font-family: var(--s9-mono); font-size: 10px; letter-spacing: .14em; color: var(--s9-mut); margin: 10px 0 4px; text-transform: uppercase; }
-#ui .s9-dim .s9-card { max-height: calc(100vh - 32px); overflow-y: auto; }
-#ui .s9-card .s9-sec { padding-bottom: 6px; }
-#ui .s9-card .s9-row { gap: 10px; }
-#ui .s9-card .s9-row > span:first-child { width: 128px; }
-#ui .s9-card input[type=range].s9-range { width: 150px; }
-#ui .s9-reset { background: transparent; border: 0; color: var(--s9-mut); font-family: var(--s9-mono); font-size: 10.5px;
-  letter-spacing: .1em; cursor: pointer; padding: 4px 0; text-decoration: underline; }
-#ui .s9-reset:hover { color: var(--s9-fg); }
-#ui .s9-btn { display: inline-block; margin-top: 18px; padding: 11px 22px; background: transparent; color: var(--s9-fg);
-  border: 1px solid #5b605b; font-family: var(--s9-mono); font-size: 12px; letter-spacing: .22em; text-transform: uppercase; cursor: pointer; }
-#ui .s9-btn:hover { background: rgba(211,213,207,.08); border-color: var(--s9-fg); }
-#ui .s9-btn.s9-primary { background: #d3d5cf; color: #0b0c0d; border-color: #d3d5cf; }
-#ui .s9-btn.s9-primary:hover { background: #e9eae6; }
-#ui .s9-btn + .s9-btn { margin-left: 10px; }
-#ui .s9-note { min-height: 16px; margin-top: 10px; font-family: var(--s9-mono); font-size: 11px; color: #b9a37a; letter-spacing: .05em; }
-#ui .s9-warn { margin-top: 18px; font-family: var(--s9-mono); font-size: 10.5px; line-height: 1.5; color: var(--s9-mut); letter-spacing: .04em;
-  border-left: 2px solid var(--s9-red); padding-left: 10px; }
+/* menu: over the live blurred scene, bottom-left, nothing else */
+#ui .s9-menu { background: linear-gradient(90deg, rgba(5,6,7,.62) 0%, rgba(5,6,7,.3) 45%, rgba(5,6,7,0) 75%); }
+#ui .s9-home { position: absolute; left: clamp(28px, 7vw, 120px); bottom: clamp(36px, 12vh, 140px); }
+#ui .s9-home .s9-title { margin-bottom: 30px; }
+#ui .s9-go { display: block; background: var(--s9-fg); color: #0b0c0d !important; border: 0; padding: 12px 26px; font-family: var(--s9-mono);
+  font-size: 12px; letter-spacing: .2em; text-transform: uppercase; cursor: pointer; }
+#ui .s9-go:hover { background: #fff; }
+#ui .s9-links { margin-top: 18px; display: flex; gap: 22px; }
+#ui .s9-link { background: none; border: 0; padding: 2px 0; cursor: pointer; font-family: var(--s9-mono); font-size: 11px;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--s9-mut) !important; }
+#ui .s9-link:hover, #ui .s9-link.on { color: var(--s9-fg) !important; }
+#ui .s9-foot { position: absolute; left: clamp(28px, 7vw, 120px); bottom: 18px; right: 28px; font-size: 10.5px; color: var(--s9-dim); }
+#ui .s9-note { min-height: 15px; margin-top: 12px; font-family: var(--s9-mono); font-size: 11px; color: #c4ad84; }
 
-/* pause / debrief */
-#ui .s9-dim { background: rgba(5,6,7,.72); display: flex; align-items: center; }
-#ui .s9-card { margin-left: max(32px, 8vw); width: min(460px, calc(100vw - 32px)); box-sizing: border-box; background: var(--s9-bg);
-  border: 1px solid var(--s9-line); padding: 26px 30px 26px; }
-#ui .s9-card h3 { font-family: var(--s9-sans); font-weight: 600; font-size: 22px; letter-spacing: .22em; margin: 18px 0 16px; text-transform: uppercase; }
-#ui .s9-table { width: 100%; border-collapse: collapse; font-family: var(--s9-mono); font-size: 12px; }
-#ui .s9-table td { padding: 7px 0; border-bottom: 1px solid var(--s9-line); color: var(--s9-mut); letter-spacing: .06em; }
-#ui .s9-table td:last-child { text-align: right; color: var(--s9-fg); }
+/* panels: compact, on demand, right of the menu column */
+#ui .s9-panel { position: absolute; right: clamp(16px, 5vw, 80px); top: 50%; transform: translateY(-50%);
+  width: min(400px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow-y: auto; box-sizing: border-box;
+  padding: 22px 24px; background: rgba(7,8,9,.82); }
+#ui .s9-panel h2 { margin: 0 0 14px; font-weight: 600; font-size: 11px; letter-spacing: .4em; text-transform: uppercase; }
+#ui .s9-panel h3 { margin: 16px 0 6px; font-family: var(--s9-mono); font-weight: 400; font-size: 10px; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--s9-dim); }
+#ui .s9-row { display: flex; align-items: center; gap: 12px; margin: 7px 0; color: #c3c5bf; font-size: 12.5px; flex-wrap: wrap; row-gap: 4px; }
+#ui .s9-row > span:first-child { width: 140px; flex: none; }
+#ui .s9-hint { margin: -2px 0 6px 152px; font-size: 10.5px; color: var(--s9-dim); line-height: 1.45; }
+#ui .s9-seg { display: inline-flex; flex-wrap: wrap; gap: 2px 12px; }
+#ui .s9-seg button { background: none; border: 0; padding: 2px 0; cursor: pointer; font-family: var(--s9-mono); font-size: 11px;
+  color: var(--s9-dim); border-bottom: 1px solid transparent; }
+#ui .s9-seg button.on { color: var(--s9-fg); border-bottom-color: var(--s9-fg); }
+#ui .s9-seg button:not(.on):hover { color: var(--s9-mut); }
+#ui input[type=range].s9-range { -webkit-appearance: none; appearance: none; width: 130px; height: 1px; background: var(--s9-mut); outline: none; }
+#ui input[type=range].s9-range::-webkit-slider-thumb { -webkit-appearance: none; width: 9px; height: 13px; background: var(--s9-fg); border: 0; cursor: pointer; }
+#ui input[type=range].s9-range::-moz-range-thumb { width: 9px; height: 13px; background: var(--s9-fg); border: 0; border-radius: 0; cursor: pointer; }
+#ui .s9-val { font-family: var(--s9-mono); font-size: 11px; color: var(--s9-mut); min-width: 44px; }
+#ui .s9-keys { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: 12.5px; color: #c3c5bf; }
+#ui .s9-keys > span:nth-child(odd) { font-family: var(--s9-mono); font-size: 11px; color: var(--s9-fg); white-space: nowrap; }
+#ui .s9-keys i { font-style: normal; color: var(--s9-dim); }
+#ui .s9-close { position: absolute; right: 14px; top: 12px; }
+#ui .s9-reset { margin-top: 14px; }
 
-/* death */
-#ui .s9-dead { background:
-    repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px),
-    radial-gradient(ellipse at center, rgba(0,0,0,.55) 0%, rgba(0,0,0,.9) 100%);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; cursor: pointer;
-  animation: s9-in .35s steps(4) both; }
-#ui .s9-dead .s9-sig { font-family: var(--s9-mono); font-size: clamp(28px, 5vw, 56px); letter-spacing: .4em; color: #e4e4e0;
-  padding-left: .4em; animation: s9-flick 2.4s steps(1) infinite; }
-#ui .s9-dead .s9-meta { margin-top: 14px; font-family: var(--s9-mono); font-size: 11px; letter-spacing: .18em; color: var(--s9-mut); }
-#ui .s9-dead .s9-rec { display: inline-block; width: 8px; height: 8px; background: var(--s9-red); margin-right: 10px; vertical-align: 1px; }
-#ui .s9-dead .s9-hint { margin-top: 10px; font-family: var(--s9-mono); font-size: 10.5px; color: var(--s9-mut); letter-spacing: .14em; }
+/* pause / death / debrief: dim scene, left column, no boxes */
+#ui .s9-dim { background: rgba(4,5,6,.62); }
+#ui .s9-col { position: absolute; left: clamp(28px, 7vw, 120px); top: 50%; transform: translateY(-50%); }
+#ui .s9-col .s9-title { margin-bottom: 10px; }
+#ui .s9-col .s9-line { margin-bottom: 26px; }
+#ui .s9-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+#ui .s9-figs { display: grid; grid-template-columns: max-content max-content; gap: 6px 28px; margin: 6px 0 28px;
+  font-family: var(--s9-mono); font-size: 12px; color: var(--s9-mut); }
+#ui .s9-figs b { font-weight: 400; color: var(--s9-fg); text-align: right; }
+#ui .s9-dead { background: radial-gradient(ellipse at center, rgba(0,0,0,.5) 0%, rgba(0,0,0,.88) 100%); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; animation: s9-in .4s steps(4) both; }
+#ui .s9-dead .s9-title { letter-spacing: .6em; padding-left: .6em; }
+#ui .s9-dead .s9-line { margin-top: 14px; }
 @keyframes s9-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes s9-flick { 0%, 100% { opacity: 1; } 47% { opacity: .82; } 48% { opacity: 1; } 83% { opacity: .9; } }
 
-/* HUD */
-#ui .s9-ammo { position: absolute; right: 34px; bottom: 30px; font-family: var(--s9-mono); font-size: 13px; letter-spacing: .14em;
-  color: rgba(222,223,218,.82); text-shadow: 0 0 2px rgba(0,0,0,.8); opacity: 0; transition: opacity .35s ease; }
+/* HUD: nothing persistent; ammo after reload / when low, objective line fades out */
+#ui .s9-ammo { position: absolute; right: 34px; bottom: 30px; font-family: var(--s9-mono); font-size: 12px; letter-spacing: .14em;
+  color: rgba(222,223,218,.8); text-shadow: 0 0 2px rgba(0,0,0,.8); opacity: 0; transition: opacity .35s ease; }
 #ui .s9-ammo.on { opacity: 1; transition-duration: .08s; }
 #ui .s9-ammo.low { color: rgba(214,170,150,.9); }
-#ui .s9-ammo .s9-res { color: rgba(170,172,166,.6); }
-#ui .s9-obj { position: absolute; left: 34px; bottom: 34px; font-family: var(--s9-mono); font-size: 12px; letter-spacing: .14em;
+#ui .s9-ammo .s9-res { color: rgba(170,172,166,.55); }
+#ui .s9-obj { position: absolute; left: 34px; bottom: 34px; font-family: var(--s9-mono); font-size: 11.5px; letter-spacing: .14em;
   text-transform: uppercase; color: rgba(222,223,218,.85); text-shadow: 0 0 3px rgba(0,0,0,.9); opacity: 0; transition: opacity 1.1s ease; }
 #ui .s9-obj.on { opacity: 1; transition-duration: .4s; }
-#ui .s9-obj .s9-ts { color: rgba(160,163,157,.7); margin-right: 14px; }
+#ui .s9-obj .s9-ts { color: rgba(160,163,157,.65); margin-right: 14px; }
+@media (max-height: 560px) { #ui .s9-home { bottom: 40px; } #ui .s9-home .s9-title { margin-bottom: 18px; } }
 `;
 
 const fmtTime = (s) => {
@@ -152,123 +131,123 @@ export function createGame(ctx) {
   const $ = (root, sel) => root.querySelector(sel);
 
   // ---- screens ------------------------------------------------------------------------------
+  // Minimal on purpose: one action per screen, everything else on demand (Einstellungen / Steuerung panels).
   const scrLoading = el(`
     <div class="s9-screen s9-loading">
       <div class="s9-load-box">
-        <div class="s9-load-title">SECTOR 9</div>
-        <div class="s9-load-row"><span data-k="label">Initialisiere Aufzeichnung</span><span data-k="pct">0 %</span></div>
+        <div class="s9-title">SECTOR 9</div>
         <div class="s9-bar"><div data-k="bar"></div></div>
-        <div class="s9-load-row"><span>${G.cameraId}</span><span>${G.caseId}</span></div>
+        <div class="s9-line" data-k="label">Lade</div>
       </div>
     </div>`);
 
   const scrMenu = el(`
     <div class="s9-screen s9-menu s9-hidden">
-      <div class="s9-panel">
-        <div class="s9-head"><span>Beweismittel-Verwaltung</span><span>${G.caseId} · ${G.cameraId}</span></div>
+      <div class="s9-home">
         <div class="s9-title">SECTOR 9</div>
-        <div class="s9-sub">Einsatzaufzeichnung · stillgelegtes Werk, Halle 9</div>
-        <div class="s9-sec">
-          <h2>Lage</h2>
-          <p>Anonymer Hinweis, 05:40 Uhr: In einem seit Jahren stillgelegten Werk halten sich mehrere bewaffnete Personen auf.
-             Unterstützung ist nicht verfügbar.</p>
-          <p>Auftrag: Gebäude betreten und sichern. Bewaffnete Personen ausschalten, anschließend zur Laderampe.</p>
+        <button type="button" class="s9-go" data-act="start">Einsatz beginnen</button>
+        <div class="s9-links">
+          <button type="button" class="s9-link" data-panel="settings">Einstellungen</button>
+          <button type="button" class="s9-link" data-panel="controls">Steuerung</button>
         </div>
-        <div class="s9-sec">
-          <h2>Steuerung</h2>
-          <div class="s9-keys2">
-            <span><kbd>W A S D</kbd><kbd>Pfeiltasten</kbd></span><span>Bewegen</span>
-            <span><kbd>Maus</kbd></span><span>Umsehen und Waffe führen</span>
-            <span><kbd>Linke Maustaste</kbd></span><span>Schießen</span>
-            <span><kbd>Rechte Maustaste</kbd></span><span>Zielen (Halten oder Umschalten, siehe Einstellungen)</span>
-            <span><kbd>R</kbd><kbd>Enter</kbd><kbd>Num 1</kbd></span><span>Nachladen</span>
-            <span><kbd>F</kbd><kbd>Ende</kbd><kbd>Num ,</kbd></span><span>Waffenlicht</span>
-            <span><kbd>Shift</kbd><kbd>Shift rechts</kbd></span><span>Sprinten (nur vorwärts, bricht frühes Nachladen ab)</span>
-            <span><kbd>C</kbd><kbd>Strg</kbd><kbd>Strg rechts</kbd><kbd>Num 0</kbd></span><span>Ducken</span>
-            <span><kbd>Q</kbd><kbd>E</kbd> · <kbd>Entf</kbd><kbd>Bild ↓</kbd></span><span>Lehnen links / rechts</span>
-            <span><kbd>Esc</kbd></span><span>Pause und Einstellungen</span>
-          </div>
-        </div>
-        <div data-k="settings-slot"></div>
-        <button type="button" class="s9-btn s9-primary" data-act="start">Einsatz beginnen</button>
         <div class="s9-note" data-k="note"></div>
-        <p class="s9-warn">Inhaltshinweis: Dieses Spiel zeigt realistisch dargestellte Waffengewalt und Blut.</p>
       </div>
+      <div class="s9-foot">Stillgelegtes Werk, bewaffnete Personen, keine Unterstützung · Enthält realistische Waffengewalt.</div>
+      <div data-k="settings-slot"></div>
     </div>`);
 
   const scrPause = el(`
     <div class="s9-screen s9-dim s9-hidden">
-      <div class="s9-card">
-        <div class="s9-head"><span>Aufnahme pausiert</span><span>${G.cameraId}</span></div>
-        <h3>Pause</h3>
-        <table class="s9-table">
-          <tr><td>Verbleibende Zielpersonen</td><td data-k="left">–</td></tr>
-          <tr><td>Einsatzzeit</td><td data-k="time">00:00</td></tr>
-        </table>
-        <button type="button" class="s9-btn s9-primary" data-act="resume">Fortsetzen</button><button type="button" class="s9-btn" data-act="restart">Neu starten</button>
+      <div class="s9-col">
+        <div class="s9-title">PAUSE</div>
+        <div class="s9-line" data-k="left">–</div>
+        <div class="s9-actions">
+          <button type="button" class="s9-go" data-act="resume">Weiter</button>
+          <button type="button" class="s9-link" data-act="restart">Neu starten</button>
+          <button type="button" class="s9-link" data-panel="settings">Einstellungen</button>
+          <button type="button" class="s9-link" data-panel="controls">Steuerung</button>
+        </div>
         <div class="s9-note" data-k="note"></div>
-        <div data-k="settings-slot" style="margin-top:14px"></div>
       </div>
+      <div data-k="settings-slot"></div>
     </div>`);
 
-  // settings block: one element, moved into whichever screen (menu / pause) is shown
+  // settings + controls panels: one element, moved into whichever screen (menu / pause) is shown
   const settingsEl = (() => {
     const t = document.createElement('template');
     t.innerHTML = `
-      <div class="s9-sec">
-        <h2>Einstellungen</h2>
-        <div class="s9-sub2">Maus und Zielen</div>
-        <div class="s9-row"><span>Mausempfindlichkeit</span>
-          <input class="s9-range" type="range" min="0" max="1000" step="1" data-k="sens"><span class="s9-val" data-k="sensv"></span></div>
-        <div class="s9-row"><span>Empfindlichkeit beim Zielen</span>
-          <input class="s9-range" type="range" min="30" max="150" step="1" data-k="adssens"><span class="s9-val" data-k="adssensv"></span></div>
-        <div class="s9-row"><span>Y-Achse umkehren</span>
-          <span class="s9-seg" data-k="invert"><button type="button" data-v="0">Aus</button><button type="button" data-v="1">An</button></span></div>
-        <div class="s9-row"><span>Freies Zielen</span>
-          <span class="s9-seg" data-k="freeaim"><button type="button" data-v="aus">Aus</button><button type="button" data-v="gering">Gering</button><button type="button" data-v="standard">Standard</button><button type="button" data-v="stark">Stark</button></span></div>
-        <div class="s9-row"><span>Zielen</span>
-          <span class="s9-seg" data-k="aimmode"><button type="button" data-v="hold">Halten</button><button type="button" data-v="toggle">Umschalten</button></span></div>
-        <div class="s9-row"><span>Ducken</span>
-          <span class="s9-seg" data-k="crouchmode"><button type="button" data-v="toggle">Umschalten</button><button type="button" data-v="hold">Halten</button></span></div>
-        <div class="s9-sub2">Bild und Ton</div>
-        <div class="s9-row"><span>Sichtfeld</span>
-          <input class="s9-range" type="range" min="80" max="110" step="1" data-k="fov"><span class="s9-val" data-k="fovv"></span></div>
-        <div class="s9-row"><span>Kamerawackeln</span>
-          <input class="s9-range" type="range" min="0" max="100" step="5" data-k="shake"><span class="s9-val" data-k="shakev"></span></div>
-        <div class="s9-row"><span>Gesichter verpixeln</span>
-          <span class="s9-seg" data-k="faces"><button type="button" data-v="1">An</button><button type="button" data-v="0">Aus</button></span></div>
-        <div class="s9-row"><span>Grafikqualität</span>
-          <span class="s9-seg" data-k="quality">
-            <button type="button" data-q="low">Niedrig</button><button type="button" data-q="medium">Mittel</button><button type="button" data-q="high">Hoch</button>
-          </span></div>
-        <div class="s9-row"><span>Lautstärke</span>
-          <input class="s9-range" type="range" min="0" max="100" step="1" value="80" data-k="vol"><span class="s9-val" data-k="volv">80 %</span></div>
-        <button type="button" class="s9-reset" data-k="reset">Steuerung zurücksetzen</button>
+      <div>
+        <div class="s9-panel s9-hidden" data-p="settings">
+          <h2>Einstellungen</h2>
+          <button type="button" class="s9-link s9-close" data-panel="close">Esc</button>
+          <div class="s9-row"><span>Grafik</span>
+            <span class="s9-seg" data-k="quality">
+              <button type="button" data-q="auto">Automatisch</button><button type="button" data-q="minimal">Sehr niedrig</button><button type="button" data-q="low">Niedrig</button><button type="button" data-q="medium">Mittel</button><button type="button" data-q="high">Hoch</button>
+            </span></div>
+          <div class="s9-hint" data-k="qinfo"></div>
+          <div class="s9-row"><span>Sichtfeld</span>
+            <input class="s9-range" type="range" min="80" max="110" step="1" data-k="fov"><span class="s9-val" data-k="fovv"></span></div>
+          <div class="s9-row"><span>Kamerawackeln</span>
+            <input class="s9-range" type="range" min="0" max="100" step="5" data-k="shake"><span class="s9-val" data-k="shakev"></span></div>
+          <div class="s9-row"><span>Gesichter verpixeln</span>
+            <span class="s9-seg" data-k="faces"><button type="button" data-v="1">An</button><button type="button" data-v="0">Aus</button></span></div>
+          <div class="s9-row"><span>Lautstärke</span>
+            <input class="s9-range" type="range" min="0" max="100" step="1" value="80" data-k="vol"><span class="s9-val" data-k="volv">80 %</span></div>
+        </div>
+        <div class="s9-panel s9-hidden" data-p="controls">
+          <h2>Steuerung</h2>
+          <button type="button" class="s9-link s9-close" data-panel="close">Esc</button>
+          <div class="s9-keys">
+            <span>W A S D <i>/</i> Pfeile</span><span>Bewegen</span>
+            <span>Maus</span><span>Umsehen, Waffe führen</span>
+            <span>Linke Maustaste</span><span>Schießen</span>
+            <span>Rechte Maustaste</span><span>Zielen</span>
+            <span>R <i>/</i> Enter</span><span>Nachladen</span>
+            <span>F <i>/</i> Ende</span><span>Waffenlicht</span>
+            <span>Shift</span><span>Sprinten</span>
+            <span>C <i>/</i> Strg</span><span>Ducken</span>
+            <span>Q E <i>/</i> Entf Bild↓</span><span>Lehnen</span>
+            <span>Esc</span><span>Pause</span>
+          </div>
+          <h3>Maus und Zielen</h3>
+          <div class="s9-row"><span>Empfindlichkeit</span>
+            <input class="s9-range" type="range" min="0" max="1000" step="1" data-k="sens"><span class="s9-val" data-k="sensv"></span></div>
+          <div class="s9-hint">Gleiche Skala wie Source/CS (0,022° pro Zählschritt).</div>
+          <div class="s9-row"><span>Beim Zielen</span>
+            <input class="s9-range" type="range" min="30" max="150" step="1" data-k="adssens"><span class="s9-val" data-k="adssensv"></span></div>
+          <div class="s9-row"><span>Y-Achse umkehren</span>
+            <span class="s9-seg" data-k="invert"><button type="button" data-v="0">Aus</button><button type="button" data-v="1">An</button></span></div>
+          <div class="s9-row"><span>Freies Zielen</span>
+            <span class="s9-seg" data-k="freeaim"><button type="button" data-v="aus">Aus</button><button type="button" data-v="gering">Gering</button><button type="button" data-v="standard">Standard</button><button type="button" data-v="stark">Stark</button></span></div>
+          <div class="s9-hint">Die Waffe bewegt sich etwas im Bild, bevor die Kamera mitdreht.</div>
+          <div class="s9-row"><span>Zielen</span>
+            <span class="s9-seg" data-k="aimmode"><button type="button" data-v="hold">Halten</button><button type="button" data-v="toggle">Umschalten</button></span></div>
+          <div class="s9-row"><span>Ducken</span>
+            <span class="s9-seg" data-k="crouchmode"><button type="button" data-v="toggle">Umschalten</button><button type="button" data-v="hold">Halten</button></span></div>
+          <button type="button" class="s9-link s9-reset" data-k="reset">Zurücksetzen</button>
+        </div>
       </div>`.trim();
     return t.content.firstElementChild;
   })();
 
   const scrDead = el(`
     <div class="s9-screen s9-dead s9-hidden">
-      <div class="s9-sig">SIGNAL VERLOREN</div>
-      <div class="s9-meta"><span class="s9-rec"></span>${G.cameraId} · VERBINDUNG UNTERBROCHEN · <span data-k="ts">00:00:00</span></div>
-      <button type="button" class="s9-btn" data-act="retry">Erneut versuchen</button>
-      <div class="s9-hint">[R] · [ENTER] · KLICK</div>
+      <div class="s9-title">SIGNAL VERLOREN</div>
+      <div class="s9-line">Klick oder Enter: erneut versuchen</div>
       <div class="s9-note" data-k="note"></div>
     </div>`);
 
   const scrDone = el(`
     <div class="s9-screen s9-dim s9-hidden">
-      <div class="s9-card">
-        <div class="s9-head"><span>Einsatzbericht</span><span>${G.caseId}</span></div>
-        <h3>Gebäude gesichert</h3>
-        <table class="s9-table">
-          <tr><td>Einsatzzeit</td><td data-k="time">–</td></tr>
-          <tr><td>Neutralisierte Personen</td><td data-k="kills">–</td></tr>
-          <tr><td>Abgegebene Schüsse</td><td data-k="shots">–</td></tr>
-          <tr><td>Trefferquote</td><td data-k="acc">–</td></tr>
-        </table>
-        <button type="button" class="s9-btn s9-primary" data-act="again">Neuer Einsatz</button>
+      <div class="s9-col">
+        <div class="s9-title">GESICHERT</div>
+        <div class="s9-figs">
+          <span>Zeit</span><b data-k="time">–</b>
+          <span>Ausgeschaltet</span><b data-k="kills">–</b>
+          <span>Schüsse</span><b data-k="shots">–</b>
+          <span>Treffer</span><b data-k="acc">–</b>
+        </div>
+        <button type="button" class="s9-go" data-act="again">Neuer Einsatz</button>
         <div class="s9-note" data-k="note"></div>
       </div>
     </div>`);
@@ -278,6 +257,7 @@ export function createGame(ctx) {
 
   const screens = [scrLoading, scrMenu, scrPause, scrDead, scrDone];
   function showScreen(s) {
+    openPanel(null);
     for (const x of screens) x.classList.toggle('s9-hidden', x !== s);
     const slot = s && $(s, '[data-k=settings-slot]');
     if (slot && settingsEl.parentNode !== slot) slot.appendChild(settingsEl);
@@ -285,6 +265,14 @@ export function createGame(ctx) {
     const hud = s === null;
     hudAmmo.classList.toggle('s9-hidden', !hud);
     hudObj.classList.toggle('s9-hidden', !hud);
+  }
+  const panels = settingsEl.querySelectorAll('[data-p]');
+  let panelOpen = null;
+  function openPanel(name) {
+    panelOpen = name && name !== 'close' && panelOpen !== name ? name : null;
+    panels.forEach((p) => p.classList.toggle('s9-hidden', p.dataset.p !== panelOpen));
+    ui.querySelectorAll('[data-panel]').forEach((b) => b.classList.toggle('on', b.dataset.panel === panelOpen));
+    if (panelOpen) { syncQualityInfo(); setTimeout(() => settingsEl.querySelector(`[data-p=${panelOpen}] button, [data-p=${panelOpen}] input`)?.focus?.({ preventScroll: true }), 0); }
   }
   function activeScreen() { return screens.find((x) => !x.classList.contains('s9-hidden')) || null; }
   function note(text) {
@@ -303,9 +291,9 @@ export function createGame(ctx) {
   let deathPending = false, deathTimer = 0, deadShownAt = 0;
   let missionTime = 0, clock = 0, kills = 0, secured = false;
   let shotsBase = 0, hitsBase = 0;
-  let objTimer = 0, radioTimer = -1;
+  let objTimer = 0;
   let ammoShowT = 0, lastAmmo = -1, lastReloading = false, lastAmmoText = '', lastResText = '', ammoOn = false, ammoLow = false;
-  let quality = 'medium';
+  let quality = 'auto';
   let volume = 0.8;
   const tmpV = new THREE.Vector3();
 
@@ -353,19 +341,20 @@ export function createGame(ctx) {
       hitsBase = Number(ctx.player?.shotsHit ?? ctx.player?.hits) || 0;
       lastAmmo = -1; ammoShowT = 0;
       objective('Gebäude sichern');
-      radioTimer = G.startRadioDelay;
     }
     game.state = 'playing';
     ctx.pipeline?.setMenu?.(false);
     showScreen(null);
   }
 
+  let pausedAt = 0;
   function pause() {
     game.state = 'paused';
+    pausedAt = clock;
     ctx.pipeline?.setMenu?.(true);
     const n = ctx.enemies?.aliveCount;
-    $(scrPause, '[data-k=left]').textContent = typeof n === 'number' ? String(n) : '–';
-    $(scrPause, '[data-k=time]').textContent = fmtTime(missionTime);
+    $(scrPause, '[data-k=left]').textContent = typeof n === 'number'
+      ? (n === 0 ? `Alle ausgeschaltet · ${fmtTime(missionTime)}` : `Noch ${n} Bewaffnete · ${fmtTime(missionTime)}`) : fmtTime(missionTime);
     showScreen(scrPause);
   }
 
@@ -373,7 +362,6 @@ export function createGame(ctx) {
     deathPending = false;
     game.state = 'dead';
     deadShownAt = clock;
-    $(scrDead, '[data-k=ts]').textContent = fmtClock(missionTime);
     showScreen(scrDead);
   }
 
@@ -389,7 +377,6 @@ export function createGame(ctx) {
     $(scrDone, '[data-k=kills]').textContent = String(kills);
     $(scrDone, '[data-k=shots]').textContent = fired === null ? '–' : String(fired);
     $(scrDone, '[data-k=acc]').textContent = fired && hits !== null ? `${Math.round((100 * Math.min(hits, fired)) / fired)} %` : '–';
-    ctx.audio?.play?.('radio', { volume: 0.8 });
     showScreen(scrDone);
   }
 
@@ -405,6 +392,7 @@ export function createGame(ctx) {
     const b = e.target.closest?.('button');
     if (!b || !ui.contains(b)) return;
     ctx.audio?.play?.('ui_click');
+    if (b.dataset.panel) { openPanel(b.dataset.panel); return; }
     const act = b.dataset.act;
     if (act === 'start' && game.state === 'menu') beginPlay({ first: true });
     else if (act === 'resume' && game.state === 'paused') beginPlay({});
@@ -415,12 +403,23 @@ export function createGame(ctx) {
   });
 
   const qBtns = settingsEl.querySelectorAll('[data-q]');
+  const QUALITIES = ['auto', 'minimal', 'low', 'medium', 'high'];
+  const Q_NAMES = { minimal: 'Sehr niedrig', low: 'Niedrig', medium: 'Mittel', high: 'Hoch' };
   function setQuality(q) {
-    if (q !== 'low' && q !== 'medium' && q !== 'high') return;
+    if (!QUALITIES.includes(q)) return;
     quality = q;
     qBtns.forEach((b) => b.classList.toggle('on', b.dataset.q === q));
     store('s9.quality', q);
-    ctx.pipeline?.setQuality?.(q);
+    if (ctx.pipeline?.setQualityMode) ctx.pipeline.setQualityMode(q);
+    else if (q !== 'auto') ctx.pipeline?.setQuality?.(q);
+    syncQualityInfo();
+  }
+  function syncQualityInfo() {
+    const n = $(settingsEl, '[data-k=qinfo]');
+    if (!n) return;
+    const cur = ctx.pipeline?.quality, sc = ctx.pipeline?.renderScale;
+    n.textContent = quality === 'auto' && cur
+      ? `Passt sich der Leistung an · aktuell ${Q_NAMES[cur] || cur}${sc && sc < 0.99 ? `, ${Math.round(sc * 100)} % Auflösung` : ''}` : '';
   }
   const volInput = $(settingsEl, '[data-k=vol]'), volVal = $(settingsEl, '[data-k=volv]');
   function setVolume(v) {
@@ -503,27 +502,35 @@ export function createGame(ctx) {
 
   function canRetry() { return game.state === 'dead' && clock - deadShownAt > G.retryGuard; }
   addEventListener('mousedown', () => { if (canRetry()) beginPlay({ restart: true }); });
+  // keyboard: Enter = the screen's primary action, Esc closes an open panel (or resumes from pause)
   addEventListener('keydown', (e) => {
-    if (!canRetry()) return;
-    if (e.code === 'KeyR' || e.code === 'Enter' || e.code === 'NumpadEnter') { e.preventDefault(); beginPlay({ restart: true }); }
+    const enter = e.code === 'Enter' || e.code === 'NumpadEnter';
+    if (canRetry()) {
+      if (e.code === 'KeyR' || enter) { e.preventDefault(); beginPlay({ restart: true }); }
+      return;
+    }
+    if (e.code === 'Escape' && panelOpen) { e.preventDefault(); openPanel(null); return; }
+    const focusInPanel = settingsEl.contains(document.activeElement) && document.activeElement !== document.body;
+    if (enter && !focusInPanel && !e.repeat) {
+      if (game.state === 'menu') { e.preventDefault(); beginPlay({ first: true }); }
+      else if (game.state === 'paused') { e.preventDefault(); beginPlay({}); }
+      else if (game.state === 'complete') { e.preventDefault(); beginPlay({ restart: true }); }
+    } else if (e.code === 'Escape' && game.state === 'paused' && !e.repeat && clock - pausedAt > 0.3) {
+      e.preventDefault(); beginPlay({});
+    }
   });
 
   // ---- contract API -------------------------------------------------------------------------
   function setLoading(p, label) {
     const v = Math.min(1, Math.max(0, Number(p) || 0));
     $(scrLoading, '[data-k=bar]').style.width = `${(v * 100).toFixed(1)}%`;
-    $(scrLoading, '[data-k=pct]').textContent = `${Math.round(v * 100)} %`;
     if (label) $(scrLoading, '[data-k=label]').textContent = String(label);
   }
 
   function ready() {
     setLoading(1, 'Bereit');
     const savedQ = load('s9.quality');
-    const valid = (x) => x === 'low' || x === 'medium' || x === 'high';
-    const q = valid(savedQ) ? savedQ : valid(ctx.pipeline?.quality) ? ctx.pipeline.quality : 'medium';
-    quality = q;
-    qBtns.forEach((b) => b.classList.toggle('on', b.dataset.q === q));
-    if (ctx.pipeline && ctx.pipeline.quality !== q) ctx.pipeline.setQuality?.(q);
+    setQuality(QUALITIES.includes(savedQ) ? savedQ : 'auto');
     const savedV = Number(load('s9.volume'));
     setVolume(load('s9.volume') !== null && Number.isFinite(savedV) ? savedV : volume);
     applyControls();
@@ -575,6 +582,9 @@ export function createGame(ctx) {
 
   function update(dt) {
     clock += dt;
+    // the standby (menu) view is the camera alone: no arms in front of the title
+    const vmRoot = ctx.player?.viewmodel?.root;
+    if (vmRoot) vmRoot.visible = game.state !== 'menu' && game.state !== 'loading';
     if (game.state === 'playing') {
       missionTime += dt;
       if (deathPending) {
@@ -584,12 +594,10 @@ export function createGame(ctx) {
         const en = ctx.enemies;
         if (!secured && en && typeof en.aliveCount === 'number' && en.aliveCount === 0 && (en.list?.length ?? 1) > 0) {
           secured = true;
-          objective('Gebäude gesichert — zur Laderampe');
-          ctx.audio?.play?.('radio');
+          objective('Gesichert — zum Sammelpunkt, hinterer Hof');
         }
         if (secured && inExtraction()) complete();
       }
-      if (radioTimer > 0 && (radioTimer -= dt) <= 0) ctx.audio?.play?.('radio', { volume: 0.7 });
     }
     if (objTimer > 0 && (objTimer -= dt) <= 0) hudObj.classList.remove('on');
     if (game.state === 'playing' || game.state === 'paused') updateHud(dt);

@@ -43,6 +43,34 @@ export function randomLook(index) {
   return l;
 }
 
+// Geometry variety is limited to GEO_VARIANTS body meshes (each costs ~0.25 s of surface nets at load); colours,
+// skin, hair colour, height and weapon stay random per enemy, so repeats do not read as clones.
+export const GEO_VARIANTS = 12;
+const GEO_KEYS = ['top', 'hood', 'headwear', 'face', 'hair', 'legsKind', 'vest', 'gloves', 'stubble'];
+function seeded(seed) {
+  let a = seed >>> 0;
+  return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+/** Deterministic garment geometry for variant v (0..GEO_VARIANTS-1) with random colours; bulk bucket included. */
+export function lookFor(v) {
+  v = ((v % GEO_VARIANTS) + GEO_VARIANTS) % GEO_VARIANTS;
+  const rnd = Math.random;
+  let geo;
+  try { Math.random = seeded(v * 7919 + 17); geo = randomLook(v); } finally { Math.random = rnd; }
+  const look = randomLook(v);
+  for (const k of GEO_KEYS) look[k] = geo[k];
+  return { look, bulk: [0.95, 1.0, 1.06][v % 3] };
+}
+/** Build every body variant ahead of time in small steps (keeps the loading screen alive). */
+export async function prewarmBodies(onStep) {
+  for (let v = 0; v < GEO_VARIANTS; v++) {
+    const { look, bulk } = lookFor(v);
+    generateBody(look, bulk);
+    onStep?.(v + 1, GEO_VARIANTS);
+    await new Promise((r) => setTimeout(r, 0));
+  }
+}
+
 // slot -> { color, set (cloth texture index or -1), rough, metal }
 function palette(L) {
   const d = (hex, f) => { const c = new THREE.Color().setHex(hex); return c.multiplyScalar(f); };

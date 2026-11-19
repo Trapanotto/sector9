@@ -179,11 +179,24 @@ export function createEngine(ac, ctx, opts = {}) {
     metal: (size, thin) => (r) => SF.genImpactMetal(sr, r, size, thin), wood: (h) => (r) => SF.genImpactWood(sr, r, h),
     bodyFall: (s) => (r) => SF.genBodyFall(sr, r, s), camDrop: (r) => SF.genCamDrop(sr, r),
     breath: (inh, e) => (r) => SF.genBreath(sr, r, inh, e), heart: (r) => SF.genHeart(sr, r),
-    radio: (r) => SV.genRadio(sr, r),
     drip: (r) => SF.genDrip(sr, r), creak: (m) => (r) => SF.genCreak(sr, r, m), bang: (r) => SF.genSheetBang(sr, r),
     bird: (c) => (r) => SF.genBird(sr, r, c), pigeons: (r) => SF.genPigeons(sr, r), coo: (r) => SF.genCoo(sr, r),
     car: (r) => SF.genCarPass(sr, r), train: (r) => SF.genTrain(sr, r), siren: (r) => SF.genSiren(sr, r),
     flicker: (r) => SF.genFlickerBuzz(sr, r),
+    // desk phone: electromechanical bell, two 0.4 s rings (clapper at 25 Hz on two detuned bell partials)
+    phone: (r) => {
+      const n = Math.floor(1.3 * sr), b = new Float32Array(n);
+      const f1 = 1180 * (0.98 + 0.04 * r()), f2 = f1 * 2.76;
+      for (const t0 of [0, 0.6]) {
+        for (let i = 0; i < 0.42 * sr; i++) {
+          const t = i / sr, k = Math.floor(t * 25), tt = t - k / 25;
+          const env = Math.exp(-tt * 38) * (1 - Math.exp(-t * 300)) * Math.min(1, (0.42 - t) * 40);
+          const j = Math.floor((t0 + t) * sr); if (j >= n) break;
+          b[j] += env * (0.6 * Math.sin(6.2832 * f1 * t) + 0.3 * Math.sin(6.2832 * f2 * t + 1.1) + 0.1 * Math.sin(6.2832 * 3.9 * f1 * t));
+        }
+      }
+      return b;
+    },
     switch: (r) => { const b = new Float32Array(Math.floor(0.06 * sr)); SW._internal.clickAt(b, sr, r, 0.002, 2900, 1, 0.006); return b; },
     ui: (r) => { const b = new Float32Array(Math.floor(0.05 * sr)); SW._internal.clickAt(b, sr, r, 0.001, 1700, 0.6, 0.012); return b; },
   };
@@ -768,9 +781,6 @@ export function createEngine(ac, ctx, opts = {}) {
       buf(v, pick('imp_glass', 3, G.imp.glass).ab, { gain: vol * CAL.impGlass * vary(1, 0.15), rate });
     } else if (kind === 'flesh') {
       buf(v, pick('imp_flesh', 5, G.imp.flesh).ab, { gain: vol * CAL.impFlesh * vary(1, 0.15), rate });
-      // a surviving enemy grunts
-      const ne = nearestEnemy(o.position, 1.5);
-      if (ne && ne.e.alive && R() < 0.65) enemyVoice(ne, 'grunt', vC.copy(o.position), rnd(0.06, 0.2));
     } else {
       buf(v, pick('imp_concrete', 6, G.imp.concrete).ab, { gain: vol * CAL.impConcrete * vary(1, 0.15), rate });
     }
@@ -781,31 +791,25 @@ export function createEngine(ac, ctx, opts = {}) {
     }
   }
 
-  // ============================================================== voices / bodies
-  function enemyVoice(ne, kind, pos, delay = 0) {
-    const prof = profileOf(ne);
-    const ab = kind === 'shout' ? utter(ne.i, 'shout', 4, (r) => SV.genShout(sr, r, prof))
-      : kind === 'death' ? utter(ne.i, 'death', 2, (r) => SV.genDeathVoice(sr, r, prof))
-        : utter(ne.i, 'grunt', 3, (r) => SV.genGrunt(sr, r, prof, true));
-    const v = voice('voice', { position: pos, send: 1, startDelay: delay }); if (!v) return;
-    const cal = kind === 'shout' ? CAL.shout : kind === 'death' ? CAL.deathVoice : CAL.grunt;
-    buf(v, ab, { gain: cal * vary(1, 0.15) });
-  }
-  function shout(o) {
-    const pos = validPos(o.position) ? o.position : null; if (!pos) return;
-    enemyVoice(nearestEnemy(pos, 3) || { i: 0, e: null }, 'shout', pos);
-  }
+  // ============================================================== (no voices)
+  // The game has no vocal sounds at all (user request): no shouts, call-outs, grunts, death cries, radio or
+  // dispatcher chatter. Alerts are AI logic, not audio. 'shout' and 'radio' are silent no-ops; 'hurt' / 'death'
+  // are non-vocal (body impact, gear and a short unvoiced breath for the player; nothing extra for enemies, whose
+  // hit is already audible as the flesh impact and whose fall plays 'body_fall').
+  function shout() {}
+  function radio() {}
   function hurt(o) {
-    if (validPos(o.position)) { enemyVoice(nearestEnemy(o.position, 3) || { i: 0, e: null }, 'grunt', o.position); return; }
-    const v = voice('voice', { send: 1, nearDist: 0.3 }); if (!v) return;
+    if (validPos(o.position)) return;
+    const v = voice('foley', { send: 1, nearDist: 0.3 }); if (!v) return;
     buf(v, pick('imp_flesh', 5, G.imp.flesh).ab, { gain: CAL.playerHit * (o.volume ?? 1), rate: 0.8 });
-    buf(v, utter(-1, 'grunt', 4, (r) => SV.genGrunt(sr, r, playerProfile, true)), { at: rnd(0.03, 0.08), gain: CAL.playerVoice * (o.volume ?? 1) });
+    buf(v, pick('gear_2', 4, G.gear(STEP_LV[2])).ab, { at: 0.02, gain: CAL.playerHit * 0.5 * (o.volume ?? 1) });
+    buf(v, pick('be_0', 3, G.breath(false, 0.1)).ab, { at: rnd(0.08, 0.14), gain: CAL.playerVoice * 0.8 * (o.volume ?? 1) });
     ring += 0.55;
   }
   function death(o) {
-    if (validPos(o.position)) { enemyVoice(nearestEnemy(o.position, 3) || { i: 0, e: null }, 'death', o.position); return; }
-    const v = voice('voice', { send: 1, nearDist: 0.3 }); if (!v) return;
-    buf(v, utter(-1, 'death', 2, (r) => SV.genDeathVoice(sr, r, playerProfile)), { gain: CAL.playerVoice * 0.8 });
+    if (validPos(o.position)) return;
+    const v = voice('foley', { send: 1, nearDist: 0.3 }); if (!v) return;
+    buf(v, pick('gear_2', 4, G.gear(STEP_LV[2])).ab, { gain: CAL.playerHit * 0.6 });
     ring += 0.3;
   }
   const recentFalls = [];
@@ -827,9 +831,10 @@ export function createEngine(ac, ctx, opts = {}) {
     buf(v, pick('bodyfall_concrete', 3, G.bodyFall('concrete')).ab, { at: 0.01, gain: CAL.bodyFall * 2 });
     if (ctx?.player && !ctx.player.alive) setMuffleStage(1);
   }
-  function radio(o) {
-    const v = voice('voice', { send: 0.5, nearDist: 0.2 }); if (!v) return;
-    buf(v, pick('radio', 3, G.radio).ab, { gain: CAL.radio * (o.volume ?? 1) });
+  function phoneRing(o) {
+    if (!validPos(o.position)) return;
+    const v = voice('foley', { position: o.position, send: 1 }); if (!v) return;
+    buf(v, pick('phone', 2, G.phone).ab, { gain: 0.05 * (o.volume ?? 1) });
   }
   function uiClick(o) {
     if (ctx?.game?.state === 'playing') {   // flashlight switch on the vest
@@ -849,7 +854,7 @@ export function createEngine(ac, ctx, opts = {}) {
     step_other: (o) => validPos(o.position) && enemyStep({ position: o.position }, o.intensity ?? 0.5),
     impact_concrete: (o) => impact('concrete', o), impact_metal: (o) => impact('metal', o), impact_wood: (o) => impact('wood', o),
     impact_glass: (o) => impact('glass', o), impact_flesh: (o) => impact('flesh', o),
-    hurt, death, body_fall: bodyFall, shell, shout, radio, ui_click: uiClick,
+    hurt, death, body_fall: bodyFall, shell, shout, radio, phone_ring: phoneRing, ui_click: uiClick,
   };
 
   // ============================================================== ambience bed
@@ -1136,7 +1141,6 @@ export function createEngine(ac, ctx, opts = {}) {
   pick('blast_player', 6, G.blast('player')); pick('blast_pistol', 5, G.blast('pistol')); pick('blast_rifle', 5, G.blast('rifle'));
   pick('mech', 4, G.mech(false));
   if (!offline) {
-    jobs.unshift(() => pick('radio', 3, G.radio));
     for (const s of ['asphalt', 'concrete', 'gravel']) for (const lv of [1, 2, 0]) prewarm(`step_${s}_${lv}`, 4, G.step(s, STEP_LV[lv]));
     for (const lv of [0, 1, 2]) prewarm('gear_' + lv, 4, G.gear(STEP_LV[lv]));
     prewarm('cloth', 4, G.cloth(0.22));
@@ -1144,15 +1148,6 @@ export function createEngine(ac, ctx, opts = {}) {
     prewarm('magout', 3, G.magOut); prewarm('magin', 3, G.magIn); prewarm('dry', 3, G.dry); prewarm('slide', 3, G.slide);
     prewarm('shell_asphalt', 3, G.shell('asphalt', false)); prewarm('shell_concrete', 3, G.shell('concrete', false));
     prewarm('bi_0', 3, G.breath(true, 0.1)); prewarm('be_0', 3, G.breath(false, 0.1));
-    for (let i = 0; i < 10; i++) {
-      jobs.push(() => {
-        const prof = profileOf({ i });
-        for (const [kind, fn] of [['shout', (r) => SV.genShout(sr, r, prof)], ['grunt', (r) => SV.genGrunt(sr, r, prof, true)]]) {
-          const k = i + ':' + kind; const c = voiceCache.get(k) || []; voiceCache.set(k, c);
-          if (c.length < 2) c.push(toAB(fn(makeRng((R() * 4294967296) >>> 0))));
-        }
-      });
-    }
     for (const s of ['metal', 'lino']) for (const lv of [1, 2, 0]) prewarm(`step_${s}_${lv}`, 4, G.step(s, STEP_LV[lv]));
     prewarm('imp_metal_m', 3, G.metal(0.9, false)); prewarm('imp_wood_h', 3, G.wood(true)); prewarm('imp_glass', 3, G.imp.glass);
     prewarm('bodyfall_concrete', 3, G.bodyFall('concrete'));

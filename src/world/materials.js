@@ -149,7 +149,11 @@ function noiseTexture() {
   return t;
 }
 
+// Texture resolution cap for weak GPUs (integrated graphics share system memory): 0 = full size.
+let texCap = 0, anisoCap = 16;
+export function setTextureBudget(maxSize, maxAniso = 16) { texCap = maxSize | 0; anisoCap = maxAniso; }
 async function loadImage(url, size) {
+  if (texCap) size = Math.min(size || texCap, texCap);
   const res = await fetch(url);
   if (!res.ok) throw new Error(`${res.status} ${url}`);
   const blob = await res.blob();
@@ -174,7 +178,7 @@ function toTexture(image, srgb, aniso) {
   t.flipY = !!image.__needsFlip;      // ImageBitmaps are flipped at decode time
   t.premultiplyAlpha = false;
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.anisotropy = aniso;
+  t.anisotropy = Math.min(aniso, anisoCap);
   t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
   t.needsUpdate = true;
   return t;
@@ -274,12 +278,18 @@ vec3 sNT = vec3( 0.0, 0.0, 1.0 );
 
   // anti-tiling: layer A = base uv, layer B = rotated / rescaled / offset; world-noise blend
   float sW = smoothstep( 0.4, 0.6, sN1.g * 0.65 + sN2.b * 0.35 );
+  #ifdef SURF_CHEAP
+  sW = 0.0;              // low tiers: one texture layer, no parallax, no detail normal
+  #endif
   vec2 uvA = sUV0;
   vec2 uvB = sROT * sUV0 * sK + sOFF;
   vec2 gxB = sROT * sGX * sK, gyB = sROT * sGY * sK;
 
   vec2 offA = vec2( 0.0 );
   float sFade = 1.0 - smoothstep( 5.0, 13.0, sDist );
+  #ifdef SURF_CHEAP
+  sFade = 0.0;
+  #endif
   if ( sPom > 0.0 && sFade > 0.02 ) {
     float steps = floor( mix( 14.0, 5.0, clamp( sVT.z, 0.0, 1.0 ) ) * sFade + 2.0 );
     float dUV = sPom / sScale * sFade;
@@ -316,6 +326,9 @@ vec3 sNT = vec3( 0.0, 0.0, 1.0 );
 
   // close-range detail normal (same map, ~5x frequency, rotated)
   float sDet = ( 1.0 - smoothstep( 1.5, 6.0, sDist ) ) * 0.45;
+  #ifdef SURF_CHEAP
+  sDet = 0.0;
+  #endif
   if ( sDet > 0.01 ) {
     vec2 uvD = mat2( 0.8, 0.6, -0.6, 0.8 ) * ( uvA + offA ) * 5.3;
     vec3 nD = sDecodeN( texture2D( normalMap, uvD ).xyz );
@@ -328,7 +341,7 @@ vec3 sNT = vec3( 0.0, 0.0, 1.0 );
   sAlb *= mix( vec3( 1.0 ), mix( vec3( 0.80, 0.79, 0.77 ), vec3( 1.10, 1.08, 1.05 ), sN1.r ) * ( 0.92 + 0.16 * sN2.g ), sMac );
   sRough *= 0.84 + 0.32 * sN2.r;
 
-  #ifdef SURF_LAYER2
+  #if defined( SURF_LAYER2 ) && ! defined( SURF_CHEAP )
   {
     // second concrete (cracked / patched slab) in large patches
     float m2 = sN1.b * 0.75 + sN2.a * 0.25;
@@ -501,6 +514,26 @@ vec3 sNT = vec3( 0.0, 0.0, 1.0 );
 }
 `;
 
+// SURF_CHEAP (set for the 'minimal' / 'low' quality tiers before materials are built, see setSurfaceQuality)
+let surfCheap = false;
+export function setSurfaceQuality(cheap) { surfCheap = !!cheap; }
+export function surfaceIsCheap() { return surfCheap; }
+/** Switch every surface-shader material under root to the cheap / full variant (recompiles those programs). */
+export function applySurfaceQuality(root, cheap) {
+  surfCheap = !!cheap;
+  const seen = new Set();
+  root.traverse((o) => {
+    for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+      if (!m || !m.userData?.surfShader || seen.has(m)) continue;
+      seen.add(m);
+      const has = 'SURF_CHEAP' in m.defines;
+      if (has === surfCheap) continue;
+      if (surfCheap) m.defines.SURF_CHEAP = ''; else delete m.defines.SURF_CHEAP;
+      m.needsUpdate = true;
+    }
+  });
+  return seen.size;
+}
 function surfaceDefines(s) {
   const d = {};
   if (s.ground) d.SURF_GROUND = '';
@@ -518,6 +551,8 @@ function applySurfaceShader(m, d, tex, neutral) {
   const s = d.surf;
   const key = 'surf:' + Object.keys(surfaceDefines(s)).sort().join(',');
   m.defines = { ...(m.defines || {}), ...surfaceDefines(s) };
+  if (surfCheap) m.defines.SURF_CHEAP = '';
+  m.userData.surfShader = true;
   const dado = s.dado || [0x555555, -10];
   const u = {
     sNoise: SURF_UNIFORMS.sNoise,
@@ -543,7 +578,7 @@ function applySurfaceShader(m, d, tex, neutral) {
   if (s.debris) set('debris', 'sDeb', 1.5);
   if (s.plaster) set('brick', 'sBr', MATS.brick.scale);
   m.userData.surfUniforms = u;
-  m.customProgramCacheKey = () => key;
+  m.customProgramCacheKey = () => key + ('SURF_CHEAP' in m.defines ? '|cheap' : '');
   m.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, u);
     shader.vertexShader = shader.vertexShader

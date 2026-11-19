@@ -49,7 +49,9 @@ export async function createLevel(ctx, onProgress = () => {}) {
   const { scene, renderer } = ctx;
   const tLoad = performance.now();
   const progress = (p, label) => { try { onProgress(Math.min(1, Math.max(0, p)), label); } catch { /* ui not ready */ } };
-  progress(0.01, 'Lade Gelände');
+  // let the loading screen paint between the long synchronous build steps (it must never look frozen)
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+  progress(0.01, 'Gelände');
 
   // ---------------------------------------------------------------- pure data
   const layout = buildLayout();
@@ -62,7 +64,7 @@ export async function createLevel(ctx, onProgress = () => {}) {
 
   // ---------------------------------------------------------------- sky + light bake (runs in workers while textures load)
   installLightPatch();
-  const matsP = loadMaterials(renderer, (p) => progress(0.03 + p * 0.55, 'Lade Texturen'));
+  const matsP = loadMaterials(renderer, (p) => progress(0.03 + p * 0.55, 'Texturen'));
   const sky = await loadSky(renderer, scene);
   const lampDir = new THREE.Vector3(...WORK_LAMP.target).sub(new THREE.Vector3(...WORK_LAMP.pos)).normalize();
   const giP = bakeIrradianceVolume({
@@ -77,7 +79,7 @@ export async function createLevel(ctx, onProgress = () => {}) {
   if (lib.missing.length) console.warn('[world] procedural fallback for:', lib.missing.join(', '));
   lib.mats.screen = screenMaterial();
   lib.scales.screen = 0.5; lib.surfaces.screen = 'metal';
-  progress(0.6, 'Baue Hallen');
+  progress(0.6, 'Gebäude'); await tick();
 
   // ---------------------------------------------------------------- floor AO (distance to things standing on a floor)
   const aoBoxes = layout.solids.filter((s) => s.max[1] - s.min[1] > 0.3 && s.kind !== 'floor' && s.kind !== 'roof' && LEVEL_YS.some((l) => Math.abs(s.min[1] - l) < 0.3));
@@ -129,7 +131,7 @@ export async function createLevel(ctx, onProgress = () => {}) {
   }
   scene.add(staticGroup);
   const splitMs = performance.now() - tSplit;
-  progress(0.78, 'Details');
+  progress(0.78, 'Details'); await tick();
 
   // ---------------------------------------------------------------- decals
   const R = rng(31);
@@ -168,7 +170,7 @@ export async function createLevel(ctx, onProgress = () => {}) {
   }
 
   // ---------------------------------------------------------------- lights, sky, fog
-  progress(0.82, 'Licht');
+  progress(0.82, 'Licht'); await tick();
   const lighting = await setupLighting(ctx, layout, { sky, culler });
   const staticSun = createStaticSun(renderer, {
     dirTravel: SUN_DIR, center: new THREE.Vector3(10, 0, -10), halfX: 56, halfY: 56,
@@ -217,7 +219,7 @@ export async function createLevel(ctx, onProgress = () => {}) {
   }
 
   // ---------------------------------------------------------------- collision + raycast proxies
-  progress(0.9, 'Kollision');
+  progress(0.9, 'Kollision'); await tick();
   const colliders = world.colliders.map((c) => new THREE.Box3(new THREE.Vector3(...c.min), new THREE.Vector3(...c.max)));
   const unit = new THREE.BoxGeometry(1, 1, 1);
   const proxyMat = new THREE.MeshBasicMaterial({ visible: false });
@@ -300,7 +302,7 @@ export async function createLevel(ctx, onProgress = () => {}) {
   doors.forEach(setDoor);
   const openDoor = (door, fast = false) => { if (!door.wind && door.target < 1) { door.target = 1; door.fast = fast; } };
 
-  progress(0.93, 'Reflexionen');
+  progress(0.93, 'Reflexionen'); await tick();
   refreshStaticLighting();
 
   // ---------------------------------------------------------------- gameplay data
