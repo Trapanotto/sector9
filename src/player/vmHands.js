@@ -146,7 +146,7 @@ function strongSpec() {
     dorsal: norm([0.62, 0.30, 0.72]),
     // metacarpal runs forward-down from the web along the left of the frame (not splayed out sideways, which read
     // as a thumb sticking up out of the hand from the camera); distal part lies on the support thumb, along the bore
-    thumb: [[-0.0105, -0.0285, 0.0420], [-0.0208, -0.0052, 0.0185], [-0.0262, 0.0042, -0.0105], [-0.0278, 0.0062, -0.0350]],
+    thumb: [[-0.0110, -0.0240, 0.0400], [-0.0205, -0.0075, 0.0170], [-0.0240, -0.0012, -0.0110], [-0.0248, -0.0016, -0.0355]],
     thumbDorsal: norm([-0.55, 0.8, 0.15]),
     fingers,
     palmBulge: 0.004,           // thick palm pad on the backstrap
@@ -158,7 +158,8 @@ function supportSpec() {
     wrist: [-0.0330, -0.0950, 0.0850],
     armDir: norm([-0.50, -0.18, 1]),
     dorsal: norm([-0.85, 0.25, 0.35]),
-    thumb: [[-0.0360, -0.0460, 0.0260], [-0.0248, -0.0200, 0.0000], [-0.0207, -0.0098, -0.0330], [-0.0198, -0.0062, -0.0585]],
+    // along the frame below the strong thumb, parallel to the bore (pointing at the target, not upward)
+    thumb: [[-0.0360, -0.0460, 0.0260], [-0.0252, -0.0218, 0.0000], [-0.0220, -0.0178, -0.0315], [-0.0210, -0.0170, -0.0560]],
     thumbDorsal: norm([-0.6, 0.8, 0.0]),
     fingers: {
       index: { joints: wrapFinger(path, -0.0020, 0.0232, 0.06, FINGER.index.L) },
@@ -503,7 +504,9 @@ function thumbWeb(B, spec, body, mcps) {
     const c = sampleAt(cl, s);
     const U = ortho(up, c.t), S = cross(c.t, U);
     const u = s / tot;
-    const w = 0.0095 * (1 - 0.2 * Math.sin(u * Math.PI)), h = 0.0066;
+    // a full first-dorsal-interosseous mass, not a thin strap: from behind it fuses the thumb with the back of
+    // the hand (with a thin web the thumb read as a separate stick lying across the backstrap)
+    const w = 0.0150 * (1 - 0.15 * Math.sin(u * Math.PI)), h = 0.0105 * (1 - 0.3 * u);
     const ring = [];
     const wb = sstep(0.3, 0.9, u);
     const [si, sw] = skinOf([[0, 1 - wb], [13, wb]]);
@@ -519,13 +522,15 @@ function thumbWeb(B, spec, body, mcps) {
 }
 
 // ---------------------------------------------------------------- sleeve (long-sleeved top) with folds + watch slot
+// cuff radius and growth toward the elbow (a loose duty shirt over a forearm, not a tight tube)
+const SLEEVE_R0 = 0.0395, SLEEVE_RG = 0.024;
 function sleeve(wrist, armDir, upHint, seed, pinch, L = 0.46) {
   const f = norm(armDir);
   const u = ortho(upHint, f), s = cross(f, u);
   const NR = 26, start = 0.034;
   const tSamples = [];
   for (let i = 0; i <= 26; i++) { const a = i / 26; tSamples.push(start + L * a * a * 0.55 + L * a * 0.45); }
-  const radius = (t) => 0.0352 + 0.020 * Math.min(1, (t - start) / 0.22) + 0.004 * Math.max(0, (t - 0.3) / 0.2);
+  const radius = (t) => SLEEVE_R0 + SLEEVE_RG * Math.min(1, (t - start) / 0.22) + 0.004 * Math.max(0, (t - 0.3) / 0.2);
   const rows = [];
   const ringAt = (t, inward = 0) => {
     const row = [];
@@ -586,7 +591,7 @@ function watch(wrist, armDir, upHint, dorsal, t, mats) {
   const face = norm(add(mul(ortho(dorsal, f), 0.55), mul(u, 0.45)));
   const side = cross(f, face);
   const centre = add(wrist, mul(f, t));
-  const rSleeve = 0.0352 + 0.020 * Math.min(1, (t - 0.034) / 0.22) - 0.0022;
+  const rSleeve = SLEEVE_R0 + SLEEVE_RG * Math.min(1, (t - 0.034) / 0.22) - 0.0022;
   const m4 = new THREE.Matrix4().makeBasis(new THREE.Vector3(...side), new THREE.Vector3(...face), new THREE.Vector3(...f));
   // strap: elliptical band around the sleeve (matches the sleeve's 0.92 squash on u)
   const band = new THREE.BufferGeometry();
@@ -879,7 +884,7 @@ function buildArm(spec, mats, gloveMat, seed, pinch) {
   // upper arm: origin at the elbow, +Z toward the shoulder; a rounded elbow cap closes the joint
   const upper = new THREE.Group();
   upper.name = 'upperArm';
-  const R0 = 0.054, R1 = 0.062, L = UPPER_ARM_L + 0.02;
+  const R0 = 0.062, R1 = 0.068, L = UPPER_ARM_L + 0.02;
   const tube = new THREE.CylinderGeometry(R1, R0, L, 26, 8, true);
   tube.rotateX(Math.PI / 2);          // axis along Z, the R0 end at -L/2
   tube.translate(0, 0, L / 2 - 0.012);

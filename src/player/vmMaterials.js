@@ -10,6 +10,11 @@ import * as THREE from 'three';
 // Textures are packed WebP: RG = normal XY (tilt amplified x2.5 at pack time), B = roughness.
 
 const GAIN = 2.5;
+// The player's own torso and head sit right behind the hands: surfaces facing the camera (view-space +Z, the backs
+// of the hands and the tops of the sleeves) see the dark body, not the room the irradiance volume describes. Without
+// this the dark gloves read as pale grey clay outdoors.
+// The volume also has no idea of the arms shadowing each other and the gun: a flat 0.6 on top.
+const BODY_OCC = '(0.6 * (1.0 - 0.6 * smoothstep(-0.2, 0.85, normal.z) - 0.15 * smoothstep(0.0, 0.8, -normal.y)))';
 
 function assetBase() {
   let base = '/';
@@ -247,8 +252,9 @@ export function createVmMaterials() {
       #endif`,
     fragOcc: /* glsl */`
     {
-      reflectedLight.indirectDiffuse *= vmOccD;
-      reflectedLight.indirectSpecular *= vmOccS;
+      float vmBody = ${BODY_OCC};
+      reflectedLight.indirectDiffuse *= vmOccD * vmBody;
+      reflectedLight.indirectSpecular *= vmOccS * mix(1.0, vmBody, 0.6);
       reflectedLight.directDiffuse *= mix(1.0, vmOccD, 0.6);
       reflectedLight.directSpecular *= mix(1.0, vmOccS, 0.75);
       // sky rim: grazing light from the overcast sky / skylights outlines the dark glove against the floor
@@ -281,6 +287,9 @@ export function createVmMaterials() {
     }`,
     fragOcc: /* glsl */`
     {
+      float vmBody = ${BODY_OCC};
+      reflectedLight.indirectDiffuse *= vmBody;
+      reflectedLight.indirectSpecular *= mix(1.0, vmBody, 0.6);
       float fr = pow(1.0 - saturate(dot(normal, geometryViewDir)), 3.0);
       reflectedLight.indirectSpecular += iblIrradiance * RECIPROCAL_PI * fr * uRim * 0.7;
     }`,

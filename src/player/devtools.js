@@ -6,7 +6,17 @@
 //   const r = dev.controlTest();        // automated mouse-path / frame-rate test (see controlTest below)
 
 const ctx = () => window.__ctx;
-export const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const yieldNow = () => new Promise((r) => { const ch = new MessageChannel(); ch.port1.onmessage = () => r(); ch.port2.postMessage(0); });
+/**
+ * Wait ms of game time. While the tab is hidden (rAF paused) the frames are pumped manually through ctx.step at
+ * 60 Hz so automation keeps working; timings measured that way are not real frame times.
+ */
+export async function wait(ms) {
+  const c = window.__ctx;
+  if (!document.hidden || !c?.step || !c.pipeline) return new Promise((r) => setTimeout(r, ms));
+  const n = Math.max(1, Math.round(ms / (1000 / 60)));
+  for (let i = 0; i < n; i++) { c.step(1 / 60); if (i % 4 === 3) await yieldNow(); }
+}
 
 export async function start(x = -9, z = 24, yaw = 0) {
   const c = ctx();
@@ -42,6 +52,7 @@ export function afterRender(fn) {
     pl.__devWrapped = true;
   }
   pl.__devQ.push(fn);
+  if (document.hidden && ctx().step) yieldNow().then(() => { if (pl.__devQ.length) ctx().step(1 / 60); });
 }
 
 export function sample(rects) {
@@ -87,7 +98,7 @@ export function snap(w = 480, crop = null) {
  * Render several states into one overlay image (cols per row, 1280 CSS px wide). Each entry is either a viewmodel
  * inspect pose array or an async function that sets up the state; crop is [u0, v0, u1, v1] of the canvas.
  */
-export async function grid(states, crop = [0, 0, 1, 1], cols = 2) {
+export async function grid(states, crop = [0, 0, 1, 1], cols = 2, saveName = null) {
   const cnv = ctx().renderer.domElement;
   const out = document.createElement('canvas');
   const rows = Math.ceil(states.length / cols);
@@ -111,10 +122,49 @@ export async function grid(states, crop = [0, 0, 1, 1], cols = 2) {
     el.style.cssText = 'position:fixed;left:0;top:0;z-index:99999;pointer-events:none;';
     document.body.appendChild(el);
   }
+  if (saveName) return post(saveName, out);
   el.src = out.toDataURL();
   el.style.width = '1280px';
   await new Promise((r) => { el.onload = r; });
   return [out.width, out.height];
+}
+
+/** POST a canvas as JPEG to a local sink (scratch tool on :5191) so frames can be inspected while the tab is hidden */
+export async function post(name, canvas) {
+  const r = await fetch('http://localhost:5191/save?name=' + encodeURIComponent(name), { method: 'POST', body: canvas.toDataURL('image/jpeg', 0.9) });
+  return r.text();
+}
+
+/** Save the current frame (optionally cropped / scaled to width w) under name via post() */
+export function shot(name, crop = [0, 0, 1, 1], w = 1280) {
+  return new Promise((res) => afterRender(() => {
+    const cnv = ctx().renderer.domElement;
+    const [u0, v0, u1, v1] = crop;
+    const sw = (u1 - u0) * cnv.width, sh = (v1 - v0) * cnv.height;
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(w); cv.height = Math.round(w * sh / sw);
+    cv.getContext('2d').drawImage(cnv, u0 * cnv.width, v0 * cnv.height, sw, sh, 0, 0, cv.width, cv.height);
+    res(post(name, cv));
+  }));
+}
+
+export const key = (code, down) => window.dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { code, key: code, bubbles: true }));
+export const tap = async (code, ms = 60) => { key(code, true); await wait(ms); key(code, false); };
+
+/** Standard hand review: hip, ADS, shot, reload (mid), sprint, lean left/right, crouch ADS -> one saved grid */
+export async function handSeries(name, crop = [0.15, 0.3, 0.85, 1]) {
+  const m = ctx().input.mouse;
+  const fire = async () => { m.leftPressed = true; m.leftClicks = 1; m.left = true; await wait(34); m.left = false; };
+  return grid([
+    async () => { await wait(300); },
+    async () => { m.right = true; await wait(600); },
+    async () => { await fire(); },
+    async () => { m.right = false; await wait(500); await tap('KeyR'); await wait(520); },
+    async () => { await wait(1600); key('ShiftLeft', true); key('KeyW', true); await wait(900); },
+    async () => { key('ShiftLeft', false); key('KeyW', false); await wait(500); key('KeyQ', true); await wait(600); },
+    async () => { key('KeyQ', false); key('KeyE', true); await wait(600); },
+    async () => { key('KeyE', false); await tap('KeyC'); m.right = true; await wait(700); },
+  ], crop, 4, name).finally(async () => { m.right = false; await tap('KeyC'); });
 }
 
 /** Override the viewmodel pose (camera space position + YXZ euler) for close inspection; null restores. */

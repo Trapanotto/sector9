@@ -46,8 +46,8 @@ async function boot() {
   });
 
   const clock = new THREE.Clock();
-  renderer.setAnimationLoop(() => {
-    const dt = Math.min(clock.getDelta(), 0.05);
+  // ctx.step(dt): one frame with a given dt (tests drive this directly while the tab is hidden and rAF is paused)
+  const step = ctx.step = (dt) => {
     const playing = ctx.game.state === 'playing';
     if (playing) {
       ctx.player.update(dt);
@@ -59,7 +59,8 @@ async function boot() {
     ctx.game.update(dt);
     ctx.pipeline.render(dt);
     ctx.input.endFrame();
-  });
+  };
+  renderer.setAnimationLoop(() => step(Math.min(clock.getDelta(), 0.05)));
 }
 
 boot().catch((err) => {

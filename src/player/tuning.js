@@ -87,7 +87,7 @@ export const PIVOT_HIP = [0.0, 0.10, 0.10];          // roughly between the shou
 // Arms nearly extended (two-handed ready, gun just below the camera line): seen from the chest camera the forearms
 // then enter from the lower corners and converge on the gun. The old compressed pose (gun 0.35 m out, 0.16 m low)
 // put the wrists straight below the gun, so the forearms hung vertically and both hands merged into one column.
-export const OFF_HIP = [0.05, -0.20, -0.56];          // -> gun at about (0.05, -0.10, -0.46)
+export const OFF_HIP = [0.03, -0.165, -0.50];        // -> gun at about (0.03, -0.065, -0.40)
 export const HIP_ROT = [0.0, 0.0, -0.05];            // slight cant at hip
 export const ADS_DIST = 0.28;                         // camera -> gun origin distance in ADS
 export const LOW_POS = [-0.05, -0.09, 0.07];          // low-ready offset (camera space)
@@ -95,9 +95,9 @@ export const LOW_ROT = [-0.62, 0.30, 0.38];           // low-ready rotation (gun
 // Arms (camera space, right side; the left is mirrored): shoulder joint relative to the chest camera and the
 // direction the elbows bend toward (down, out, slightly back) for the two-bone arm IK in viewmodel.js.
 export const SHOULDER = [0.175, -0.05, 0.085];
-export const ELBOW_POLE = [0.5, -1.0, 0.1];
-export const WALL_CHECK = 0.8;                       // forward ray length for wall low-ready
-export const WALL_FULL = 0.38;                        // distance at which the gun is fully lowered
+export const ELBOW_POLE = [0.9, -1.0, 0.1];
+export const WALL_CHECK = 0.95;                      // forward ray length for wall low-ready
+export const WALL_FULL = 0.5;                         // distance at which the gun is fully lowered
 
 // --- Weapon ---------------------------------------------------------------
 export const MAG_SIZE = 15;

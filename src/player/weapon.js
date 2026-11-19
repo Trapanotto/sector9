@@ -25,7 +25,7 @@ const CANCEL_BLEND = 0.22;    // s to return the support hand to the grip after 
 
 // support hand key poses (gun-local position offsets + small rotation)
 const AXIS_DOWN_Y = -Math.cos(0.31), AXIS_DOWN_Z = Math.sin(0.31);   // magwell axis (matches viewmodel GRIP_ANGLE)
-const BELT = [-0.07, -0.34, 0.15], BELT_R = [0.6, 0, 0.3];
+const BELT = [-0.07, -0.34, 0.19], BELT_R = [0.6, 0, 0.3];   // pouch on the belt (gun is ~0.40 m out at the hip)
 const PRE = [-0.004, AXIS_DOWN_Y * 0.10, AXIS_DOWN_Z * 0.10], PRE_R = [0.05, 0, 0.05];
 const ZERO = [0, 0, 0];
 
