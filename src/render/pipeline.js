@@ -78,7 +78,8 @@ export const TUNING = {
   focusBreathing: 0.006,     // image scale per dioptre of focus
 
   // ---- first-person viewmodel (arms + pistol, masked by the viewmodel pass)
-  vmCocHip: 1.15,            // max defocus of the viewmodel at the hip (half-res px): slightly soft, never a ghost
+  vmFov: 72,                 // vertical FOV the arms + pistol are drawn with (0 = scene FOV)
+  vmCocHip: 1.15,           // max defocus of the viewmodel at the hip (half-res px): slightly soft, never a ghost
   vmCocAds: 0.3,             // ... when aiming (front sight / gun sharp)
   vmTnr: 0.12,               // temporal-NR strength on the viewmodel relative to the scene (no smeared hands)
 
@@ -566,8 +567,8 @@ export function createPipeline(ctx) {
     renderer.setClearColor(0x000000, 0);
     renderer.setRenderTarget(vmRT);
     try {
+      renderer.clear();
       if (swapped.length) renderer.render(camera, camera);
-      else renderer.clear();
     } finally {
       for (let i = 0; i < swapped.length; i += 2) {
         if (swapped[i + 1]) swapped[i].material = swapped[i + 1];
@@ -576,6 +577,41 @@ export function createPipeline(ctx) {
       renderer.shadowMap.enabled = shadows;
       renderer.setClearColor(clearCol, clearA);
     }
+  }
+
+  // ---- viewmodel projection
+  // First-person arms are drawn with their own, narrower vertical FOV (T.vmFov, 0 = same as the scene), as
+  // first-person games do: at the scene's ~97 deg bodycam FOV, forearms 15-30 cm from the lens balloon toward
+  // the frame edge. The arms live on layer VM_LAYER; every light is enabled on both layers.
+  const VM_LAYER = 1;
+  let vmTagCount = -1, lightScan = 0, vmFovSaved = 0;
+  function tagViewmodelLayers() {
+    let n = 0;
+    camera.traverse(() => { n++; });
+    if (n !== vmTagCount) {
+      vmTagCount = n;
+      camera.traverse((o) => {
+        if (o === camera) return;
+        if (o.isLight) o.layers.enable(VM_LAYER); else o.layers.set(VM_LAYER);
+      });
+    }
+    if (lightScan-- <= 0) {
+      lightScan = 120;
+      scene.traverse((o) => { if (o.isLight) o.layers.enable(VM_LAYER); });
+    }
+  }
+  function vmProjectionBegin() {
+    const f = T.vmFov;
+    if (!f || f >= camera.fov) return false;
+    vmFovSaved = camera.fov;
+    camera.fov = f;
+    camera.updateProjectionMatrix();
+    return true;
+  }
+  function vmProjectionEnd(changed) {
+    if (!changed) return;
+    camera.fov = vmFovSaved;
+    camera.updateProjectionMatrix();
   }
 
   function shakeNoise(t, a, b) {
@@ -757,10 +793,24 @@ export function createPipeline(ctx) {
     smearV *= Math.exp(-dt * 5);
     menuAmt += ((menuOn ? 1 : 0) - menuAmt) * (1 - Math.exp(-dt * 5));
 
-    // ---- scene (linear HDR)
+    // ---- scene (linear HDR), then the viewmodel with its own narrower projection on top (depth cleared)
     renderer.setRenderTarget(sceneRT);
+    tagViewmodelLayers();
+    camera.layers.set(0);
     renderer.render(scene, camera);
-    renderViewmodelMask();
+    camera.layers.set(VM_LAYER);
+    const vmProj = vmProjectionBegin();
+    const bg = scene.background, autoClear = renderer.autoClear, shadowAuto = renderer.shadowMap.autoUpdate;
+    scene.background = null; renderer.autoClear = false; renderer.shadowMap.autoUpdate = false;
+    try {
+      renderer.clearDepth();
+      renderer.render(scene, camera);
+      renderViewmodelMask();
+    } finally {
+      scene.background = bg; renderer.autoClear = autoClear; renderer.shadowMap.autoUpdate = shadowAuto;
+      vmProjectionEnd(vmProj);
+      camera.layers.set(0);
+    }
     uNear.value = camera.near; uFar.value = camera.far;
     updateLens();
 
@@ -978,6 +1028,31 @@ export function createPipeline(ctx) {
     tuning: TUNING,
     /** Snap exposure / white balance / focus to the current scene (e.g. after respawn/teleport). */
     resetExposure() { needReset = true; havePrev = false; },
+    /** World point on the viewmodel -> world point that appears on the same pixel with the scene projection
+     *  (muzzle flash, tracer start and casings line up with the gun drawn at T.vmFov). Modifies v. */
+    viewmodelPoint(v) {
+      const k = api.viewmodelScale();
+      if (k === 1) return v;
+      camera.updateMatrixWorld();
+      v.applyMatrix4(camera.matrixWorldInverse);
+      v.x *= k; v.y *= k;
+      return v.applyMatrix4(camera.matrixWorld);
+    },
+    /** Same for a world direction drawn on the viewmodel (where the drawn barrel points on screen). Modifies d. */
+    viewmodelDir(d) {
+      const k = api.viewmodelScale();
+      if (k === 1) return d;
+      camera.updateMatrixWorld();
+      d.transformDirection(camera.matrixWorldInverse);
+      d.x *= k; d.y *= k;
+      return d.transformDirection(camera.matrixWorld);
+    },
+    /** tan(scene FOV / 2) / tan(viewmodel FOV / 2): screen magnification of the viewmodel (1 = same projection) */
+    viewmodelScale() {
+      const f = T.vmFov;
+      if (!f || f >= camera.fov) return 1;
+      return Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) / Math.tan(THREE.MathUtils.degToRad(f) / 2);
+    },
     /** Debug: read back the camera state (AE / AWB / AF / veil). Stalls the GPU; dev use only. */
     debugState() {
       const buf = new Uint16Array(16);

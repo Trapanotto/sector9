@@ -211,12 +211,14 @@ export function createVmMaterials() {
       nT = normalize(mix(nT, normal, rubber * 0.9));
       normal = normalize(mix(normal, nT, uTexReady));
       // albedo (linear): blacks that still separate from each other
-      vec3 cFab = vec3(0.020, 0.0205, 0.020);
-      vec3 cLea = vec3(0.028, 0.026, 0.024);
-      vec3 cRub = vec3(0.011, 0.0115, 0.012);
-      vec3 cStr = vec3(0.024, 0.024, 0.023);
-      vec3 cVel = vec3(0.016, 0.016, 0.016);
-      vec3 cCuf = vec3(0.017, 0.0175, 0.018);
+      // (separated on purpose: black stretch back, lighter worn leather on palm / finger sides / tips, near-black
+      // satin rubber on the knuckles, so the form reads at a glance under the bodycam lens)
+      vec3 cFab = vec3(0.013, 0.0135, 0.014);
+      vec3 cLea = vec3(0.060, 0.052, 0.044);
+      vec3 cRub = vec3(0.008, 0.008, 0.0085);
+      vec3 cStr = vec3(0.030, 0.030, 0.029);
+      vec3 cVel = vec3(0.018, 0.018, 0.018);
+      vec3 cCuf = vec3(0.011, 0.0115, 0.012);
       vec3 col = cFab;
       col = mix(col, cLea, leather);
       col = mix(col, cCuf, cuff);
@@ -230,9 +232,9 @@ export function createVmMaterials() {
       col *= 1.0 + leather * smoothstep(200.0, 700.0, curv) * max(convex, 0.0) * 0.35;
       diffuseColor.rgb = col;
       float rough = 0.9;
-      rough = mix(rough, 0.48, leather);
+      rough = mix(rough, 0.40, leather);
       rough = mix(rough, 0.72, cuff);
-      rough = mix(rough, 0.42, rubber);
+      rough = mix(rough, 0.32, rubber);
       rough = mix(rough, 0.74, strap);
       rough = mix(rough, 0.97, velcro);
       roughnessFactor = clamp(rough + (rT - 0.5) * 0.3 * uTexReady * (1.0 - rubber) + (dirt - 0.5) * 0.08, 0.3, 1.0);
@@ -267,7 +269,8 @@ export function createVmMaterials() {
   const gloveSupport = makeGlove(contactSupport);
 
   // ---------------------------------------------------------------- sleeve
-  const sleeve = inject(new THREE.MeshPhysicalMaterial({ color: 0x15181d, metalness: 0, roughness: 0.92, sheen: 0.6, sheenRoughness: 0.55, sheenColor: new THREE.Color(0.03, 0.033, 0.038) }), 'sleeve', {
+  // dark navy duty shirt: a step lighter and bluer than the black gloves so wrist and sleeve separate
+  const sleeve = inject(new THREE.MeshPhysicalMaterial({ color: 0x232a38, metalness: 0, roughness: 0.92, sheen: 0.6, sheenRoughness: 0.55, sheenColor: new THREE.Color(0.03, 0.033, 0.038) }), 'sleeve', {
     uniforms: { uCloth: tex.cloth, uTexReady: ready, uRim: shared.rim },
     vertexHead: 'varying vec2 vVmUv;',
     vertexBody: 'vVmUv = uv;',

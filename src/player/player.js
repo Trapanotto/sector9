@@ -89,6 +89,7 @@ export function createPlayer(ctx) {
   const qAim = new THREE.Quaternion(), qRel = new THREE.Quaternion(), qExtra = new THREE.Quaternion();
   const vA = new THREE.Vector3(), vB = new THREE.Vector3(), vC = new THREE.Vector3();
   const muzzleW = new THREE.Vector3(), dirW = new THREE.Vector3(), originW = new THREE.Vector3();
+  const qIdent = new THREE.Quaternion();
   const camFwd = new THREE.Vector3(), probe = new THREE.Vector3(), probeDir = new THREE.Vector3();
   const pivot = new THREE.Vector3(), off = new THREE.Vector3();
   const nrm = { x: 0, z: 0 };
@@ -475,6 +476,10 @@ export function createPlayer(ctx) {
     eAim.set(bodyPitch + aimY, bodyYaw + aimX, gunRoll, 'YXZ');
     qAim.setFromEuler(eAim);
     qRel.copy(camera.quaternion).invert().multiply(qAim);
+    // drawn with a narrower FOV the gun's offset from the view axis is magnified on screen by k: draw the aim
+    // offset 1/k as large so the barrel still points (on screen) where the shot goes (fire() maps it back)
+    const vmK = ctx.pipeline?.viewmodelScale?.() || 1;
+    if (vmK !== 1) qRel.slerp(qIdent, 1 - 1 / vmK);
 
     // hip <-> ADS placement. ADS: pivot at the camera origin, gun origin at (0, -sightY, -ADS_DIST) in aim
     // space, so the sight line (y = sightY, x = 0 in gun space) passes exactly through the camera.
@@ -545,8 +550,11 @@ export function createPlayer(ctx) {
   function fire() {
     camera.updateMatrixWorld(true);
     vm.muzzle.getWorldPosition(muzzleW);
+    // the viewmodel is drawn with its own narrower FOV: move the point to where the drawn muzzle appears
+    ctx.pipeline?.viewmodelPoint?.(muzzleW);
     const e = vm.muzzle.matrixWorld.elements;
     dirW.set(-e[8], -e[9], -e[10]).normalize();
+    ctx.pipeline?.viewmodelDir?.(dirW);
 
     // muzzle inside a wall? pull the origin back onto the camera plane
     originW.copy(muzzleW);
@@ -568,6 +576,7 @@ export function createPlayer(ctx) {
     ctx.fx?.muzzleFlash?.(muzzleW.clone(), dirW.clone());
     // casing out of the ejection port: right, up, slightly back (gun axes)
     const pos = vm.ejectPort.getWorldPosition(new THREE.Vector3());
+    ctx.pipeline?.viewmodelPoint?.(pos);
     const re = vm.root.matrixWorld.elements;
     vC.set(re[0], re[1], re[2]).normalize().multiplyScalar(1.0)
       .addScaledVector(vB.set(re[4], re[5], re[6]).normalize(), 0.65)

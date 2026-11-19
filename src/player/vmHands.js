@@ -2,6 +2,10 @@ import * as THREE from 'three';
 import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 import { sdRoundCone, sdRoundBox } from './vmGeom.js';
 import { GRIP_ANGLE, MAG_ORIGIN } from './vmPistol.js';
+import { buildHandSDF } from './vmHandSDF.js';
+
+// true: each hand is one smooth implicit surface (vmHandSDF.js); false: the older lofted tubes below
+const USE_SDF = true;
 
 // Gloved hands as explicit sculpted geometry (built once at load, ~8k triangles per hand):
 //   - every finger and the thumb is ONE lofted tube along a smooth centreline through its joints, with a
@@ -472,8 +476,8 @@ function gauntlet(B, spec, F) {
   for (const t of ts) {
     const c = add(W, mul(A, t));
     const f = sstep(-0.014, 0.004, t);
-    const rw = lerp(0.0255, 0.0305, f) + 0.004 * sstep(0.03, 0.058, t);
-    const ru = lerp(0.0185, 0.0228, f) + 0.003 * sstep(0.03, 0.058, t);
+    const rw = lerp(0.0235, 0.0282, f) + 0.0015 * sstep(0.03, 0.058, t);   // slim wrist cuff (was a bulb at the frame edge)
+    const ru = lerp(0.0178, 0.0212, f) + 0.0012 * sstep(0.03, 0.058, t);
     const strap = t >= 0.0108 && t <= 0.0292 ? 1 : 0;
     const ring = [];
     for (let i = 0; i < AR; i++) {
@@ -523,7 +527,7 @@ function thumbWeb(B, spec, body, mcps) {
 
 // ---------------------------------------------------------------- sleeve (long-sleeved top) with folds + watch slot
 // cuff radius and growth toward the elbow (a loose duty shirt over a forearm, not a tight tube)
-const SLEEVE_R0 = 0.0395, SLEEVE_RG = 0.024;
+const SLEEVE_R0 = 0.0355, SLEEVE_RG = 0.019;
 function sleeve(wrist, armDir, upHint, seed, pinch, L = 0.46) {
   const f = norm(armDir);
   const u = ortho(upHint, f), s = cross(f, u);
@@ -804,8 +808,9 @@ function makeRig(mesh, spec, info, extraPose) {
 export function buildHands(mats, strongGroup, supportGroup) {
   const sSpec = strongSpec(), pSpec = supportSpec();
   // the support fingers are the most visible from the chest camera: they get the rounder sections
-  const sInfo = buildHand(sSpec, { fingerAround: 12 });
-  const pInfo = buildHand(pSpec, { fingerAround: 14 });
+  const dims = { FINGER, THUMB, NAMES };
+  const sInfo = USE_SDF ? buildHandSDF(sSpec, dims, gunSDF) : buildHand(sSpec, { fingerAround: 12 });
+  const pInfo = USE_SDF ? buildHandSDF(pSpec, dims, gunSDF) : buildHand(pSpec, { fingerAround: 14 });
 
   // AO: self (own hand) and contact (gun + other hand)
   const sSelf = occPrims(sSpec), pSelf = occPrims(pSpec);
@@ -884,7 +889,7 @@ function buildArm(spec, mats, gloveMat, seed, pinch) {
   // upper arm: origin at the elbow, +Z toward the shoulder; a rounded elbow cap closes the joint
   const upper = new THREE.Group();
   upper.name = 'upperArm';
-  const R0 = 0.062, R1 = 0.068, L = UPPER_ARM_L + 0.02;
+  const R0 = 0.055, R1 = 0.061, L = UPPER_ARM_L + 0.02;
   const tube = new THREE.CylinderGeometry(R1, R0, L, 26, 8, true);
   tube.rotateX(Math.PI / 2);          // axis along Z, the R0 end at -L/2
   tube.translate(0, 0, L / 2 - 0.012);
