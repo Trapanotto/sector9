@@ -213,12 +213,14 @@ export function createVmMaterials() {
       // albedo (linear): blacks that still separate from each other
       // (separated on purpose: black stretch back, lighter worn leather on palm / finger sides / tips, near-black
       // satin rubber on the knuckles, so the form reads at a glance under the bodycam lens)
-      vec3 cFab = vec3(0.013, 0.0135, 0.014);
-      vec3 cLea = vec3(0.060, 0.052, 0.044);
-      vec3 cRub = vec3(0.008, 0.008, 0.0085);
-      vec3 cStr = vec3(0.030, 0.030, 0.029);
-      vec3 cVel = vec3(0.018, 0.018, 0.018);
-      vec3 cCuf = vec3(0.011, 0.0115, 0.012);
+      // olive-charcoal fabric and coyote synthetic leather: always a clear step lighter and warmer than the
+      // near-black pistol, so glove and gun never merge into one mass under blur, grain and compression
+      vec3 cFab = vec3(0.046, 0.046, 0.036);
+      vec3 cLea = vec3(0.150, 0.108, 0.068);
+      vec3 cRub = vec3(0.018, 0.018, 0.016);
+      vec3 cStr = vec3(0.040, 0.040, 0.034);
+      vec3 cVel = vec3(0.030, 0.030, 0.026);
+      vec3 cCuf = vec3(0.020, 0.020, 0.018);
       vec3 col = cFab;
       col = mix(col, cLea, leather);
       col = mix(col, cCuf, cuff);

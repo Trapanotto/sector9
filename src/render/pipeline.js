@@ -79,7 +79,7 @@ export const TUNING = {
 
   // ---- first-person viewmodel (arms + pistol, masked by the viewmodel pass)
   vmFov: 72,                 // vertical FOV the arms + pistol are drawn with (0 = scene FOV)
-  vmCocHip: 1.15,           // max defocus of the viewmodel at the hip (half-res px): slightly soft, never a ghost
+  vmCocHip: 0.6,            // max defocus of the viewmodel at the hip (half-res px): slightly soft, never a ghost
   vmCocAds: 0.3,             // ... when aiming (front sight / gun sharp)
   vmTnr: 0.12,               // temporal-NR strength on the viewmodel relative to the scene (no smeared hands)
 

@@ -91,7 +91,8 @@ export function buildHandSDF(spec, dims, gunSDF, opts = {}) {
   const thenar = prims.find((p) => p.part === 'thenar');
   const thumbP = prims.filter((p) => p.part === 'thumb');
   const fingerP = prims.filter((p) => p.finger !== undefined);
-  const gunClip = opts.gunClip ?? 0.0006;
+  const gunClip = opts.gunClip ?? 0.0012;
+  const avoid = opts.avoid || null;           // SDF of the other hand (support hand stays outside the strong one)
 
   function sdf(x, y, z) {
     // palm
@@ -109,10 +110,11 @@ export function buildHandSDF(spec, dims, gunSDF, opts = {}) {
       const chain = Math.min(smin(d0, cd(f1, x, y, z), 0.003), cd(f2, x, y, z));
       d = Math.min(d, smin(dp, d0, 0.0075), chain);
     }
-    // flatten against the pistol (contact, no penetration)
-    if (gunSDF) {
-      const g = gunSDF(x, y, z);
-      if (g < 0.01) d = smax(d, gunClip - g, 0.0025);
+    // hard contact with the pistol and the other hand: the surface stops a small gap short of them (no smooth
+    // blend, so hand and gun stay two objects with a visible contact line, never one melted mass)
+    if (d < 0.012) {
+      if (gunSDF) { const g = gunSDF(x, y, z); if (g < 0.012) d = smax(d, gunClip - g, 0.0008); }
+      if (avoid) { const o = avoid(x, y, z); if (o < 0.012) d = smax(d, 0.0011 - o, 0.0016); }
     }
     return d;
   }

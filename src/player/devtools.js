@@ -167,6 +167,40 @@ export async function handSeries(name, crop = [0.15, 0.3, 0.85, 1]) {
   ], crop, 4, name).finally(async () => { m.right = false; await tap('KeyC'); });
 }
 
+/** Hand vs pistol penetration in the current pose (actual pistol triangles, skinned hand vertices). */
+export async function penetration(tol = 0.0006) {
+  const C = await import('./vmCheck.js');
+  const vm = ctx().player.viewmodel;
+  const parts = { slide: vm.slide, frame: vm.frame, barrel: vm.barrel, light: vm.lightBody, mag: vm.magGroup };
+  const meshes = [];
+  for (const [nm, o] of Object.entries(parts)) o?.traverse((x) => { if (x.isMesh) { x.userData.part = x.userData.part || nm; meshes.push(x); } });
+  const T = C.pistolTriangles(meshes, vm.root);
+  const out = {};
+  for (const [nm, m] of [['strong', vm.hands.strongMesh], ['support', vm.hands.supportMesh]]) {
+    const r = C.penetration(C.skinnedPoints(m, vm.root, 2), T, tol);
+    out[nm] = r;
+  }
+  return out;
+}
+
+/** Penetration in every pose of handSeries (hip, ADS, shot, reload, sprint, lean L/R, crouch ADS). */
+export async function penetrationSeries() {
+  const m = ctx().input.mouse, res = {};
+  const fire = async () => { m.leftPressed = true; m.leftClicks = 1; m.left = true; await wait(16); m.left = false; };
+  res.hip = await penetration();
+  m.right = true; await wait(600); res.ads = await penetration();
+  await fire(); await wait(16); res.shot = await penetration();
+  m.right = false; await wait(500); await tap('KeyR');
+  for (const t of [150, 300, 500, 800, 1100, 1400]) { await wait(t === 150 ? 150 : 250); res['reload' + t] = await penetration(); }
+  await wait(1500);
+  key('ShiftLeft', true); key('KeyW', true); await wait(900); res.sprint = await penetration();
+  key('ShiftLeft', false); key('KeyW', false); await wait(500);
+  key('KeyQ', true); await wait(600); res.leanL = await penetration(); key('KeyQ', false);
+  key('KeyE', true); await wait(600); res.leanR = await penetration(); key('KeyE', false);
+  const summary = Object.fromEntries(Object.entries(res).map(([k, v]) => [k, `${v.strong.inside}/${v.support.inside} ${v.strong.worst}/${v.support.worst}`]));
+  return { summary, res };
+}
+
 /** Override the viewmodel pose (camera space position + YXZ euler) for close inspection; null restores. */
 export function inspect(o) {
   const root = ctx().player.viewmodel.root;

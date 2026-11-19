@@ -6,6 +6,8 @@ import { buildHandSDF } from './vmHandSDF.js';
 
 // true: each hand is one smooth implicit surface (vmHandSDF.js); false: the older lofted tubes below
 const USE_SDF = true;
+export let TRIGGER_LIFT = 0.55;   // rad the trigger finger swings outward halfway between frame and trigger
+export function setTriggerLift(v) { TRIGGER_LIFT = v; }
 
 // Gloved hands as explicit sculpted geometry (built once at load, ~8k triangles per hand):
 //   - every finger and the thumb is ONE lofted tube along a smooth centreline through its joints, with a
@@ -49,12 +51,13 @@ const GRIP = { fB: -0.0235, fF: 0.0195, hx: 0.0148, rc: 0.0060 };
 const AX = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
 const GAX = [GA, GF, GX];
 const gunBoxes = [
-  { c: G(0.059, -0.002, 0), ax: GAX, h: [0.0545, 0.0212, 0.0143], r: 0.0050 },        // grip
-  { c: [0, 0.0015, -0.050], ax: AX, h: [0.0102, 0.0098, 0.100], r: 0.0010 },          // upper frame
-  { c: [0, 0.0030, 0.0390], ax: AX, h: [0.0102, 0.0060, 0.0090], r: 0.0030 },         // beavertail
+  { c: G(0.059, -0.002, 0), ax: GAX, h: [0.0560, 0.0228, 0.0160], r: 0.0050 },        // grip (fitted to the frame mesh, see scripts/selftest-hands.mjs)
+  { c: [0, 0.0015, -0.050], ax: AX, h: [0.0130, 0.0098, 0.100], r: 0.0010 },          // upper frame + rail
+  { c: [0, 0.0030, 0.0390], ax: AX, h: [0.0118, 0.0060, 0.0110], r: 0.0030 },         // beavertail
   { c: [0, 0.0275, -0.045], ax: AX, h: [0.0126, 0.0170, 0.1120], r: 0.0015 },         // slide
-  { c: [0, -0.0265, -0.0445], ax: AX, h: [0.0055, 0.0190, 0.0290], r: 0.0030 },       // trigger guard
-  { c: [0, -0.0170, -0.1220], ax: AX, h: [0.0136, 0.0092, 0.0285], r: 0.0040 },       // light
+  { c: [0, -0.0265, -0.0445], ax: AX, h: [0.0068, 0.0190, 0.0290], r: 0.0030 },       // trigger guard
+  { c: [0, -0.0240, 0.0020], ax: AX, h: [0.0166, 0.0160, 0.0290], r: 0.0040 },       // wide top of the grip (thumb shelf)
+  { c: [0, -0.0170, -0.1220], ax: AX, h: [0.0168, 0.0092, 0.0285], r: 0.0040 },       // light
 ];
 export function gunSDF(x, y, z) {
   let d = 1e9;
@@ -810,7 +813,7 @@ export function buildHands(mats, strongGroup, supportGroup) {
   // the support fingers are the most visible from the chest camera: they get the rounder sections
   const dims = { FINGER, THUMB, NAMES };
   const sInfo = USE_SDF ? buildHandSDF(sSpec, dims, gunSDF) : buildHand(sSpec, { fingerAround: 12 });
-  const pInfo = USE_SDF ? buildHandSDF(pSpec, dims, gunSDF) : buildHand(pSpec, { fingerAround: 14 });
+  const pInfo = USE_SDF ? buildHandSDF(pSpec, dims, gunSDF, { avoid: sInfo.sdf }) : buildHand(pSpec, { fingerAround: 14 });
 
   // AO: self (own hand) and contact (gun + other hand)
   const sSelf = occPrims(sSpec), pSelf = occPrims(pSpec);
@@ -824,7 +827,7 @@ export function buildHands(mats, strongGroup, supportGroup) {
   for (const m of [strongMesh, supportMesh]) { m.frustumCulled = false; m.castShadow = false; m.receiveShadow = true; }
 
   // thumb reach targets (gun space): support thumb -> light switch / slide stop, strong thumb -> magazine release
-  const sRig = makeRig(strongMesh, sSpec, sInfo, { magRelease: [-0.0205, -0.0105, -0.0150] });
+  const sRig = makeRig(strongMesh, sSpec, sInfo, { magRelease: [-0.0285, -0.0105, -0.0130] });
   const pRig = makeRig(supportMesh, pSpec, pInfo, {
     light: [-0.0215, -0.0150, -0.0890],
     slideStop: [-0.0200, 0.0035, -0.0520],
@@ -845,12 +848,18 @@ export function buildHands(mats, strongGroup, supportGroup) {
   const pa1 = pressAxis.clone().applyQuaternion(W1.clone().invert());
   const idxBones = sRig.fingerBones('index');
   const qI = new THREE.Quaternion(), qP = new THREE.Quaternion();
+  const qL = new THREE.Quaternion(), Y_AXIS = new THREE.Vector3(0, 1, 0);
   function setTrigger(t, press = 0) {
-    for (let k = 0; k < 3; k++) idxBones[k].quaternion.slerpQuaternions(qI, triggerPose[k], t);
+    // base joint leads, the distal joints curl in last (the finger reaches the trigger, then wraps it)
+    for (let k = 0; k < 3; k++) idxBones[k].quaternion.slerpQuaternions(qI, triggerPose[k], k === 0 ? t : t * t);
+    // between the frame and the trigger the finger swings out to the right (a straight blend cuts through the
+    // frame in front of the trigger guard)
+    const lift = t > 0 && t < 0.8 ? Math.sqrt(Math.sin(Math.PI * t / 0.8)) : 0;
+    if (lift > 0) { qL.setFromAxisAngle(Y_AXIS, -TRIGGER_LIFT * lift); idxBones[0].quaternion.premultiply(qL); }
     if (press !== 0) {
-      qP.setFromAxisAngle(pa1, 0.20 * press * t);
+      qP.setFromAxisAngle(pa1, 0.11 * press * t);
       idxBones[1].quaternion.multiply(qP);
-      qP.setFromAxisAngle(pa0, 0.09 * press * t);
+      qP.setFromAxisAngle(pa0, 0.05 * press * t);
       idxBones[0].quaternion.multiply(qP);
     }
   }

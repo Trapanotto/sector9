@@ -209,8 +209,9 @@ export function createViewmodel() {
     // ---- strong hand: grip pressure with breathing, recoil squeeze, thumb on the magazine release
     const br = pose.breath;
     const squeeze = bump(regripT, 0, 0.05, 0.3) * 0.05;
-    for (const n of ['middle', 'ring', 'pinky']) hands.strong.setFinger(n, 1 + 0.012 * Math.sin(time * 1.3 + n.length) + squeeze);
-    hands.strong.setFinger('thumb', 1 + 0.03 * br - bump(regripT, 0.02, 0.08, 0.3) * 0.12);
+    // (curl never above the sculpted grip: tighter would push the fingers into the grip)
+    for (const n of ['middle', 'ring', 'pinky']) hands.strong.setFinger(n, 1 - 0.008 * (1 + Math.sin(time * 1.3 + n.length)) - squeeze);
+    hands.strong.setFinger('thumb', 1 - 0.02 * (1 + br) - bump(regripT, 0.02, 0.08, 0.3) * 0.12);
     hands.strong.addReach('magRelease', hand.magRelease);
 
     // ---- support hand
@@ -249,6 +250,7 @@ export function createViewmodel() {
 
   return {
     root, slide, mag, magGroup, magNew, support, strong, muzzle, ejectPort, light, lens,
+    frame: gun.frame, barrel: gun.barrel, lightBody: gun.light,
     sightY, slideTop: SLIDE_TOP, rearSightZ: REAR_Z, frontSightZ: FRONT_Z, setFlashlight, materials: mats,
     hands, hand,
     /** weapon writes the support hand's reload pose here (gun-local offsets); the animation layer adds to it */
