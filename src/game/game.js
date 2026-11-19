@@ -203,10 +203,10 @@ export function createGame(ctx) {
             <span>Maus</span><span>Umsehen, Waffe führen</span>
             <span>Linke Maustaste</span><span>Schießen</span>
             <span>Rechte Maustaste</span><span>Zielen</span>
-            <span>R <i>/</i> Enter</span><span>Nachladen</span>
-            <span>F <i>/</i> Ende</span><span>Waffenlicht</span>
-            <span>Shift</span><span>Sprinten</span>
-            <span>C <i>/</i> Strg</span><span>Ducken</span>
+            <span>R <i>/</i> Enter <i>/</i> Num 1</span><span>Nachladen</span>
+            <span>F <i>/</i> Ende <i>/</i> Num ,</span><span>Waffenlicht</span>
+            <span>Shift <i>(links / rechts)</i></span><span>Sprinten</span>
+            <span>C <i>/</i> Strg <i>/</i> Num 0</span><span>Ducken</span>
             <span>Q E <i>/</i> Entf Bild↓</span><span>Lehnen</span>
             <span>Esc</span><span>Pause</span>
           </div>
@@ -461,7 +461,7 @@ export function createGame(ctx) {
   const segSel = (key, val) => settingsEl.querySelectorAll(`[data-k=${key}] button`).forEach((b) => b.classList.toggle('on', b.dataset.v === String(val)));
   function syncControlsUI() {
     $(settingsEl, '[data-k=sens]').value = String(sensToSlider(ctrl.sens));
-    $(settingsEl, '[data-k=sensv]').textContent = ctrl.sens.toFixed(2);
+    $(settingsEl, '[data-k=sensv]').textContent = ctrl.sens.toFixed(2).replace('.', ',');
     $(settingsEl, '[data-k=adssens]').value = String(Math.round(ctrl.adsSens * 100));
     $(settingsEl, '[data-k=adssensv]').textContent = `${Math.round(ctrl.adsSens * 100)} %`;
     $(settingsEl, '[data-k=fov]').value = String(ctrl.fov);
