@@ -773,7 +773,8 @@ export function createPipeline(ctx) {
     compU.uVeil.value = T.veilingGlare;
     compU.uDirtAmt.value = T.dirtStrength;
     compU.uBreath.value = T.focusBreathing;
-    compU.uNoiseP.value.set(T.noiseShot, T.noiseRead, T.noise);
+    // at low internal resolution every noise pixel is magnified on screen: keep the perceived grain constant
+    compU.uNoiseP.value.set(T.noiseShot, T.noiseRead, T.noise * Math.min(1, Math.sqrt(ih / 900)));
     compU.uNoiseQ.value.set(T.chromaNoise, T.fixedPattern, T.hotPixels, T.hotPixelStrength);
     compU.uGrain.value.set(T.grainSize[0], T.grainSize[1]);
     compU.uNR.value = T.noiseReduction;
