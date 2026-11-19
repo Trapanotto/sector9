@@ -523,6 +523,7 @@ export function createGame(ctx) {
 
   // ---- contract API -------------------------------------------------------------------------
   function setLoading(p, label) {
+    (window.__loadLog ||= []).push([Math.round(performance.now()), label || '', +(+p || 0).toFixed(2)]);   // load profile (tests)
     const v = Math.min(1, Math.max(0, Number(p) || 0));
     $(scrLoading, '[data-k=bar]').style.width = `${(v * 100).toFixed(1)}%`;
     if (label) $(scrLoading, '[data-k=label]').textContent = String(label);

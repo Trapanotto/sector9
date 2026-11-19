@@ -187,7 +187,9 @@ export async function createLevel(ctx, onProgress = () => {}) {
   const lum = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
   let staticSig = '';
   // Re-renders everything that depends on static geometry: static sun shadow, lamp shadow, reflection probes.
-  function refreshStaticLighting() {
+  // onProbe(i, n): async capture with a yield after every probe (first load: keeps the loading screen alive while
+  // the GPU driver compiles its draw-time shader variants)
+  function refreshStaticLighting(onProbe = null) {
     const t0 = performance.now();
     culler.showAll();
     adoptScene(scene);
@@ -208,9 +210,14 @@ export async function createLevel(ctx, onProgress = () => {}) {
     });
     staticSig = signature();
     const casters = staticSun.render(scene, ctx.camera);
-    const ms = probes.capture(scene, { hide, normAt: gi ? (x, y, z) => lum(gi.sample(x, y, z)) : null, culler });
-    culler.showAll();
-    console.info(`[light] static lighting refreshed: ${casters} sun casters, ${nStatic} static objects, probes ${ms.toFixed(0)} ms, total ${(performance.now() - t0).toFixed(0)} ms`);
+    const opts = { hide, normAt: gi ? (x, y, z) => lum(gi.sample(x, y, z)) : null, culler };
+    const done = (ms) => {
+      culler.showAll();
+      console.info(`[light] static lighting refreshed: ${casters} sun casters, ${nStatic} static objects, probes ${ms.toFixed(0)} ms, total ${(performance.now() - t0).toFixed(0)} ms`);
+    };
+    if (onProbe) return probes.captureAsync(scene, opts, onProbe).then(done);
+    done(probes.capture(scene, opts));
+    return null;
   }
   function signature() {
     let n = 0, v = 0;
@@ -302,8 +309,22 @@ export async function createLevel(ctx, onProgress = () => {}) {
   doors.forEach(setDoor);
   const openDoor = (door, fast = false) => { if (!door.wind && door.target < 1) { door.target = 1; door.fast = fast; } };
 
+  // Compile every program the static scene needs before the first render (reflection probes): on a first visit
+  // (empty browser shader cache) synchronous compilation inside the probe capture blocked the page for ~11 s
+  // under ANGLE / D3D11. compileAsync uses KHR_parallel_shader_compile, so the loading screen stays alive.
+  progress(0.91, 'Shader'); await tick();
+  try {
+    const rt = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType });   // same colour space / tone mapping as the scene pass
+    const prevRT = renderer.getRenderTarget();
+    renderer.setRenderTarget(rt);
+    const tC = performance.now();
+    await renderer.compileAsync(scene, ctx.camera);
+    renderer.setRenderTarget(prevRT);
+    rt.dispose();
+    console.info(`[world] shaders compiled in ${(performance.now() - tC).toFixed(0)} ms`);
+  } catch (e) { console.warn('[world] async shader compile skipped:', e?.message || e); }
   progress(0.93, 'Reflexionen'); await tick();
-  refreshStaticLighting();
+  await refreshStaticLighting((i, n) => progress(0.93 + 0.06 * (i / n), 'Reflexionen'));
 
   // ---------------------------------------------------------------- gameplay data
   const v = (a) => new THREE.Vector3(a[0], a[1], a[2]);

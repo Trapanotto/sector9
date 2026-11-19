@@ -41,7 +41,19 @@ export function createReflectionProbes(renderer) {
   }
 
   /** Captures all probes. hide: objects to hide during the capture (moving things). normAt(x,y,z) -> luminance. */
-  function capture(scene, { hide = [], normAt = null, culler = null } = {}) {
+  function capture(scene, opts = {}) {
+    const it = captureSteps(scene, opts);
+    let r = it.next(); while (!r.done) r = it.next();
+    return r.value;
+  }
+  /** Same, yielding to the event loop after every probe; onProbe(i, n) reports progress. */
+  async function captureAsync(scene, opts = {}, onProbe = null) {
+    const it = captureSteps(scene, opts);
+    let r = it.next(), i = 0;
+    while (!r.done) { onProbe?.(++i, N); await new Promise((res) => setTimeout(res, 0)); r = it.next(); }
+    return r.value;
+  }
+  function* captureSteps(scene, { hide = [], normAt = null, culler = null } = {}) {
     const t0 = performance.now();
     const prevOn = LP.lpReflOn.value, prevRT = renderer.getRenderTarget();
     const prevTM = renderer.toneMapping;
@@ -61,6 +73,7 @@ export function createReflectionProbes(renderer) {
       copy.render(renderer);
       pm.dispose();
       LP.lpReflNorm.value[i] = normAt ? Math.max(1e-4, normAt(...z.pos)) : 1;
+      if (i < N - 1) yield i;
     }
     hide.forEach((o, k) => { o.visible = vis[k]; });
     renderer.setRenderTarget(prevRT);
@@ -71,5 +84,5 @@ export function createReflectionProbes(renderer) {
     return performance.now() - t0;
   }
 
-  return { capture, zones: REFL_ZONES, texture: arrayRT.texture };
+  return { capture, captureAsync, zones: REFL_ZONES, texture: arrayRT.texture };
 }
