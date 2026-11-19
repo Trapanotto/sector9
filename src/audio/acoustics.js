@@ -5,50 +5,48 @@ import * as LAYOUT from '../world/layout.js';
 import { makeRng, rr, Biquad, addMode, TAU, clamp } from './dsp.js';
 
 // ------------------------------------------------------------------------------------ zones
-export const ZONE_DEFS = {
-  yard:     { ir: 'yard', floor: 'asphalt', outdoor: true },
-  hall:     { ir: 'hall', floor: 'concrete' },
-  under:    { ir: 'under', floor: 'concrete' },
-  corridor: { ir: 'corridor', floor: 'concrete' },
-  office:   { ir: 'room', floor: 'lino' },
-  locker:   { ir: 'room', floor: 'lino' },
-  storage:  { ir: 'room', floor: 'concrete' },
-  control:  { ir: 'room', floor: 'lino' },
-  bay:      { ir: 'bay', floor: 'concrete' },
+// Zones come from the level's 3D ZONES (layout.js): each has boxes and an acoustic class (yard | hall | bay |
+// corridor | room | under). Stacked rooms (offices above offices, the basement under the foundry) are separate.
+const FLOOR_OF = { yard: 'asphalt', hall: 'concrete', bay: 'concrete', corridor: 'concrete', room: 'lino', under: 'concrete' };
+const CONCRETE_ROOMS = new Set(['storage', 'archive', 'gatehouse']);
+export const ZONE_DEFS = {   // kept for older consumers (harness): acoustic class -> reverb / floor
+  yard: { ir: 'yard', floor: 'asphalt', outdoor: true }, hall: { ir: 'hall', floor: 'concrete' }, bay: { ir: 'bay', floor: 'concrete' },
+  corridor: { ir: 'corridor', floor: 'concrete' }, room: { ir: 'room', floor: 'lino' }, under: { ir: 'under', floor: 'concrete' },
 };
 // Reflection coefficients (pressure) of the main boundaries
 const R_WALL = 0.82, R_FLOOR = 0.86, R_ROOF_METAL = 0.78, R_SLAB = 0.84, R_ROOM_WALL = 0.7;
 
 /** Builds zones (boxes + reflectors) and portals from the level layout. Falls back gracefully. */
 export function buildAcoustics(layout) {
-  const regions = LAYOUT.REGIONS || [];
-  const H = LAYOUT.H || { hall: 8, bay: 7, room: 3.2 };
-  const DECK = LAYOUT.DECK || { min: [-23.6, -5.8], max: [-17, 2], y: 3.3 };
-  const FOOT = LAYOUT.FOOTPRINT || { min: [-24, -18], max: [20, 16] };
+  const ZL = LAYOUT.ZONES || [];
   const zones = {};
-  const heightOf = { hall: H.hall, bay: H.bay, corridor: H.room, office: H.room, locker: H.room, storage: H.room, control: H.room };
-  for (const reg of regions) {
-    if (!ZONE_DEFS[reg.name] || zones[reg.name]) continue;
-    const h = reg.name === 'yard' ? 30 : heightOf[reg.name] ?? H.room;
-    zones[reg.name] = { id: reg.name, ...ZONE_DEFS[reg.name], box: { x0: reg.min[0], x1: reg.max[0], z0: reg.min[1], z1: reg.max[1], y0: 0, y1: h } };
-  }
-  zones.under = { id: 'under', ...ZONE_DEFS.under, box: { x0: DECK.min[0], x1: DECK.max[0], z0: DECK.min[1], z1: DECK.max[1], y0: 0, y1: DECK.y - 0.12 } };
-  if (!zones.yard) zones.yard = { id: 'yard', ...ZONE_DEFS.yard, box: { x0: -24, x1: 20, z0: 16, z1: 26, y0: 0, y1: 30 } };
-  if (!zones.hall) zones.hall = { id: 'hall', ...ZONE_DEFS.hall, box: { x0: -23.6, x1: 7.8, z0: -5.8, z1: 15.6, y0: 0, y1: 8 } };
-  const order = ['under', 'office', 'locker', 'storage', 'control', 'corridor', 'hall', 'bay'].filter((k) => zones[k]);
+  ZL.forEach((Z, i) => {
+    const ac = Z.acoustic || (i === 0 ? 'yard' : 'room');
+    const main = Z.boxes[0];
+    const floor = ac === 'room' && CONCRETE_ROOMS.has(Z.name) ? 'concrete' : FLOOR_OF[ac] || 'concrete';
+    zones[Z.name] = {
+      id: Z.name, index: i, ir: ac, floor, outdoor: ac === 'yard',
+      box: { x0: main.min[0], x1: main.max[0], y0: main.min[1], y1: main.max[1], z0: main.min[2], z1: main.max[2] },
+      boxes: Z.boxes,
+    };
+  });
+  const outName = ZL[0]?.name || 'out';
+  if (!zones[outName]) zones[outName] = { id: outName, index: 0, ir: 'yard', floor: 'asphalt', outdoor: true, box: { x0: -60, x1: 80, y0: -1, y1: 60, z0: -80, z1: 70 } };
+  const real = Object.values(zones);
+  // aliases used by the ambience code (same objects, not extra zones)
+  if (!zones.yard) Object.defineProperty(zones, 'yard', { value: zones[outName], enumerable: false });
+  if (!zones.hall) Object.defineProperty(zones, 'hall', { value: real.find((z) => z.ir === 'hall') || zones[outName], enumerable: false });
+  if (!zones.bay) Object.defineProperty(zones, 'bay', { value: real.find((z) => z.ir === 'bay') || zones.hall, enumerable: false });
 
   // reflectors per zone: { axis 0|1|2, c, R, lp: 1|2|3 }
-  for (const z of Object.values(zones)) {
+  for (const z of real) {
     const b = z.box, refl = [];
-    if (z.id === 'yard') {
+    if (z.outdoor) {
       refl.push({ axis: 1, c: 0, R: 0.88, lp: 1 });                  // asphalt
-      refl.push({ axis: 2, c: b.z0, R: 0.85, lp: 1 });               // factory facade
-      refl.push({ axis: 2, c: b.z1, R: 0.45, lp: 2 });               // corrugated fence (low)
-      refl.push({ axis: 0, c: b.x0, R: 0.35, lp: 2 }, { axis: 0, c: b.x1, R: 0.35, lp: 2 });
-      // buildings across the street / neighbouring warehouses: long slap echoes
-      refl.push({ axis: 2, c: b.z1 + 38, R: 0.6, lp: 3, far: true });
-      refl.push({ axis: 0, c: b.x0 - 46, R: 0.45, lp: 3, far: true });
-      refl.push({ axis: 0, c: b.x1 + 64, R: 0.35, lp: 3, far: true });
+      // facades of the site buildings and the street: long slap echoes
+      refl.push({ axis: 2, c: 16, R: 0.7, lp: 2 }, { axis: 2, c: -34, R: 0.6, lp: 2 });
+      refl.push({ axis: 0, c: 44, R: 0.5, lp: 2 }, { axis: 0, c: -24, R: 0.5, lp: 2 });
+      refl.push({ axis: 2, c: 72, R: 0.45, lp: 3, far: true }, { axis: 0, c: -70, R: 0.35, lp: 3, far: true });
     } else {
       const small = z.ir === 'room' || z.ir === 'corridor' || z.ir === 'under';
       const wR = z.ir === 'room' && z.floor === 'lino' ? R_ROOM_WALL : R_WALL;
@@ -61,22 +59,12 @@ export function buildAcoustics(layout) {
     z.refl = refl;
   }
 
-  function inBox(b, x, z, m = 0) { return x >= b.x0 - m && x <= b.x1 + m && z >= b.z0 - m && z <= b.z1 + m; }
+  const byIndex = ZL.map((Z) => zones[Z.name]);
   function zoneAt(x, y, z) {
-    const u = zones.under.box;
-    if (inBox(u, x, z, 0.05)) return y < DECK.y - 0.25 ? zones.under : zones.hall;
-    for (const k of order) if (k !== 'under' && inBox(zones[k].box, x, z, 0.02)) return zones[k];
-    const inside = x > FOOT.min[0] && x < FOOT.max[0] && z > FOOT.min[1] && z < FOOT.max[1];
-    if (!inside) return zones.yard;
-    // in a wall/doorway: nearest zone box
-    let best = zones.hall, bd = Infinity;
-    for (const k of order) {
-      if (k === 'under') continue;
-      const b = zones[k].box;
-      const dx = Math.max(b.x0 - x, 0, x - b.x1), dz = Math.max(b.z0 - z, 0, z - b.z1), d = dx * dx + dz * dz;
-      if (d < bd) { bd = d; best = zones[k]; }
-    }
-    return best;
+    let i = LAYOUT.zoneIndexAt ? LAYOUT.zoneIndexAt(x, y, z, 0) : 0;
+    // standing in a doorway / wall thickness of a building: take the nearest room instead of the outside
+    if (i === 0 && LAYOUT.insideBuilding?.(x, z)) i = LAYOUT.zoneIndexAt(x, y, z, 0.6);
+    return byIndex[i] || zones[outName];
   }
 
   // portals
@@ -88,9 +76,10 @@ export function buildAcoustics(layout) {
   const doors = layout?.doors || [];
   for (const d of doors) {
     if (d.nav === false && /dock/.test(d.name || '')) continue;   // closed by the trailer
-    const [cx, cz] = d.center, off = 0.7, hy = Math.min(d.height || 2.2, 3) * 0.5;
+    const [cx, cz] = d.center, off = 0.7, y0 = d.y || 0, hy = y0 + Math.min(d.height || 2.2, 3) * 0.5;
     const pa = d.normal === 'z' ? [cx, cz - off] : [cx - off, cz], pb = d.normal === 'z' ? [cx, cz + off] : [cx + off, cz];
-    addPortal([cx, hy, cz], zoneAt(pa[0], 1, pa[1]), zoneAt(pb[0], 1, pb[1]), d.width || 1.4, d.height || 2.2, 'door');
+    if (d.state === 'closed' || d.state === 'locked') continue;
+    addPortal([cx, hy, cz], zoneAt(pa[0], y0 + 1, pa[1]), zoneAt(pb[0], y0 + 1, pb[1]), d.width || 1.4, d.height || 2.2, 'door');
   }
   const windows = layout?.windows || [];
   for (const w of windows) {
@@ -99,21 +88,26 @@ export function buildAcoustics(layout) {
     const off = 0.7;
     const pa = w.normal === 'z' ? [cx, cz - off] : [cx - off, cz], pb = w.normal === 'z' ? [cx, cz + off] : [cx + off, cz];
     const wa = w.normal === 'z' ? w.max[0] - w.min[0] : w.max[2] - w.min[2];
-    addPortal([cx, cy, cz], zoneAt(pa[0], 1, pa[1]), zoneAt(pb[0], 1, pb[1]), wa * 0.6, (w.max[1] - w.min[1]) * 0.6, 'window');
+    addPortal([cx, cy, cz], zoneAt(pa[0], cy, pa[1]), zoneAt(pb[0], cy, pb[1]), wa * 0.6, (w.max[1] - w.min[1]) * 0.6, 'window');
   }
   for (const h of layout?.roofHoles || []) {
     const cx = (h.min[0] + h.max[0]) / 2, cz = (h.min[2] + h.max[2]) / 2;
-    addPortal([cx, h.min[1], cz], zoneAt(cx, 1, cz), zones.yard, h.max[0] - h.min[0], h.max[2] - h.min[2], 'roof');
+    addPortal([cx, h.min[1], cz], zoneAt(cx, h.min[1] - 1, cz), zones[outName], h.max[0] - h.min[0], h.max[2] - h.min[2], 'roof');
+  }
+  // horizontal openings (stair shafts between storeys, basement shafts)
+  for (const p of layout?.portals || []) {
+    const cx = (p.min[0] + p.max[0]) / 2, cy = (p.min[1] + p.max[1]) / 2, cz = (p.min[2] + p.max[2]) / 2;
+    addPortal([cx, cy, cz], zones[p.a], zones[p.b], p.max[0] - p.min[0], p.max[2] - p.min[2], 'shaft');
   }
   const windowList = windows.filter((w) => w.glass === 'broken' || w.glass === 'empty').map((w) => ({
     x: (w.min[0] + w.max[0]) / 2, y: (w.min[1] + w.max[1]) / 2, z: (w.min[2] + w.max[2]) / 2, glass: w.glass,
   }));
   const adj = {};
-  for (const id of Object.keys(zones)) adj[id] = [];
+  for (const z of real) adj[z.id] = [];
   for (const p of portals) { adj[p.a].push(p); adj[p.b].push(p); }
   // hop distance between zones (BFS)
   const hops = {};
-  for (const s of Object.keys(zones)) {
+  for (const s of Object.keys(adj)) {
     const dist = { [s]: 0 }, q = [s];
     while (q.length) { const c = q.shift(); for (const p of adj[c]) { const o = p.a === c ? p.b : p.a; if (dist[o] === undefined) { dist[o] = dist[c] + 1; q.push(o); } } }
     hops[s] = dist;
@@ -124,9 +118,9 @@ export function buildAcoustics(layout) {
 /** Floor surface at a position: zone floor plus metal deck/stair and debris patches. */
 export function surfaceAt(ac, x, y, z, debrisSpots) {
   const zone = ac.zoneAt(x, y, z);
-  if (zone.id === 'yard') {
-    // gravel strips along the fences and around the container, asphalt elsewhere
-    if (z > 24.6 || x < -22.5 || x > 18.5 || (x > -13.5 && x < -4.5 && z > 18.6 && z < 23)) return 'gravel';
+  if (zone.outdoor) {
+    // gravel along the rail siding and the fences, asphalt elsewhere
+    if ((z > -31 && z < -24) || z > 29 || x < -26 || x > 46) return 'gravel';
     return 'asphalt';
   }
   for (const s of debrisSpots) { const dx = x - s[0], dz = z - s[1]; if (dx * dx + dz * dz < s[2] * s[2]) return 'debris'; }

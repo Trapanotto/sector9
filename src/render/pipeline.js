@@ -43,7 +43,7 @@ export const TUNING = {
   highlightClip: 1.08,       // post-curve gain + hard clip (>1 = harder clipping)
   toe: 0.0035,               // shadow crush
   highlightDesat: 0.75,      // clipped colours run toward white
-  awbStrength: 0.62,         // 0 = fixed WB, 1 = full grey-world correction (never fully neutral)
+  awbStrength: 0.42,         // 0 = fixed WB, 1 = full grey-world correction (never fully neutral)
   awbTau: 3.5,               // s
   wbBias: [-0.035, 0.03],    // camera's own cast (log R/G, log B/G): slightly cool-green
 
@@ -58,9 +58,9 @@ export const TUNING = {
   halationTint: [1.0, 0.82, 0.68],
   veilingGlare: 0.030,       // whole-frame contrast loss from bright light in view
   flare: 1.0,                // master for ghosts + streak (0 skips the pass)
-  flareThreshold: 2.2,
-  flareGhosts: 0.06,
-  flareHalo: 0.025,
+  flareThreshold: 3.4,           // (audit: ghosts were smearing purple/cyan blobs over every hall view)
+  flareGhosts: 0.018,
+  flareHalo: 0.015,
   flareStreak: 0.035,
   flareStreakAngle: 0.18,    // radians, the cover-glass wipe direction
   dirtStrength: 0.45,

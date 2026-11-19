@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { resetGlass } from '../world/decals.js';
 
 // Game flow + everything inside #ui (loading, menu, pause, death, debrief, minimal HUD).
 // Created first: only touches the DOM at creation; sibling modules are read lazily from ctx.
@@ -332,7 +333,7 @@ export function createGame(ctx) {
     const p = pending || {}; pending = null;
     if (p.restart) {
       ctx.player?.reset?.(); ctx.enemies?.reset?.(); ctx.fx?.reset?.();
-      import('../world/decals.js').then((m) => m.resetGlass?.()).catch(() => {});   // restore shot-out windows
+      try { resetGlass(); } catch (e) { /* no glass */ }   // restore shot-out windows
       ctx.audio?.setMuffled?.(false); ctx.pipeline?.setDead?.(false);
     }
     if (p.restart || p.first) {

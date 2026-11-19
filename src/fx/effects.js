@@ -46,8 +46,9 @@ export function createEffects(ctx) {
   const mA = new THREE.Matrix4(), sA = new THREE.Vector3(), colA = new THREE.Color();
   const ZERO_M = new THREE.Matrix4().makeScale(0, 0, 0);
 
-  const groundAt = (x, z) => {
-    const g = ctx.level?.groundHeight?.(x, z);
+  // y: height of the event (floors are stacked; the level returns the highest floor at or below it)
+  const groundAt = (x, z, y = 0) => {
+    const g = ctx.level?.groundHeight?.(x, z, y);
     return Number.isFinite(g) ? g : 0;
   };
   function randUnit(out) {
@@ -541,7 +542,7 @@ export function createEffects(ctx) {
   function glass(point, dir) {
     if (!point) return;
     const d = dir && dir.lengthSq() > 1e-8 ? vN.copy(dir).normalize() : vN.copy(UP);
-    const gy = groundAt(point.x, point.z);
+    const gy = groundAt(point.x, point.z, point.y);
     for (let i = 0; i < 46; i++) {
       randUnit(vA);
       const fwd = Math.random() < 0.75 ? rnd(0.6, 3.2) : -rnd(0.3, 1.4);
@@ -566,7 +567,7 @@ export function createEffects(ctx) {
     const size = s === 'metal' ? rnd(0.03, 0.04) : s === 'wood' ? rnd(0.045, 0.06) : rnd(0.05, 0.075);
     holes.add(point, vN, size, Math.random() * 6.283, cell, rnd(0.8, 1));
 
-    const gy = groundAt(point.x, point.z);
+    const gy = groundAt(point.x, point.z, point.y);
     const px = point.x + vN.x * 0.01, py = point.y + vN.y * 0.01, pz = point.z + vN.z * 0.01;
     const dc = s === 'wood' ? COL.dustWood : s === 'metal' ? COL.dustMetal : COL.dustConcrete;
     const nDust = s === 'metal' ? 5 : s === 'wood' ? 9 : 14;
@@ -632,7 +633,7 @@ export function createEffects(ctx) {
         rnd(0.02, 0.05), rnd(0.2, 0.4), COL.mist, 0.4, 1.0, 5, 0.1);
     }
     // heavy droplets under gravity, leave spots on the floor
-    const gy = groundAt(px, pz) + 0.002;
+    const gy = groundAt(px, pz, py) + 0.002;
     for (let i = 0; i < 14; i++) {
       randUnit(vA); const sp = rnd(1.5, 4.5);
       drops.spawn(px, py, pz, d.x * sp + vA.x * 1.2, d.y * sp + vA.y * 1.2 + rnd(0, 1.2), d.z * sp + vA.z * 1.2,
@@ -648,7 +649,7 @@ export function createEffects(ctx) {
       queueSplat(hit.point, vN, size, hit.distance / T.bloodSpeed, (Math.random() * 7) | 0);
     } else if (Math.random() < 0.7) {
       const fwd = rnd(0.6, 1.6);
-      vA.set(px + d.x * fwd, 0, pz + d.z * fwd); vA.y = groundAt(vA.x, vA.z);
+      vA.set(px + d.x * fwd, 0, pz + d.z * fwd); vA.y = groundAt(vA.x, vA.z, py);
       queueSplat(vA, UP, rnd(0.35, 0.7), 0.25, (Math.random() * 7) | 0);
     }
   }
@@ -657,7 +658,7 @@ export function createEffects(ctx) {
     if (!position) return;
     const a = Math.random() * 6.283, off = rnd(0.05, 0.3);
     vA.set(position.x + Math.cos(a) * off, 0, position.z + Math.sin(a) * off);
-    vA.y = groundAt(vA.x, vA.z);
+    vA.y = groundAt(vA.x, vA.z, position.y + 0.3);
     const rot = Math.random() * 6.283;
     const i = pools.add(vA, UP, 0.05, rot, (Math.random() * 4) | 0, rnd(0.85, 1));
     const st = poolState[i];
@@ -727,7 +728,7 @@ export function createEffects(ctx) {
       sh.pos.addScaledVector(sh.vel, dt);
       qA.setFromAxisAngle(sh.axis, sh.spin * dt);
       sh.q.premultiply(qA);
-      const gy = groundAt(sh.pos.x, sh.pos.z) + 0.0045;
+      const gy = groundAt(sh.pos.x, sh.pos.z, sh.pos.y) + 0.0045;
       if (sh.pos.y <= gy && sh.vel.y < 0) {
         sh.pos.y = gy;
         sh.bounces++;

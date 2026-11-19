@@ -13,6 +13,13 @@ import { gpuInfo, detectTier, TIERS } from './render/quality.js';
 import { setTextureBudget, setSurfaceQuality } from './world/materials.js';
 
 const ui = document.getElementById('ui');
+// favicon (inline: no extra request, and no 404 for /favicon.ico on the public site)
+{
+  const l = document.createElement('link');
+  l.rel = 'icon';
+  l.href = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#0b0c0d"/><circle cx="8" cy="8" r="3.2" fill="#c0392b"/></svg>');
+  document.head.appendChild(l);
+}
 function fatal(title, text, reload = true) {
   ui.innerHTML = `<div style="position:absolute;inset:0;background:#050506;color:#d9dbd5;display:flex;align-items:center;justify-content:center;
     font:13px 'Segoe UI',Arial,sans-serif;text-align:left"><div style="max-width:440px;padding:24px">

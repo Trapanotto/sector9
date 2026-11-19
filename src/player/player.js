@@ -129,13 +129,14 @@ export function createPlayer(ctx) {
 
   const level = () => ctx.level;
   const colliders = () => ctx.level?.colliders || EMPTY;
-  const levelGround = (x, z) => {
-    const g = ctx.level?.groundHeight?.(x, z);
+  // floors are stacked (basement, upper storey, catwalks): the level picks the highest floor at or below y + step
+  const levelGround = (x, z, y = player.position.y) => {
+    const g = ctx.level?.groundHeight?.(x, z, y);
     return Number.isFinite(g) ? g : 0;
   };
   /** floor under (x, z) for feet at y: level floor or the top of low clutter we can step onto */
   const groundAt = (x, z, y) => {
-    const g = levelGround(x, z);
+    const g = levelGround(x, z, y);
     const b = boxGround(colliders(), x, z, 0.1, y - T.STEP_DOWN - 0.01, y + T.STEP_BOX + 0.01);
     return b > g ? b : g;
   };
@@ -300,12 +301,12 @@ export function createPlayer(ctx) {
         }
       }
       // a level floor rise higher than a step acts like a wall: keep the axis that still works
-      if (levelGround(pos.x, pos.z) - pos.y > T.STEP_UP) {
+      if (levelGround(pos.x, pos.z, pos.y) - pos.y > T.STEP_UP) {
         const nx = pos.x, nz = pos.z;
         pos.x = nx; pos.z = oz;
-        if (levelGround(pos.x, pos.z) - pos.y > T.STEP_UP) {
+        if (levelGround(pos.x, pos.z, pos.y) - pos.y > T.STEP_UP) {
           pos.x = ox; pos.z = nz; vel.x = 0;
-          if (levelGround(pos.x, pos.z) - pos.y > T.STEP_UP) { pos.z = oz; vel.z = 0; }
+          if (levelGround(pos.x, pos.z, pos.y) - pos.y > T.STEP_UP) { pos.z = oz; vel.z = 0; }
         } else vel.z = 0;
       }
     }

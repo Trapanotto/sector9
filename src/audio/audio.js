@@ -903,7 +903,7 @@ export function createEngine(ac, ctx, opts = {}) {
       for (const e of amb.emit.hum) { const s = ac.createBufferSource(); s.buffer = hb; s.loop = true; s.playbackRate.value = 1 + rnd(-0.003, 0.003); s.connect(e.g); s.start(now() + 0.05, R()); e.src = s; }
     });
   }
-  const fixtures = Array.isArray(LAYOUT.FIXTURES) ? LAYOUT.FIXTURES.filter((f) => f.state !== 'dead').map((f) => ({ p: new THREE.Vector3(f.pos[0], f.pos[1], f.pos[2]), flick: f.state === 'flicker' })) : [];
+  const fixtures = Array.isArray(LAYOUT.FIXTURES) ? LAYOUT.FIXTURES.filter((f) => (f.state === 'on' || f.state === 'flicker')).map((f) => ({ p: new THREE.Vector3(f.pos[0], f.pos[1], f.pos[2]), flick: f.state === 'flicker' })) : [];
   function setPanPos(pan, p) { if (pan.positionX) { setParam(pan.positionX, p.x, 0.05); setParam(pan.positionY, p.y, 0.05); setParam(pan.positionZ, p.z, 0.05); } else pan.setPosition(p.x, p.y, p.z); }
   function randomOutside(dMin, dMax, yMin, yMax) {
     const F = LAYOUT.FOOTPRINT || { min: [-24, -18], max: [20, 16] };

@@ -149,9 +149,11 @@ export function createEnemies(ctx) {
 
   function animate(e, dt) {
     e.ch.root.position.copy(e.position);
+    // a sleeper slumps: deep crouch against whatever is behind him, weapon down, chin on the chest
+    const zz = e.asleep && e.alive;
     e.anim.update(dt, {
-      aimYaw: e.aimYaw, aimPitch: e.aimPitch, lookYaw: e.lookYaw, lookPitch: e.lookPitch,
-      raise: e.wantRaise, crouch: e.wantCrouch, reload: e.reloadT,
+      aimYaw: e.aimYaw, aimPitch: zz ? -0.5 : e.aimPitch, lookYaw: e.lookYaw, lookPitch: zz ? -0.95 : e.lookPitch,
+      raise: zz ? 0 : e.wantRaise, crouch: zz ? 1 : e.wantCrouch, reload: e.reloadT,
       strafe: e.state === 'combat' || e.state === 'search', ground: e.groundFn || W.groundFn,
     });
     e.ch.getEye(e.eye);
