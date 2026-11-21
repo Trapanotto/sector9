@@ -30,7 +30,9 @@ export function createSky(sky, sun) {
       ${SKY_GLSL}
       void main() {
         vec3 d = normalize(vDir);
-        vec3 c = skyRadiance(d);
+        // what the camera sees of the sky: a small bodycam sensor exposed for the ground blows it out — near-white at the
+        // horizon, a washed blue-grey high up (the bake keeps the physical radiance: this gain is display-only)
+        vec3 c = skyRadiance(d) * mix(2.6, 1.7, clamp(d.y * 1.6, 0.0, 1.0));
         // sun disc (radiance far above anything else: always clips)
         c += uSunColor * (uSunI * 40.0) * smoothstep(0.99985, 0.99993, dot(d, uSunDir));
         gl_FragColor = vec4(c * uExposure, 1.0);
