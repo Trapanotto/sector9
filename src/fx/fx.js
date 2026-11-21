@@ -365,6 +365,19 @@ export function createFx(ctx) {
     }
   };
 
+  /** director (F): a brick carton bursts — white powder cloud + grains at pos {x,y,z} */
+  fx.powder = (p) => {
+    if (!debris || !p) return;
+    for (let k = 0; k < 4; k++) addPuff(p.x + rs(0.15), p.y + 0.1 + rs(0.1), p.z + rs(0.15), rs(0.6), 0.3 + Math.random() * 0.3, rs(0.6), 0.15, 0.9 + k * 0.2, 0.7, 3.5 + k * 0.6, 0.95, 0.95, 0.93, 1.4);
+    for (let k = 0; k < 14; k++) addDebris(K.grain, p.x, p.y + 0.1, p.z, rs(1.6), 0.8 + Math.random() * 1.2, rs(1.6), 0.004, 1.6, 0.95, 0.95, 0.93);
+  };
+  /** director (F): cold-store door fog spilling out at pos, roughly size metres across */
+  fx.fog = (p, size = 6) => {
+    if (!debris || !p) return;
+    const n = Math.min(10, 4 + (size / 2) | 0);
+    for (let k = 0; k < n; k++) addPuff(p.x + rs(size * 0.15), p.y + 0.2 + Math.random() * 0.6, p.z + rs(size * 0.15), rs(0.5), -0.05, rs(0.5), 0.6, Math.min(3, size * 0.3) + Math.random(), 0.32, 6 + Math.random() * 3, 0.85, 0.88, 0.92, 0.6);
+  };
+
   /** muzzle flash in the view model (posVm/dirVm: view-model world space) */
   fx.muzzle = (posVm, dirVm) => {
     if (!flash || !posVm) return;

@@ -113,7 +113,7 @@ export function createWeapon(ctx) {
     let fireReq = 0, adsHeld = false;
     if (playing) {
       fireReq = input.mouse.leftClicks;
-      if (set.adsMode === 'toggle') { if (input.mouse.rightPressed) s.adsToggle = !s.adsToggle; adsHeld = s.adsToggle; }
+      if ((set.aimMode ?? set.adsMode) === 'toggle') { if (input.mouse.rightPressed) s.adsToggle = !s.adsToggle; adsHeld = s.adsToggle; }
       else adsHeld = input.mouse.right;
       if (input.mouse.wheel > 0) s.lowT = 1; else if (input.mouse.wheel < 0) s.lowT = 0;
       if (input.hit('reload')) startReload();

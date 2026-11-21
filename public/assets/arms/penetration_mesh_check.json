@@ -1,83 +1,72 @@
 {
- "method": "exported GLB, CPU skinning, ray-parity inside test vs exported pistol meshes, 30 fps",
+ "method": "exported GLB, CPU skinning of every glove vertex, exact pistol SDF at the exported joints, 60 fps",
+ "file": "fp_arms_pistol.glb",
+ "sha1": "40156ee2b72002fb22f4ae4a8f29d539a1a0b254",
  "gloveVerts": 2954,
  "clips": {
   "fp_idle": {
-   "frames": 121,
+   "frames": 61,
    "penetratingVertexFrames": 0,
    "maxDepth_mm": 0,
    "worstAt_s": 0,
-   "byBone_mm": {},
-   "byPart_mm": {}
+   "byBone_mm": {}
   },
   "fp_aim": {
-   "frames": 121,
+   "frames": 61,
    "penetratingVertexFrames": 0,
    "maxDepth_mm": 0,
    "worstAt_s": 0,
-   "byBone_mm": {},
-   "byPart_mm": {}
-  },
-  "fp_fire": {
-   "frames": 11,
-   "penetratingVertexFrames": 0,
-   "maxDepth_mm": 0,
-   "worstAt_s": 0,
-   "byBone_mm": {},
-   "byPart_mm": {}
-  },
-  "fp_dry_fire": {
-   "frames": 14,
-   "penetratingVertexFrames": 0,
-   "maxDepth_mm": 0,
-   "worstAt_s": 0,
-   "byBone_mm": {},
-   "byPart_mm": {}
+   "byBone_mm": {}
   },
   "fp_lowready": {
-   "frames": 91,
-   "penetratingVertexFrames": 8,
-   "maxDepth_mm": 0.22,
-   "worstAt_s": 0.8,
-   "byBone_mm": {
-    "thumb_03_l": 0.22
-   },
-   "byPart_mm": {
-    "pistol_frame": 0.22
-   }
-  },
-  "fp_sprint": {
-   "frames": 21,
+   "frames": 61,
    "penetratingVertexFrames": 0,
    "maxDepth_mm": 0,
    "worstAt_s": 0,
-   "byBone_mm": {},
-   "byPart_mm": {}
+   "byBone_mm": {}
+  },
+  "fp_sprint": {
+   "frames": 41,
+   "penetratingVertexFrames": 0,
+   "maxDepth_mm": 0,
+   "worstAt_s": 0,
+   "byBone_mm": {}
+  },
+  "fp_fire": {
+   "frames": 19,
+   "penetratingVertexFrames": 0,
+   "maxDepth_mm": 0,
+   "worstAt_s": 0,
+   "byBone_mm": {}
+  },
+  "fp_dry_fire": {
+   "frames": 28,
+   "penetratingVertexFrames": 0,
+   "maxDepth_mm": 0,
+   "worstAt_s": 0,
+   "byBone_mm": {}
   },
   "fp_reload": {
-   "frames": 73,
-   "penetratingVertexFrames": 2489,
-   "maxDepth_mm": 15.32,
-   "worstAt_s": 1.3,
-   "byBone_mm": {
-    "thumb_03_l": 3.92,
-    "pinky_02_l": 10.34,
-    "pinky_03_l": 10.07,
-    "ring_01_l": 8.93,
-    "pinky_01_l": 10.9,
-    "hand_l": 15.12,
-    "thumb_01_l": 15.24,
-    "thumb_02_l": 14.72,
-    "index_01_l": 15.32,
-    "index_02_l": 3.04,
-    "middle_01_l": 0.05,
-    "index_03_l": 3.47
-   },
-   "byPart_mm": {
-    "pistol_frame": 15.32,
-    "pistol_magazine_1": 10.9,
-    "pistol_trigger_1": 2.65
-   }
+   "frames": 151,
+   "penetratingVertexFrames": 0,
+   "maxDepth_mm": 0,
+   "worstAt_s": 0,
+   "byBone_mm": {}
+  },
+  "fp_reload_tac": {
+   "frames": 133,
+   "penetratingVertexFrames": 0,
+   "maxDepth_mm": 0,
+   "worstAt_s": 0,
+   "byBone_mm": {}
+  },
+  "procedural_trigger": {
+   "frames": 41,
+   "penetratingVertexFrames": 0,
+   "maxDepth_mm": 0,
+   "worstAt_s": 0,
+   "byBone_mm": {}
   }
- }
+ },
+ "maxDepth_mm": 0
 }

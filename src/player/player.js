@@ -9,7 +9,7 @@ import { FREE_AIM_DEG, freeAimStep, freeAimClamp } from './aim.js';
 
 const DEG = Math.PI / 180;
 // settings (persisted through ctx.settings; defaults only fill missing keys)
-export const C_SETTINGS = { freeAim: 'standard', adsMode: 'hold', crouchMode: 'toggle', sprintMode: 'hold', leanMode: 'hold', headBob: 1 };
+export const C_SETTINGS = { freeAim: 'standard', aimMode: 'hold', crouchMode: 'toggle', sprintMode: 'hold', leanMode: 'hold', headBob: 1 };
 
 export function createPlayer(ctx) {
   const T = { chest: 1.44, chestCrouch: 0.93, lean: 0.28, leanRoll: 9 * DEG, stride: 0.74, strideSprint: 0.95 };

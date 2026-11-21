@@ -9,8 +9,6 @@
 // gun offset (free aim, sway, bob, breathing, recoil, wall retraction) → two-bone IK for both arms so the
 // hands stay on the moved gun (support hand blends to its clip pose during reloads).
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { U, createDynamicMaterial } from '../render/materials.js';
 
 export const VM_ZOOM = 1.55; // view-model lens magnification relative to the world lens (tan ratio)
@@ -32,7 +30,7 @@ export function createViewmodel(ctx) {
   };
   const B = {};      // bones / markers by name
   const actions = {};
-  const pose = { off: [], trig: [], press: [] }; // index finger local quaternions
+  const pose = { off: [], mid: [], trig: [], press: [] }; // index finger local quaternions
   const IDX = ['index_01_r', 'index_02_r', 'index_03_r'];
   const pistolInHandInv = new THREE.Matrix4(), supportInPistol = new THREE.Matrix4();
   const trigRest = new THREE.Quaternion(), slideRest = new THREE.Vector3();
@@ -40,6 +38,7 @@ export function createViewmodel(ctx) {
   let trigTravel = 0.28, slideTravel = 0.032;
 
   vm.load = async (loader) => {
+    const [{ GLTFLoader }, { MeshoptDecoder }] = await Promise.all([import('three/examples/jsm/loaders/GLTFLoader.js'), import('three/examples/jsm/libs/meshopt_decoder.module.js')]);
     const bytes = await loader.bin('assets/arms/fp_arms_pistol.glb', { weight: 0.6 });
     const gltf = await new Promise((res, rej) => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
       .parse(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '', res, rej));
@@ -60,11 +59,11 @@ export function createViewmodel(ctx) {
     vm.tris = vm.mesh.geometry.index ? vm.mesh.geometry.index.count / 3 : vm.mesh.geometry.attributes.position.count / 3;
     // gltf.scene holds fp_root under a group; we drive fp_root directly in world space
     gltf.scene.remove(root);
-    root.matrixAutoUpdate = true;
+    vm.holder = new THREE.Group(); vm.holder.name = 'fp_holder'; vm.holder.add(root); // holder = camera pose; fp_root keeps its eye->camera offset
     vm.mixer = new THREE.AnimationMixer(root);
     for (const c of gltf.animations) {
       if (c.name.startsWith('fp_pose_index')) {
-        const k = c.name.endsWith('_off') ? 'off' : c.name.endsWith('_trigger') ? 'trig' : 'press';
+        const k = c.name.endsWith('_off') ? 'off' : c.name.endsWith('_mid') ? 'mid' : c.name.endsWith('_trigger') ? 'trig' : 'press';
         for (const bn of IDX) {
           const tr = c.tracks.find((t) => t.name === `${bn}.quaternion`);
           pose[k].push(new THREE.Quaternion().fromArray(tr.values, 0));
@@ -91,7 +90,7 @@ export function createViewmodel(ctx) {
 
   vm.init = () => {
     const scene = ctx.render.vmScene;
-    scene.add(vm.root);
+    scene.add(vm.holder);
     // own lens + per-pass light scaling (the chest light / muzzle flash are centimetres from the gun)
     const flashSave = new THREE.Vector3(), muzSave = new THREE.Vector3(), muzPosSave = new THREE.Vector3();
     scene.onBeforeRender = (renderer, sc, cam) => {
@@ -102,7 +101,7 @@ export function createViewmodel(ctx) {
       cam.near = 0.01; cam.far = 10;
       cam.updateProjectionMatrix();
       flashSave.copy(U.uFlashColor.value); muzSave.copy(U.uMuzzleColor.value); muzPosSave.copy(U.uMuzzlePos.value);
-      U.uFlashColor.value.multiplyScalar(0.1);
+      U.uFlashColor.value.multiplyScalar(0.22);
       U.uMuzzleColor.value.multiplyScalar(0.06);
       U.uMuzzlePos.value.copy(vm.muzzle);
     };
@@ -167,10 +166,12 @@ export function createViewmodel(ctx) {
   vm.update = (dt, cam) => {
     if (!vm.ready) return;
     const root = vm.root;
-    root.visible = vm.visible;
+    vm.holder.visible = vm.visible;
     if (!vm.visible) return;
-    root.position.copy(cam.position);
-    root.quaternion.copy(cam.quaternion);
+    vm.holder.position.copy(cam.position);
+    vm.holder.quaternion.copy(cam.quaternion);
+    const vc = ctx.render.vmCamera;   // the view-model camera sits exactly on the world camera
+    vc.position.copy(cam.position); vc.quaternion.copy(cam.quaternion);
     // --- clip layers
     const r = vm.reload, rw = r.weight;
     const hw = 1 - rw;
@@ -188,13 +189,14 @@ export function createViewmodel(ctx) {
     const ot = vm.onTrig, pr = vm.press;
     for (let i = 0; i < 3; i++) {
       const b = B[IDX[i]];
-      b.quaternion.copy(pose.off[i]).slerp(pose.trig[i], ot);
+      // off -> mid (lifted clear of the frame) -> on the trigger
+      if (ot < 0.5) b.quaternion.copy(pose.off[i]).slerp(pose.mid[i], ot * 2); else b.quaternion.copy(pose.mid[i]).slerp(pose.trig[i], ot * 2 - 1);
       if (pr > 0) b.quaternion.slerp(pose.press[i], pr * ot);
     }
     B.pistol_trigger.quaternion.copy(trigRest);
     if (pr > 0) { _q.setFromAxisAngle(trigAxis, trigTravel * pr * ot); B.pistol_trigger.quaternion.multiply(_q); }
     if (vm.slideOverride) B.pistol_slide.position.set(slideRest.x, slideRest.y, slideRest.z - slideTravel * vm.slide);
-    root.updateMatrixWorld(true);
+    vm.holder.updateMatrixWorld(true);
     // --- gun offset in camera space (about a pivot under the camera ~ the chest), then IK both arms onto it
     camM.compose(cam.position, cam.quaternion, _s.set(1, 1, 1));
     camInv.copy(camM).invert();

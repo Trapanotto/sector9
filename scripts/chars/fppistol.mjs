@@ -7,13 +7,13 @@ import { profile, box, cyl, merge } from './weapons.mjs';
 
 const T18 = Math.tan((18 * Math.PI) / 180);
 export const COL = {
-  slide: [0.05, 0.052, 0.056],
-  frame: [0.085, 0.086, 0.088],
+  slide: [0.022, 0.023, 0.026],
+  frame: [0.04, 0.041, 0.043],
   steel: [0.16, 0.16, 0.17],
   sight: [0.9, 0.9, 0.85],
   bore: [0.0, 0.0, 0.0],
-  mag: [0.06, 0.06, 0.065],
-  serr: [0.028, 0.029, 0.032],
+  mag: [0.035, 0.035, 0.038],
+  serr: [0.012, 0.012, 0.014],
   dot: [0.75, 0.95, 0.55],
 };
 // slide serrations (rear, both sides) — visible from the bodycam behind the gun

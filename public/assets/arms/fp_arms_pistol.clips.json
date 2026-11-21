@@ -56,6 +56,13 @@
   "source": "pose: index pad on the trigger"
  },
  {
+  "name": "fp_pose_index_mid",
+  "duration": 0.1,
+  "loop": true,
+  "made": true,
+  "source": "pose: index lifted between frame and trigger"
+ },
+ {
   "name": "fp_pose_index_press",
   "duration": 0.1,
   "loop": true,

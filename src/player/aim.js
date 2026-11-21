@@ -7,7 +7,7 @@
 // view space therefore appears on screen where the WORLD camera sees the direction (x·k, y·k, z) with
 // k = tan(worldHalfV) / tan(vmHalfV). Shots use exactly that mapping, so bullets land where the sights / barrel
 // visibly point on screen.
-export const FREE_AIM_DEG = { aus: 0, gering: 2.5, standard: 5, stark: 9 };
+export const FREE_AIM_DEG = { off: 0, low: 2.5, standard: 5, strong: 9, aus: 0, gering: 2.5, stark: 9 }; // UI values (src/ui/ui.js) + German labels
 export const ZERO_M = 15; // sights zeroed (meet the bore line on screen) at 15 m
 
 /**

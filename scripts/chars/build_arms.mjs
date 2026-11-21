@@ -143,9 +143,9 @@ function poseGun({ x = 0, y = -0.1, z = 0.33, pitch = 0, yaw = 0, roll = 0, conv
 }
 // hold poses (camera frame). ADS: sights 3.5 cm under the lens axis, 33 cm out, zeroed to the image centre at 15 m.
 const HOLD = {
-  aim: { x: 0, y: -0.035, z: 0.33, conv: 15 },
-  hip: { x: -0.02, y: -0.115, z: 0.3, conv: 12 },
-  low: { x: -0.025, y: -0.25, z: 0.27, pitch: -38, yaw: 8 },
+  aim: { x: 0, y: -0.045, z: 0.33, conv: 15 },
+  hip: { x: -0.025, y: -0.09, z: 0.3, conv: 12 },
+  low: { x: -0.03, y: -0.2, z: 0.28, pitch: -32, yaw: 8 },
   sprint: { x: -0.06, y: -0.29, z: 0.2, pitch: -55, yaw: 18, roll: 12 },
 };
 
@@ -635,6 +635,8 @@ record('fp_dry_fire', 0.45, false, (t) => {
 const IDX = ['index_01_r', 'index_02_r', 'index_03_r'];
 record('fp_pose_index_off', 0.1, true, () => { poseGun(HOLD.aim); poseGrip({ trigger: false }); }, 'pose: index straight along the frame', { fps: 10, bones: IDX, gunTracks: false });
 record('fp_pose_index_trigger', 0.1, true, () => { poseGun(HOLD.aim); poseGrip({ trigger: true }); }, 'pose: index pad on the trigger', { fps: 10, bones: IDX, gunTracks: false });
+// half-way pose between indexed and on-trigger, lifted clear of the frame (the game blends off -> mid -> trigger)
+record('fp_pose_index_mid', 0.1, true, () => { poseGun(HOLD.aim); poseGrip({ trigger: true }); blendFingers(poseIdxOff, poseIdxTrig, 0.5); openUntilClear('r', 'index'); R.curl('r', { index: [-4, -6, -4] }); }, 'pose: index lifted between frame and trigger', { fps: 10, bones: IDX, gunTracks: false });
 record('fp_pose_index_press', 0.1, true, () => { poseGun(HOLD.aim); poseGrip({ trigger: true }); pressFinger(1); }, 'pose: trigger fully pressed', { fps: 10, bones: IDX, gunTracks: false });
 
 // ---- reloads (support hand: belt pouch -> magazine -> magwell; fingers solved per frame against the gun,
@@ -753,7 +755,7 @@ function reloadClip(name, empty) {
       const u = t - tDrop;
       gun.mag.p.copy(magOnAxis(0.6 * u + 4.9 * u * u));
       gun.mag.q.copy(magRestQ);
-      gun.mag.s = u > 0.3 ? 0 : 1;
+      gun.mag.s = u > 0.12 ? 0 : 1; // out of sight below the gun by then
     } else if (t >= tGrab) gun.mag.s = 1;
     // strong ring/little finger relax while a magazine passes the bottom of the grip
     const relax = Math.max(curve([[tDrop - 0.05, 0], [tDrop + 0.03, 1], [tDrop + 0.3, 1], [tDrop + 0.4, 0]], t), curve([[tUnder - 0.1, 0], [tUnder, 1], [tSeat + 0.05, 1], [tSeat + 0.2, 0]], t));
@@ -808,7 +810,7 @@ function reloadClip(name, empty) {
     // the trigger finger stays indexed; everything clear of the gun
     openUntilClear('r', 'index');
   }, empty ? 'made: empty reload: slide locked, mag drop, new mag from the belt, insert, slide-stop release'
-    : 'made: tactical reload (round chambered): mag drop, new mag from the belt, insert');
+    : 'made: tactical reload (round chambered): mag drop, new mag from the belt, insert', { fps: 60 });
 }
 if (process.env.ARMS_FAST !== '1') {
   reloadClip('fp_reload', true);
