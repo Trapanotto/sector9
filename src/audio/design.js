@@ -288,7 +288,7 @@ export function installDesign(K) {
     if (!en || en.dead) return;
     const part = it.s, amt = it.b;
     const p = mouth(en);
-    if (part === 'legs' && rnd() < 0.5) V.speak(k, rnd() < 0.5 ? 'effort' : 'scream', p, 1, 0, true);
+    if (part === 'legs') V.speak(k, amt < 40 ? 'effort' : 'scream', p, 1, 0, true);   // leg hit: grunt and stumble, or scream
     else if (amt > 45 && rnd() < 0.5) V.speak(k, 'scream', p, 1, 0, true);
     else V.speak(k, 'pain', p, 1, 0, true);
     if (en.health > 35 && rnd() < 0.3) sched.at(K.now() + 0.9 + rnd() * 0.5, fnSpeak, 'hit', 0, 0, 0, en, 1, k);

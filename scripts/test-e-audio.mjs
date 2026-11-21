@@ -146,6 +146,9 @@ export default async function ({ W, bvh, LAYOUT, ok, warn }) {
     settings: { data: { volume: 0.8 }, save() {} }, quality: { tier: { id: 'low' } },
     world, player, enemies, machines, weapon: { ammo: 10, reloading: 1.8 }, render: null,
   };
+  // deterministic run (the design rolls dice for variations, chatter, pain vs. scream …)
+  const rand0 = Math.random; let seed = 20261121;
+  Math.random = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
   const audio = createAudio(ctx, { manifest: man, nullOutput: true, onPlay });
   await audio.load(null);
   audio.init();
@@ -296,5 +299,6 @@ export default async function ({ W, bvh, LAYOUT, ok, warn }) {
     console.log(`  firefight logic (8 enemies, 15 shots/s): ${(tot / frames).toFixed(3)} ms/frame avg, ${max.toFixed(2)} ms max (Node, without Web Audio calls)`);
     warn(tot / frames < 0.25, `audio logic ${(tot / frames).toFixed(3)} ms/frame in a firefight`);
   }
+  Math.random = rand0;
   console.log(`  (${(performance.now() - t0).toFixed(0)} ms)`);
 }
