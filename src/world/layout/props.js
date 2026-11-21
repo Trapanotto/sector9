@@ -133,19 +133,19 @@ export const PROPS = [
   I('lab_table', 3, 3), I('lab_table', 3, 6), I('lab_table', 7, 9.5, 1),
   I('drum', 8.6, 1.2), I('drum', 8.6, 2.0), I('gas_bottles', 1.0, 10.4, 1), I('sheeting', 5, 8), I('fridge', 9.4, 6),
   // ---- Sozialraum ----
-  I('table', 14, 5), I('chair', 13.2, 5), I('chair', 14.8, 5, 2), I('fridge', 21.4, 0.5), I('sofa', 18, 10.8, 2),
-  I('tv', 18, 7.5), I('lockers', 11.2, 0.4),
+  I('table', 14, 5), I('chair', 12.95, 5, 3), I('chair', 14.85, 5, 1), I('fridge', 21.4, 0.5), I('sofa', 18, 10.8),
+  I('tv', 18, 7.5, 2), I('lockers', 11.2, 0.4),
   // ---- Lagerraum ----
   I('shelf', 23, 0.4), I('shelf', 24.2, 0.4), I('shelf', 25.4, 0.4), I('carton_pile', 24.5, 8),
   I('carton_pile', 23.4, 10.5, 1, 0, 'waffenkisten'),
 
   // ---- Mezzanine (y 4.5) ----
   I('cash_table', 4.5, 4.5, 0, 4.5, 'geldtisch'), I('safe', 0.6, 0.6, 0, 4.5), I('carton_pile', 7.6, 1.0, 0, 4.5),
-  I('chair', 4.5, 5.4, 2, 4.5),
-  I('desk', 11, 2, 0, 4.5), I('desk', 15, 2, 0, 4.5), I('chair', 11, 3, 2, 4.5), I('shelf', 17.4, 5, 1, 4.5),
+  I('chair', 4.5, 5.4, 0, 4.5),
+  I('desk', 11, 2, 0, 4.5), I('desk', 15, 2, 0, 4.5), I('chair', 11, 3, 0, 4.5), I('shelf', 17.4, 5, 1, 4.5),
   I('control_desk', 26.9, 4.5, 1, 4.5, 'leitpult'), I('server_rack', 19, 1, 0, 4.5), I('chair', 25.9, 4.5, 3, 4.5),
   I('mattress', 2, 14.5, 1, 4.5), I('mattress', 2, 17.8, 1, 4.5), I('mattress', 5.5, 22.6, 0, 4.5),
-  I('sofa', 10, 23.1, 2, 4.5), I('tv', 10, 19.8, 0, 4.5), I('table', 6.5, 16, 0, 4.5),
+  I('sofa', 10, 23.1, 0, 4.5), I('tv', 10, 19.8, 2, 4.5), I('table', 6.5, 16, 0, 4.5),
   I('lockers', 21.5, 15, 1, 4.5), I('lockers', 21.5, 17, 1, 4.5), I('lockers', 21.5, 19, 1, 4.5),
 
   // ---- Basement ----

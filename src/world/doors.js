@@ -37,6 +37,7 @@ export function createDoors(ctx, W, collision, nav) {
       zonesIdx: (d.zones ?? []).map((z) => zi.get(z)).filter((z) => z !== undefined),
       t: 0, target: 0, speed: d.kind === 'roller' ? 0.8 : 1.6,
     };
+    rec.speed0 = rec.speed;   // reset() restores it after a staged doors.set(…, {speed})
     rec.target = rec.t = targetFor(rec, d.state);
     list.push(rec); byId.set(d.id, rec);
     if (d.state === 'locked') nav.doorBlocked[i] = 1;
@@ -112,7 +113,7 @@ export function createDoors(ctx, W, collision, nav) {
         r.pivot.visible = vis;
       }
     },
-    reset() { for (const r of list) { r.state = W.doors[r.index].state; r.target = r.t = targetFor(r, r.state); nav.doorBlocked[r.index] = r.state === 'locked' ? 1 : 0; apply(r); } },
+    reset() { for (const r of list) { r.state = W.doors[r.index].state; r.speed = r.speed0; r.target = r.t = targetFor(r, r.state); nav.doorBlocked[r.index] = r.state === 'locked' ? 1 : 0; apply(r); } },
   };
   return api;
 }

@@ -33,10 +33,10 @@ export const ENEMIES = [
   E('e08', 'ambusher', 16, 0, 34.3, N, 'shotgun', { trigger: 'm03_packerei', act: 'hide', group: 'pack', look: 'thug_balaclava', surrenders: false, note: 'Hinter Kartonstapel' }),
   // ---- lab / social room
   E('e09', 'guard', 3, 0, 4.95, S, 'pistol', { act: 'lab', group: 'west', look: 'thug_worker', note: 'Koch im Labor' }),
-  E('e10', 'sleeper', 13.2, 0, 4.55, N, 'pistol', { act: 'sit', seat: [13.2, 0, 4.63, N], group: 'west', look: 'thug_hoodie', note: 'Döst auf dem Stuhl im Sozialraum' }),
+  E('e10', 'sleeper', 13.32, 0, 5, O, 'pistol', { act: 'sit', seat: [13.32, 0, 5, O], group: 'west', look: 'thug_hoodie', note: 'Döst auf dem Stuhl im Sozialraum' }),
   // ---- mezzanine
   E('e11', 'sleeper', 2, 4.5, 16.0, O, 'pistol', { act: 'sleep', bed: [2, 4.7, 14.5, W], group: 'og', look: 'thug_tee' }),
-  E('e12', 'guard', 10, 4.5, 21.2, N, 'smg', { act: 'tv', group: 'og', look: 'thug_jacket', note: 'Schaut fern in der Schlafecke' }),
+  E('e12', 'guard', 10, 4.5, 22.63, N, 'smg', { act: 'sit', seat: [10, 4.5, 22.63, N], group: 'og', look: 'thug_jacket', note: 'Sitzt auf dem Sofa vor dem Fernseher (Schlafecke)' }),
   E('e13', 'guard', 3.6, 4.5, 5.75, N, 'pistol', { act: 'cash', group: 'og', look: 'thug_female', note: 'Zählt Geld, Schrei (m08)' }),
   E('e14', 'guard', 25.2, 4.5, 6.8, O, 'rifle', { group: 'og', look: 'thug_balaclava', brave: true, note: 'Leitstand, überblickt die Halle' }),
   // ---- racking hall

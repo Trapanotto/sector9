@@ -142,10 +142,6 @@ export function createDirector(ctx) {
     ctx.player?.teleport?.(sp.pos, sp.yaw + 0.12, 0.04, true);
   }
 
-  // door speeds: doors.set(id, state, {speed}) keeps the speed; restore the layout defaults on restart
-  const doorSpeed = new Map();
-  d.init = () => { for (const r of ctx.world.doors?.list ?? []) doorSpeed.set(r.id, r.speed); };
-
   d.reset = () => {
     const keep = !!pendingSnap;
     mission.reset(keep);
@@ -155,7 +151,6 @@ export function createDirector(ctx) {
     ui.objective(''); ui.ammo(''); ui.radio('', '');
   };
   ctx.events.on('mission:restart', () => {
-    for (const r of ctx.world.doors?.list ?? []) if (doorSpeed.has(r.id)) r.speed = doorSpeed.get(r.id);
     if (toMenu) { toMenu = false; return; }
     const snap = pendingSnap; pendingSnap = null;
     if (snap) {
@@ -164,7 +159,7 @@ export function createDirector(ctx) {
       for (const id of snap.dead) kill(id);
     }
     runtime.setup();
-    if (snap) { ctx.player.teleport(snap.pos, snap.yaw, 0, false); ctx.time.mission = snap.time; }
+    if (snap) { ctx.player.teleport(snap.pos, snap.yaw, 0, false); ctx.time.mission = snap.time; if (snap.ammo) ctx.weapon?.restore?.(snap.ammo); }
   });
   function kill(id) {
     const E = ctx.enemies;

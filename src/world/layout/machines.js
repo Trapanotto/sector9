@@ -28,7 +28,8 @@ export const SORTER = {
 // the route length). Width 0.9 m, length 1.4 m, height 0.45 m (+ load). Routes are kept clear of static props
 // (test: npm test checks clearance against the collision boxes).
 export const AGV_ROUTES = [
-  { id: 'agv_route1', points: [[73.1, 47.0], [73.1, 2.5], [81.6, 2.5], [81.6, 47.0]], loop: true },
+  // west leg hugs the wall (x 72.75): the 2 m aisle keeps a 0.9 m walking lane beside the vehicle (nav prefers it)
+  { id: 'agv_route1', points: [[72.75, 47.0], [72.75, 2.5], [81.6, 2.5], [81.6, 47.0]], loop: true },
   { id: 'agv_route2', points: [[76.0, 60.5], [31.0, 60.5], [31.0, 57.5], [76.0, 57.5]], loop: true },
 ];
 export const AGVS = [

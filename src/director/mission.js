@@ -97,6 +97,7 @@ export function createMission(ctx, data, runtime) {
       objectives: objectives.filter((o) => o.done).map((o) => o.id),
       breach: [...breach.values()].filter((b) => b.done).map((b) => b.id),
       stats: { ...stats },
+      ammo: ctx.weapon?.snapshot?.() ?? null,   // rounds in the gun + spare magazines (restored on retry)
     };
     ctx.events.emit('f:checkpoint', { name: cp.name });
   }

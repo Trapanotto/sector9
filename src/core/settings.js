@@ -17,7 +17,8 @@ export const BINDING_NAMES = {
 };
 
 const DEFAULTS = {
-  quality: 'auto', sensitivity: 1.0, invertY: false, fov: 112, volume: 0.8, flashlightDefault: false,
+  quality: 'auto', sensitivity: 2.0,   // 0.022°/count: 2 ≈ 26 cm/360° at 800 dpi (slider 0.2–10)
+  invertY: false, fov: 112, volume: 0.8, flashlightDefault: false,
   bindings: DEFAULT_BINDINGS, showPerf: false,
 };
 

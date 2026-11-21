@@ -60,6 +60,21 @@ export function buildNav(world, bvh, opts = {}) {
     for (let k = colStart[c]; k < colStart[c + 1]; k++) { const d = Math.abs(nodeY[k] - y); if (d < bd) { bd = d; best = k; } }
     return best;
   };
+  // AGV lanes (floor nodes within 0.6 m of a route): 4× cost, so people walk beside the vehicles instead of
+  // meeting them head-on in narrow aisles (an AGV stops for anyone in its lane and waits)
+  const lane = new Uint8Array(n);
+  for (const r of world.layout.agvRoutes ?? []) {
+    const P = r.points, segs = r.loop ? P.length : P.length - 1;
+    for (let s = 0; s < segs; s++) {
+      const a = P[s], b = P[(s + 1) % P.length];
+      const x0 = Math.min(a[0], b[0]) - 0.6, x1 = Math.max(a[0], b[0]) + 0.6, z0 = Math.min(a[1], b[1]) - 0.6, z1 = Math.max(a[1], b[1]) + 0.6;
+      for (let k = 0; k < n; k++) {
+        if (nodeY[k] > 0.5) continue;
+        const c = nodeCol[k], x = bx0 + ((c % W) + 0.5) * cell, z = bz0 + (Math.floor(c / W) + 0.5) * cell;
+        if (x > x0 && x < x1 && z > z0 && z < z1) lane[k] = 1;
+      }
+    }
+  }
   const adjStart = new Int32Array(n + 1), adj = [], cost = [];
   const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
   for (let k = 0; k < n; k++) {
@@ -74,7 +89,17 @@ export function buildNav(world, bvh, opts = {}) {
         const a = findIn(j * W + ii, y), b = findIn(jj * W + i, y);
         if (a < 0 || b < 0) continue;
       }
-      adj.push(m); cost.push((di && dj ? Math.SQRT2 : 1) * cell + Math.abs(nodeY[m] - y));
+      // thin solids between the two cell centres (plastic sheeting, mesh panels < 0.45 m thick) — the per-cell
+      // clearance test alone lets an edge cross them; check the body-height sliver between the two clearance discs
+      {
+        const xa = bx0 + (i + 0.5) * cell + di * 0.2, za = bz0 + (j + 0.5) * cell + dj * 0.2;
+        const xb = xa + di * (cell - 0.4), zb = za + dj * (cell - 0.4);
+        const ym = nodeY[m], lo = Math.max(y, ym) + 0.1, hi = Math.min(y, ym) + NAV_HEIGHT;
+        blocked = false;
+        bvh.query(Math.min(xa, xb) - 0.01, lo, Math.min(za, zb) - 0.01, Math.max(xa, xb) + 0.01, hi, Math.max(za, zb) + 0.01, F_SOLID, block);
+        if (blocked) continue;
+      }
+      adj.push(m); cost.push(((di && dj ? Math.SQRT2 : 1) * cell + Math.abs(nodeY[m] - y)) * (lane[m] ? 4 : 1));
     }
   }
   adjStart[n] = adj.length;

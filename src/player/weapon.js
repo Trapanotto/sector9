@@ -21,6 +21,8 @@ export function createWeapon(ctx) {
     ammo: inGun(A), reserve: reserve(A), reloading: 0, mags: A, vm,
     damage: 34, range: 150, ads: 0, state: 'ready', shots: 0,
     lastShot: { origin: new THREE.Vector3(), dir: new THREE.Vector3(), sightDir: new THREE.Vector3(), muzzle: new THREE.Vector3() },
+    // view-model framing offsets (m / rad, camera space; tuned at 1280×720, 1920×1080 and 760×630)
+    frame: { hipX: 0, hipY: 0.045, hipZ: 0, hipPitch: 0, adsY: 0.065, adsZ: 0, adsPitch: -0.05 },
   };
   const s = {
     adsW: 0, adsToggle: false, lowT: 0, lowW: 0, sprintW: 0, retract: 0, cooldown: 0, onTrig: 0, lastFire: -9,
@@ -194,6 +196,11 @@ export function createWeapon(ctx) {
     o.x = bobX; o.y = bobY - s.retract * 0.03 - drop * 0.25; o.z = s.rz * 0.012 + s.retract * 0.07;
     // holds: hip ⇄ ADS, low-ready, sprint (weights sum to 1)
     const lw = s.lowW * (1 - s.sprintW), hw = (1 - s.lowW) * (1 - s.sprintW);
+    // framing on top of the authored holds (camera space): hip raised so both hands stay in the picture,
+    // ADS pulled in and tipped down a little so the sight picture reads (top of the slide visible)
+    const F = w.frame, kh = hw * (1 - s.adsW) + lw * 0.5, ka = hw * s.adsW;
+    o.x += F.hipX * kh; o.y += F.hipY * kh + F.adsY * ka; o.z += F.hipZ * kh + F.adsZ * ka;
+    o.pitch += F.hipPitch * kh + F.adsPitch * ka;
     vm.w.hip = hw * (1 - s.adsW); vm.w.aim = hw * s.adsW; vm.w.low = lw; vm.w.sprint = s.sprintW;
     vm.reload.name = s.rName || vm.reload.name; vm.reload.time = s.rTime; vm.reload.weight = s.rW;
     if (!s.rName && s.rW <= 0) vm.reload.name = '';

@@ -11,7 +11,7 @@
 import * as THREE from 'three';
 import { U, createDynamicMaterial } from '../render/materials.js';
 
-export const VM_ZOOM = 1.35; // view-model lens magnification relative to the world lens (tan ratio)
+export const VM_ZOOM = 1.25; // view-model lens magnification relative to the world lens (tan ratio; 1.35 cut the hands off at 16:9)
 const HOLDS = ['fp_idle', 'fp_aim', 'fp_lowready', 'fp_sprint'];
 const RELOADS = ['fp_reload', 'fp_reload_tac'];
 

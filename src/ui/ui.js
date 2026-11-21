@@ -123,7 +123,7 @@ export function createUI(ctx, act) {
   $('s9-set').innerHTML = `
     <label>Grafik</label><div><select data-sel="quality" aria-label="Grafik">${MODES.map(([v, n]) => `<option value="${v}">${n}</option>`).join('')}</select></div>
     <div class="s9-note" id="s9-gpu"></div>
-    <label>Maus-Empfindlichkeit</label><div>${range('sensitivity', 0.2, 3, 0.05)}</div>
+    <label>Maus-Empfindlichkeit</label><div>${range('sensitivity', 0.2, 10, 0.05)}</div>
     <label>Free-Aim</label><div>${seg('freeAim', [['off', 'aus'], ['low', 'gering'], ['standard', 'standard'], ['strong', 'stark']])}</div>
     <label>Ducken</label><div>${seg('crouchMode', HOLD)}</div>
     <label>Zielen</label><div>${seg('aimMode', HOLD)}</div>

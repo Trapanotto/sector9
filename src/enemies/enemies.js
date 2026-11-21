@@ -338,6 +338,8 @@ export function createEnemies(ctx) {
       if (!e.dead) r.anim.capsules(e);
       animated++;
     }
+    // ---- privacy mosaic: the nearest visible heads with a clear line of sight → composite ellipses (source uv)
+    nvLast = nv; faceMosaic(pix);
     // ---- instanced weapons and blobs for the visible set
     for (const m of wmList) m.count = 0;
     let nb = 0, nt = 0;
@@ -381,6 +383,38 @@ export function createEnemies(ctx) {
     budget.visible = nv; budget.lod0 = lod0n; budget.lod2 = 0; for (let k = 0; k < nv; k++) if (actors[order[k]].lodSel === 2) budget.lod2++; budget.draws = draws + nv; budget.tris = ct + wt + nb * 2; budget.animated = animated;
     budget.aiMs = t1 - t0; budget.cpuMs = performance.now() - t0;
   };
+
+  // head (bone origin at the skull base) → face centre ≈ 9 cm above; ellipse radius 0.2 m (whole head + hair)
+  const _eye = new THREE.Vector3(), _hp = new THREE.Vector3();
+  const _losA = { x: 0, y: 0, z: 0 }, _losB = { x: 0, y: 0, z: 0 };
+  const FACE_R = 0.2, FACE_MAX_D = 40;
+  function faceMosaic(pix) {
+    const cu = ctx.render.composite?.uniforms;
+    if (!cu?.uFaces) return;
+    let n = 0;
+    if (pix && ctx.state !== 'loading') {
+      const cam = ctx.render.camera;
+      cam.updateMatrixWorld();
+      _eye.setFromMatrixPosition(cam.matrixWorld);
+      const tanV = Math.tan(cam.fov * Math.PI / 360);
+      for (let k = 0; k < nvLast && n < cu.uFaces.value.length; k++) {
+        const r = actors[order[k]];
+        const hm = r.anim.B?.head?.matrixWorld; if (!hm) continue;
+        _hp.set(hm.elements[12], hm.elements[13] + 0.09, hm.elements[14]);
+        const d = _hp.distanceTo(_eye);
+        if (d > FACE_MAX_D) break;
+        _losA.x = _eye.x; _losA.y = _eye.y; _losA.z = _eye.z; _losB.x = _hp.x; _losB.y = _hp.y; _losB.z = _hp.z;
+        if (!ctx.world.lineOfSight(_losA, _losB)) continue;    // behind a wall / closed door: nothing to hide
+        _hp.project(cam);
+        if (_hp.z > 1 || Math.abs(_hp.x) > 1.3 || Math.abs(_hp.y) > 1.3) continue;
+        // radius in source uv (0..1 of the frame height); generous for motion between pose updates
+        const ry = Math.min(0.25, (FACE_R / Math.max(0.3, d)) / tanV * 0.5 * 1.15);
+        cu.uFaces.value[n++].set(_hp.x * 0.5 + 0.5, _hp.y * 0.5 + 0.5, ry / cam.aspect, ry);
+      }
+    }
+    cu.uFaceN.value = n;
+  }
+  let nvLast = 0;
 
   /** last pose of a body: blob along the body, no more skinning */
   function finalizeBody(r) {

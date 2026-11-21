@@ -1,8 +1,8 @@
 {
  "format": "sector9-bake",
  "version": 3,
- "hash": "6d303320",
- "created": "2026-11-21T12:05:48.844Z",
+ "hash": "ddf5a32c",
+ "created": "2026-11-21T12:37:39.588Z",
  "quick": false,
  "params": {
   "sunSamples": 9,
@@ -1440,23 +1440,23 @@
  },
  "files": {
   "lm_day.bin": {
-   "bytes": 2016423,
+   "bytes": 2016426,
    "raw": 7995392
   },
   "lm_art.bin": {
-   "bytes": 2137835,
+   "bytes": 2137947,
    "raw": 7995392
   },
   "vlight.bin": {
-   "bytes": 940372,
+   "bytes": 940390,
    "raw": 1369504
   },
   "probes.bin": {
-   "bytes": 2136461,
+   "bytes": 2136442,
    "raw": 3735324
   },
   "env.bin": {
-   "bytes": 342330,
+   "bytes": 342377,
    "raw": 602112
   }
  },
@@ -1492,16 +1492,16 @@
   "geld": {
    "texels": 10996,
    "meanDay": 0.0001,
-   "meanArt": 0.0417,
+   "meanArt": 0.0416,
    "maxDay": 0.013,
-   "geoMean": 0.0328
+   "geoMean": 0.0327
   },
   "buero": {
    "texels": 12235,
-   "meanDay": 0.0344,
+   "meanDay": 0.0343,
    "meanArt": 0.0345,
    "maxDay": 1.081,
-   "geoMean": 0.0577
+   "geoMean": 0.0576
   },
   "leitstand": {
    "texels": 12697,
@@ -1539,11 +1539,11 @@
    "geoMean": 0.0507
   },
   "sozial": {
-   "texels": 29928,
+   "texels": 29929,
    "meanDay": 0.0148,
-   "meanArt": 0.0278,
+   "meanArt": 0.0277,
    "maxDay": 0.404,
-   "geoMean": 0.0331
+   "geoMean": 0.033
   },
   "lager_w": {
    "texels": 17396,
@@ -1805,5 +1805,5 @@
    "geoMean": 1.1803
   }
  },
- "seconds": 52.4
+ "seconds": 49
 }

@@ -29,6 +29,9 @@ export function createCompositeMaterial() {
       uOsdRect: { value: new THREE.Vector4(0, 0, 0, 0) }, // x, y, w, h in output pixels (from top-left)
       uFlashWhite: { value: 0 },                          // full-frame flash (muzzle / damage) 0..1
       uTint: { value: new THREE.Vector3(0, 0, 0) },       // additive grade tint (damage red etc.)
+      // privacy mosaic (D fills it each frame from projected heads with line of sight): centre + radii in source uv,
+      // uFaceN used entries; mosaic blocks ~1/5 of the face height. ALU only, no extra taps or passes.
+      uFaces: { value: Array.from({ length: 6 }, () => new THREE.Vector4()) }, uFaceN: { value: 0 },
     },
     vertexShader: /* glsl */`
       varying vec2 vUv;
@@ -39,6 +42,8 @@ export function createCompositeMaterial() {
       uniform float uAspect, uTanHalfV, uFish, uCA, uBloom, uBloomLod, uNoise, uGain, uCompress, uTime, uFrame, uVignette, uFlashWhite;
       uniform vec4 uOsdRect;
       uniform vec3 uTint;
+      uniform vec4 uFaces[6];
+      uniform int uFaceN;
       varying vec2 vUv;
 
       float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
@@ -75,6 +80,18 @@ export function createCompositeMaterial() {
         vec2 blk = floor(frag / (8.0 * s720));
         float bh = hash12(blk + floor(uTime * 7.0));
         uv -= uMotion * (step(0.55, bh) * uCompress * 0.004);
+
+        // face mosaic: snap the source uv to blocks inside each head ellipse (before the CA taps → coherent blocks)
+        for (int i = 0; i < 6; i++) {
+          if (i >= uFaceN) break;
+          vec4 f = uFaces[i];
+          vec2 d = (uv - f.xy) / f.zw;
+          if (dot(d, d) < 1.0) {
+            vec2 bs = vec2(f.w * 0.42 / uAspect, f.w * 0.42);
+            uv = f.xy + (floor((uv - f.xy) / bs) + 0.5) * bs;
+            break;
+          }
+        }
 
         // lateral chromatic aberration (red outwards, green/blue inwards), grows towards the edge: 2 taps
         vec2 dir = (uv - 0.5) * (uCA * rr * rr);
