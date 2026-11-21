@@ -18,7 +18,9 @@ export function createPipeline(ctx, canvas) {
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.shadowMap.enabled = false;
   const gl = renderer.getContext();
-  const hdr = !!gl.getExtension('EXT_color_buffer_float') || !!gl.getExtension('EXT_color_buffer_half_float');
+  const cbf = !!gl.getExtension('EXT_color_buffer_float');
+  const hdr = cbf || !!gl.getExtension('EXT_color_buffer_half_float');
+  const r11 = cbf && !/[?&]rgba16f/.test(location.search);
 
   const scene = new THREE.Scene();
   scene.matrixWorldAutoUpdate = true;
@@ -54,8 +56,10 @@ export function createPipeline(ctx, canvas) {
       generateMipmaps: bloom, minFilter: bloom ? THREE.LinearMipmapLinearFilter : THREE.LinearFilter, magFilter: THREE.LinearFilter,
     });
     rt.texture.name = 'sceneHDR';
+    // B: packed float R11G11B10 (4 B/px instead of 8) where renderable — halves scene-target bandwidth on iGPUs
+    if (r11) { rt.texture.format = THREE.RGBFormat; rt.texture.internalFormat = 'R11F_G11F_B10F'; }
     rtKey = key;
-    const bpp = hdr ? 8 : 4;
+    const bpp = r11 ? 4 : hdr ? 8 : 4;
     texTrack.set('sceneTarget', maxW * maxH * (bpp * (bloom ? 1.34 : 1) + 4) * (t.msaa ? t.msaa + 1 : 1));
     compMat.uniforms.tScene.value = rt.texture;
   }

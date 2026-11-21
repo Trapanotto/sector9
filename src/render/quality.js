@@ -2,11 +2,18 @@
 // Tiers never change shaders (all switches are uniforms or render-target settings), so switching mid-game
 // causes no shader compile. Event: 'quality:change' { tier }.
 
+// Per tier (B, tuned for integrated GPUs; fill rate is the limit, so the composite runs at the OUTPUT size and
+// the scene at outH × scale). The fisheye magnifies the image centre by ~1.3×, so the low tiers trade output
+// resolution for internal scale: vlow composites at 540p from a 378–540p scene (the browser upscales the canvas)
+// instead of 720p from a 360–540p scene — same centre sharpness, ~45 % fewer composite pixels.
+//   outH     output (composite/canvas) height cap      scaleMin/Max  dynamic-resolution range of the scene
+//   msaa     scene target samples                       bloom         mip-bloom strength (0 = off, no mip gen.)
+//   noise    sensor grain base                          detail        normal/roughness material layer (load time)
 export const TIERS = {
-  vlow: { id: 'vlow', name: 'Sehr niedrig', outH: 720, scaleMin: 0.5, scaleMax: 0.75, msaa: 0, bloom: 0, hdr: true, anim: 0.5, noise: 0.05 },
-  low:  { id: 'low', name: 'Niedrig', outH: 720, scaleMin: 0.6, scaleMax: 1.0, msaa: 0, bloom: 0, hdr: true, anim: 0.75, noise: 0.045 },
-  mid:  { id: 'mid', name: 'Mittel', outH: 1080, scaleMin: 0.6, scaleMax: 0.9, msaa: 0, bloom: 0.12, hdr: true, anim: 1, noise: 0.04 },
-  high: { id: 'high', name: 'Hoch', outH: 1440, scaleMin: 0.7, scaleMax: 1.0, msaa: 4, bloom: 0.16, hdr: true, anim: 1, noise: 0.038 },
+  vlow: { id: 'vlow', name: 'Sehr niedrig', outH: 540, scaleMin: 0.7, scaleMax: 1.0, msaa: 0, bloom: 0, hdr: true, anim: 0.5, noise: 0.05, detail: false },
+  low:  { id: 'low', name: 'Niedrig', outH: 720, scaleMin: 0.6, scaleMax: 0.9, msaa: 0, bloom: 0, hdr: true, anim: 0.75, noise: 0.045, detail: false },
+  mid:  { id: 'mid', name: 'Mittel', outH: 1080, scaleMin: 0.55, scaleMax: 0.8, msaa: 0, bloom: 0.12, hdr: true, anim: 1, noise: 0.04, detail: true },
+  high: { id: 'high', name: 'Hoch', outH: 1440, scaleMin: 0.6, scaleMax: 0.9, msaa: 4, bloom: 0.16, hdr: true, anim: 1, noise: 0.038, detail: true },
 };
 export const MODES = [['auto', 'Automatisch'], ['vlow', 'Sehr niedrig'], ['low', 'Niedrig'], ['mid', 'Mittel'], ['high', 'Hoch']];
 const ORDER = ['vlow', 'low', 'mid', 'high'];
@@ -21,6 +28,7 @@ export function detectGPU(gl) {
   const s = String(r).toLowerCase();
   const has = (...k) => k.some((x) => s.includes(x));
   if (has('swiftshader', 'llvmpipe', 'software', 'basic render', 'microsoft basic')) return { tier: 'vlow', renderer: r, software: true, reason: 'Software-Rendering' };
+  if (has('intel') && has('uhd graphics 6', 'hd graphics 5', 'hd graphics 6', 'hd graphics 4')) return { tier: 'vlow', renderer: r, reason: 'Intel UHD/HD (Gen9)' };
   if (has('intel') && !has('arc')) return { tier: 'low', renderer: r, reason: 'Intel iGPU' };
   if (has('radeon(tm) graphics', 'radeon graphics', 'vega', 'radeon(tm) r', 'amd custom gpu')) return { tier: 'low', renderer: r, reason: 'AMD APU' };
   if (has('mali', 'adreno', 'powervr', 'apple gpu')) return { tier: 'low', renderer: r, reason: 'Mobil-GPU' };
@@ -33,7 +41,8 @@ export function detectGPU(gl) {
 export function createQuality(ctx, gl) {
   const gpu = detectGPU(gl);
   const q = {
-    gpu, mode: ctx.settings.data.quality ?? 'auto',
+    // ?tier=vlow|low|mid|high forces a tier for this page load (tests / screenshots), not saved
+    gpu, mode: (typeof location !== 'undefined' && TIERS[new URLSearchParams(location.search).get('tier')] ? new URLSearchParams(location.search).get('tier') : null) ?? ctx.settings.data.quality ?? 'auto',
     tier: null, scale: 1,
     get tierId() { return q.tier.id; },
     setMode(mode) {
