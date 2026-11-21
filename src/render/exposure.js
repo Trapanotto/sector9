@@ -113,7 +113,7 @@ export function createExposure(ctx) {
     e.avgLum = Math.pow(2, sumL / sumW);
     // slight compensation: very bright scenes are kept a little brighter than mid grey, dark ones a little darker
     const ev = Math.log2(Math.max(e.avgLum, 1e-4));
-    const key = e.key * Math.pow(2, Math.max(-0.7, Math.min(0.5, (ev + 1.5) * 0.18)));
+    const dk = ev + 1.5, key = e.key * Math.pow(2, dk > 0 ? Math.min(1.0, dk * 0.45) : Math.max(-0.7, dk * 0.18));   // sunny exteriors run hot: sky clips
     const free = key / Math.max(e.avgLum, 1e-4);
     // the same view with every circuit on (+ flashlight / sun as they are): cap the gain-up over it
     const nominal = key / Math.max(Math.pow(2, sumN / sumW), 1e-4);
