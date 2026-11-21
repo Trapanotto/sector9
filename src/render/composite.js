@@ -103,7 +103,7 @@ export function createCompositeMaterial() {
         vec2 gp = floor(frag / s720);
         float n1 = hash12(gp + fract(uTime * 13.17) * 311.0) - 0.5;
         float n2 = hash12(gp.yx + fract(uTime * 7.31) * 173.0) - 0.5;
-        float amt = uNoise * (0.45 + 0.5 * min(uGain, 4.0)) * (0.3 + 0.9 * (1.0 - Y) * (1.0 - Y));
+        float amt = uNoise * (0.45 + 0.5 * min(uGain, 5.0)) * (0.3 + 0.9 * (1.0 - Y) * (1.0 - Y));
         Y += n1 * amt;
         C += vec2(n2, n1 * 0.6) * (amt * 0.3);
 

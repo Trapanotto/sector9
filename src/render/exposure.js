@@ -32,7 +32,11 @@ export function createExposure(ctx) {
   const hit = { t: 0.5, side: 0 }, ps = { r: 0, g: 0, b: 0, ar: 0, ag: 0, ab: 0, dx: 0, dy: 0, dz: 0, sun: 0 }, sk = [0, 0, 0];
   const NORM = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
   // key = exposed log-average target (mid grey). min/max cover yard in full sun ↔ basement lit by one bulb.
-  const e = { value: 1, target: 1, avgLum: 0.3, gain: 1, key: 0.19, min: 0.04, max: 48, frozen: false, lightViewModel: true, vel: 0 };
+  // maxBoost: how many stops the sensor may gain up over the exposure the same view would get with every light
+  // circuit on — a blackout stays dark (noisy), the flashlight matters. Circuit levels are low-passed for metering
+  // so strobes / flicker read as strobes instead of being compensated.
+  const e = { value: 1, target: 1, avgLum: 0.3, gain: 1, key: 0.19, min: 0.04, max: 48, maxBoost: 0.35, frozen: false, lightViewModel: true, vel: 0, under: 0 };
+  const circSlow = new Float32Array(16).fill(1); let circInit = false;
   const L = ctx.layout;
   let fogTarget = 0.004;
 
@@ -69,45 +73,52 @@ export function createExposure(ctx) {
     const w = ctx.world; if (!w?.ready) return;
     const cam = ctx.render.camera, m = cam.matrixWorld.elements, bvh = w.bvh, boxes = w.gen.boxes;
     const ox = cam.position.x, oy = cam.position.y, oz = cam.position.z;
-    let sumW = 0, sumL = 0;
+    let sumW = 0, sumL = 0, sumN = 0;
     const fl = U.uFlashColor.value, flOn = fl.x + fl.y + fl.z > 0;
     const circ = U.uCirc.value, sd = L.sun.dir, sc = U.uSunColor.value;
+    const ks = circInit ? 1 - Math.exp(-dt / 1.2) : 1; circInit = true;
+    for (let c = 0; c < circ.length; c++) circSlow[c] += (circ[c] - circSlow[c]) * ks;
     for (let i = 0; i < N; i++) {
       const lx = dirs[i * 3], ly = dirs[i * 3 + 1], lz = dirs[i * 3 + 2];
       const dx = m[0] * lx + m[4] * ly + m[8] * lz, dy = m[1] * lx + m[5] * ly + m[9] * lz, dz = m[2] * lx + m[6] * ly + m[10] * lz;
       const R = bvh.ray; R[0] = ox; R[1] = oy; R[2] = oz; R[3] = dx; R[4] = dy; R[5] = dz; R[6] = 150;
       const b = bvh.raycastR(F_OCC, hit);
-      let lum;
+      let lum, lumN;
       if (b < 0) {
         skyRadiance(L.sky, L.sun, dx, dy, dz, sk);
-        lum = 0.2126 * sk[0] + 0.7152 * sk[1] + 0.0722 * sk[2];
+        lum = lumN = 0.2126 * sk[0] + 0.7152 * sk[1] + 0.0722 * sk[2];
       } else {
         const n = NORM[hit.side], t = hit.t;
         const hx = ox + dx * t, hy = oy + dy * t, hz = oz + dz * t;
         P3[0] = hx + n[0] * 0.35; P3[1] = hy + n[1] * 0.35; P3[2] = hz + n[2] * 0.35;
         w.probes.sampleV(P3, 0, ps);
         const bx = boxes[b], al = 0.2126 * bx.color[0] + 0.7152 * bx.color[1] + 0.0722 * bx.color[2];
-        const zc = w.gen.zones[bx.zone]?.circuit, cl = circ[w.lights.ids.indexOf(zc)] ?? 1;
+        const zc = w.gen.zones[bx.zone]?.circuit, ci = w.lights.ids.indexOf(zc), cl = ci >= 0 ? circSlow[ci] : 1;
         // probe L0 is the mean radiance around the point; irradiance/π on the face ≈ L0 (1 + d·n)
         const dn = 1 + Math.max(-0.8, ps.dx * n[0] + ps.dy * n[1] + ps.dz * n[2]);
-        let E = (0.2126 * ps.r + 0.7152 * ps.g + 0.0722 * ps.b) * dn + 0.2126 * ps.ar * cl + 0.7152 * ps.ag * cl + 0.0722 * ps.ab * cl;
+        const Ed = (0.2126 * ps.r + 0.7152 * ps.g + 0.0722 * ps.b) * dn, Ea = 0.2126 * ps.ar + 0.7152 * ps.ag + 0.0722 * ps.ab;
+        let E = Ed + Ea * cl, EN = Ed + Ea;
         const ns = n[0] * sd[0] + n[1] * sd[1] + n[2] * sd[2];
         // sun: exact shadow ray at the hit (sun patches on the floor drive the exposure like on a real sensor)
         if (ns > 0 && ps.sun > 0.02 && !bvh.occluded(hx + n[0] * 0.02, hy + n[1] * 0.02, hz + n[2] * 0.02, sd[0], sd[1], sd[2], 300, F_OCC)) {
-          E += ns * (0.2126 * sc.x + 0.7152 * sc.y + 0.0722 * sc.z);
+          const es = ns * (0.2126 * sc.x + 0.7152 * sc.y + 0.0722 * sc.z); E += es; EN += es;
         }
         if (flOn && t < 25) E += (0.3 * fl.x + 0.6 * fl.y + 0.1 * fl.z) / (0.35 + t * t * 0.09) * (1 - t / 25) * Math.max(0, -(n[0] * dx + n[1] * dy + n[2] * dz)) * 0.6;
-        lum = al * E;
+        lum = al * E; lumN = al * EN;
       }
       // chest camera metering: rays above the horizon (sky, high windows) count less than the ground ahead
       const wi = wts[i] * (1 - 0.55 * Math.max(0, dy));
-      sumL += wi * Math.log2(Math.max(lum, 1e-4)); sumW += wi;
+      sumL += wi * Math.log2(Math.max(lum, 1e-4)); sumN += wi * Math.log2(Math.max(lumN, 1e-4)); sumW += wi;
     }
     e.avgLum = Math.pow(2, sumL / sumW);
     // slight compensation: very bright scenes are kept a little brighter than mid grey, dark ones a little darker
     const ev = Math.log2(Math.max(e.avgLum, 1e-4));
     const key = e.key * Math.pow(2, Math.max(-0.7, Math.min(0.5, (ev + 1.5) * 0.18)));
-    e.target = Math.min(e.max, Math.max(e.min, key / Math.max(e.avgLum, 1e-4)));
+    const free = key / Math.max(e.avgLum, 1e-4);
+    // the same view with every circuit on (+ flashlight / sun as they are): cap the gain-up over it
+    const nominal = key / Math.max(Math.pow(2, sumN / sumW), 1e-4);
+    e.target = Math.min(e.max, Math.max(e.min, Math.min(free, nominal * Math.pow(2, e.maxBoost))));
+    e.under = Math.max(0, Math.log2(free / e.target));   // stops the picture stays underexposed
     if (!e.frozen) {
       // adapt in log space: getting brighter (target below value) is fast, opening up into the dark slower;
       // a critically-damped-ish spring gives a small visible overshoot ("hunting") like a cheap sensor
@@ -117,7 +128,8 @@ export function createExposure(ctx) {
       e.value = Math.pow(2, Math.max(Math.log2(e.min), Math.min(Math.log2(e.max), lv + e.vel * dt)));
     }
     U.uExposure.value = e.value;
-    e.gain = Math.max(0, Math.log2(e.value / 1.0));   // stops of sensor gain above a normally lit interior
+    // noise: stops of sensor gain above a normally lit interior + the underexposure the gain cap leaves
+    e.gain = Math.max(0, Math.log2(e.value / 1.0)) + Math.min(3, e.under) * 0.8;
     ctx.render.composite.uniforms.uGain.value = e.gain;
     // fog: colour from the probe at the camera, density from the zone's acoustic class
     P3[0] = ox; P3[1] = oy; P3[2] = oz;

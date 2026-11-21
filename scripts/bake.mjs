@@ -26,7 +26,7 @@ import { deflateSync } from 'node:zlib';
 import { LAYOUT } from '../src/world/layout/index.js';
 import { generateWorld, faceCorner, boxFlags, F_OCC, F_WALK, TAN } from '../src/world/gen.js';
 import { BoxBVH } from '../src/world/bvh.js';
-import { skyRadiance, GLASS_T, ENV_SIZE, PROBE_GRID } from '../src/world/skymodel.js';
+import { skyRadiance, GLASS_T, GLASS_T_SKYLIGHT, ENV_SIZE, PROBE_GRID } from '../src/world/skymodel.js';
 
 export const BAKE_VERSION = 3;
 const ARGS = process.argv.slice(2);
@@ -65,8 +65,8 @@ function setupScene() {
   let nv = 0;
   W.faces.forEach((f, i) => { if (f.render === 'vl' || f.render === 'mesh') { vbase[i] = nv; nv += 4; } });
   // glass panes (sun / sky through windows and skylights is attenuated)
-  const glass = new Float32Array(W.glass.length * 6);
-  W.glass.forEach((g, i) => { glass.set(g.min, i * 6); glass.set(g.max, i * 6 + 3); });
+  const glass = new Float32Array(W.glass.length * 7);
+  W.glass.forEach((g, i) => { glass.set(g.min, i * 7); glass.set(g.max, i * 7 + 3); glass[i * 7 + 6] = g.skylight || g.breakable === false ? GLASS_T_SKYLIGHT : GLASS_T; });
   return { W, bvh, boxSideFace, albedo, vbase, nv, glass };
 }
 
@@ -502,7 +502,7 @@ function worker() {
   const hit = { t: 0, side: 0 };
   const sk = [0, 0, 0];
   const MASK = F_OCC;
-  const ng = glass.length / 6;
+  const ng = glass.length / 7;
 
   function insideOcc(x, y, z) { return insidePoint(bvh, x, y, z); }
   /** transmission of the glass panes crossed by the segment o + d·t, t ∈ (0, tmax) */
@@ -512,7 +512,7 @@ function worker() {
     const ex = x + dx * tmax, ey = y + dy * tmax, ez = z + dz * tmax;
     const x0 = Math.min(x, ex), x1 = Math.max(x, ex), y0 = Math.min(y, ey), y1 = Math.max(y, ey), z0 = Math.min(z, ez), z1 = Math.max(z, ez);
     for (let g = 0; g < ng; g++) {
-      const o = g * 6;
+      const o = g * 7;
       if (glass[o] > x1 || glass[o + 3] < x0 || glass[o + 1] > y1 || glass[o + 4] < y0 || glass[o + 2] > z1 || glass[o + 5] < z0) continue;
       let t0 = 1e-4, t1 = tmax, okk = true;
       for (let a = 0; a < 3 && okk; a++) {
@@ -523,7 +523,7 @@ function worker() {
         if (n > t0) t0 = n; if (f < t1) t1 = f;
         if (t0 > t1) okk = false;
       }
-      if (okk) T *= GLASS_T;
+      if (okk) T *= glass[o + 6];
     }
     return T;
   }

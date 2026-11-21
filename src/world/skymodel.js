@@ -7,6 +7,9 @@
 
 /** transmission of one glass pane (windows, skylights) for sun and sky light in the bake */
 export const GLASS_T = 0.78;
+/** roof skylights and high clerestory windows (aged polycarbonate / wired glass, never cleaned): halls stay mostly
+ *  artificially lit, so staged blackouts read as dark; sun patches below them still clip */
+export const GLASS_T_SKYLIGHT = 0.28;
 /** environment cube face resolution in the bake (per zone) */
 export const ENV_SIZE = 16;
 /** probe volume grid (bake + runtime leak-free sampler) */
