@@ -592,7 +592,7 @@ export function createBrain(env, defs, opts = {}) {
   function combatAct(e, dt) {
     const P = env.player;
     if (e.reloadUntil > 0 && now >= e.reloadUntil) { e.reloadUntil = -1; e.ammo = e.w.mag; }
-    if (e.state !== 'combat' || !e.armed || P.dead) { e.onTargetT = 0; return; }
+    if (e.state !== 'combat' || !e.armed || P.dead || e.hold) { e.onTargetT = 0; return; }
     e.fireCd -= dt;
     const yawErr = Math.abs(wrap(e.lookYaw - e.bodyYaw));
     if (e.canSee) e.onTargetT += dt; else e.onTargetT = Math.max(0, e.onTargetT - dt * 2);
