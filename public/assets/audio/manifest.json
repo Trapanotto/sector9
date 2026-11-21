@@ -15,7 +15,7 @@
    "variations": [
     {
      "file": "amb/factory_01.mp3",
-     "duration": 18.0,
+     "duration": 18,
      "peak_db": -12.85,
      "lufs": -26.3,
      "channels": 2,
@@ -23,7 +23,11 @@
      "bytes": 249688,
      "source": "freesound:278987",
      "loopStart": 0.25,
-     "loopEnd": 18.25
+     "loopEnd": 18.25,
+     "seamDb": -155.1,
+     "onset": 0,
+     "peakAt": 10.809,
+     "tailEnd": 18.492
     }
    ],
    "desc": "large hall with distant machinery"
@@ -33,7 +37,7 @@
    "variations": [
     {
      "file": "amb/freezer_01.mp3",
-     "duration": 24.0,
+     "duration": 24,
      "peak_db": -13.92,
      "lufs": -25.9,
      "channels": 2,
@@ -41,7 +45,11 @@
      "bytes": 186587,
      "source": "freesound:218312",
      "loopStart": 0.25,
-     "loopEnd": 24.25
+     "loopEnd": 24.25,
+     "seamDb": -16.1,
+     "onset": 0,
+     "peakAt": 18.855,
+     "tailEnd": 24.495
     }
    ],
    "desc": "cold-store / freezer section hum"
@@ -51,7 +59,7 @@
    "variations": [
     {
      "file": "amb/outside_01.mp3",
-     "duration": 40.0,
+     "duration": 40,
      "peak_db": -8.04,
      "lufs": -23.9,
      "channels": 2,
@@ -59,7 +67,11 @@
      "bytes": 522497,
      "source": "freesound:350267",
      "loopStart": 0.25,
-     "loopEnd": 40.25
+     "loopEnd": 40.25,
+     "seamDb": -156.1,
+     "onset": 0,
+     "peakAt": 29.152,
+     "tailEnd": 40.492
     }
    ],
    "desc": "outside by day: car park, distant traffic"
@@ -69,15 +81,19 @@
    "variations": [
     {
      "file": "amb/outside_birds_01.mp3",
-     "duration": 22.0,
-     "peak_db": -8.0,
-     "lufs": -32.0,
+     "duration": 22,
+     "peak_db": -8,
+     "lufs": -32,
      "channels": 2,
      "loop": true,
      "bytes": 305376,
      "source": "freesound:523374",
      "loopStart": 0.25,
-     "loopEnd": 22.25
+     "loopEnd": 22.25,
+     "seamDb": -4.4,
+     "onset": 0,
+     "peakAt": 12.054,
+     "tailEnd": 22.491
     }
    ],
    "desc": "outside by day: birds, wind, distant activity"
@@ -87,15 +103,19 @@
    "variations": [
     {
      "file": "amb/ventilation_01.mp3",
-     "duration": 30.0,
+     "duration": 30,
      "peak_db": -11.72,
-     "lufs": -29.0,
+     "lufs": -29,
      "channels": 2,
      "loop": true,
      "bytes": 360466,
      "source": "freesound:166014",
      "loopStart": 0.25,
-     "loopEnd": 30.25
+     "loopEnd": 30.25,
+     "seamDb": -15.2,
+     "onset": 0,
+     "peakAt": 21.501,
+     "tailEnd": 30.499
     }
    ],
    "desc": "industrial ventilation"
@@ -105,7 +125,7 @@
    "variations": [
     {
      "file": "amb/warehouse_01.mp3",
-     "duration": 40.0,
+     "duration": 40,
      "peak_db": -9.6,
      "lufs": -25.9,
      "channels": 2,
@@ -113,7 +133,11 @@
      "bytes": 528522,
      "source": "freesound:427861",
      "loopStart": 0.25,
-     "loopEnd": 40.25
+     "loopEnd": 40.25,
+     "seamDb": -26.2,
+     "onset": 0,
+     "peakAt": 23.824,
+     "tailEnd": 40.492
     }
    ],
    "desc": "large warehouse room tone: fans, vents"
@@ -124,72 +148,93 @@
     {
      "file": "bullet/ricochet_01.mp3",
      "duration": 0.43,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -24.8,
      "channels": 1,
      "loop": false,
      "bytes": 5319,
-     "source": "freesound:148840"
+     "source": "freesound:148840",
+     "onset": 0.001,
+     "peakAt": 0.032,
+     "tailEnd": 0.271
     },
     {
      "file": "bullet/ricochet_02.mp3",
      "duration": 0.46,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -26.3,
      "channels": 1,
      "loop": false,
      "bytes": 5502,
-     "source": "freesound:148840"
+     "source": "freesound:148840",
+     "onset": 0.045,
+     "peakAt": 0.06,
+     "tailEnd": 0.431
     },
     {
      "file": "bullet/ricochet_03.mp3",
      "duration": 0.55,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -27.5,
      "channels": 1,
      "loop": false,
      "bytes": 6858,
-     "source": "freesound:148840"
+     "source": "freesound:148840",
+     "onset": 0.04,
+     "peakAt": 0.066,
+     "tailEnd": 0.521
     },
     {
      "file": "bullet/ricochet_04.mp3",
      "duration": 0.45,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -20.4,
      "channels": 1,
      "loop": false,
      "bytes": 5762,
-     "source": "freesound:148840"
+     "source": "freesound:148840",
+     "onset": 0.01,
+     "peakAt": 0.118,
+     "tailEnd": 0.431
     },
     {
      "file": "bullet/ricochet_05.mp3",
      "duration": 0.76,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -25.6,
      "channels": 1,
      "loop": false,
      "bytes": 8895,
-     "source": "freesound:148827"
+     "source": "freesound:148827",
+     "onset": 0.044,
+     "peakAt": 0.155,
+     "tailEnd": 0.732
     },
     {
      "file": "bullet/ricochet_06.mp3",
      "duration": 0.77,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -24.5,
      "channels": 1,
      "loop": false,
      "bytes": 8840,
-     "source": "freesound:148827"
+     "source": "freesound:148827",
+     "onset": 0.049,
+     "peakAt": 0.139,
+     "tailEnd": 0.722
     },
     {
      "file": "bullet/ricochet_07.mp3",
      "duration": 0.69,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -17.2,
      "channels": 1,
      "loop": false,
      "bytes": 7245,
-     "source": "freesound:523403"
+     "source": "freesound:523403",
+     "onset": 0.047,
+     "peakAt": 0.057,
+     "tailEnd": 0.672
     }
    ],
    "desc": "ricochets (field recording)"
@@ -200,32 +245,41 @@
     {
      "file": "bullet/whizz_01.mp3",
      "duration": 0.87,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -18.9,
      "channels": 1,
      "loop": false,
      "bytes": 8835,
-     "source": "freesound:789222"
+     "source": "freesound:789222",
+     "onset": 0.027,
+     "peakAt": 0.101,
+     "tailEnd": 0.501
     },
     {
      "file": "bullet/whizz_02.mp3",
      "duration": 0.75,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -19.9,
      "channels": 1,
      "loop": false,
      "bytes": 7923,
-     "source": "freesound:789221"
+     "source": "freesound:789221",
+     "onset": 0.012,
+     "peakAt": 0.058,
+     "tailEnd": 0.381
     },
     {
      "file": "bullet/whizz_03.mp3",
      "duration": 0.08,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -16.6,
      "channels": 1,
      "loop": false,
      "bytes": 1773,
-     "source": "freesound:855248"
+     "source": "freesound:855248",
+     "onset": 0.001,
+     "peakAt": 0.003,
+     "tailEnd": 0.07
     }
    ],
    "desc": "bullet fly-by near the player's head"
@@ -236,52 +290,67 @@
     {
      "file": "debris/concrete_01.mp3",
      "duration": 1.08,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -24.9,
      "channels": 1,
      "loop": false,
      "bytes": 11648,
-     "source": "freesound:522099"
+     "source": "freesound:522099",
+     "onset": 0.005,
+     "peakAt": 0.088,
+     "tailEnd": 1.072
     },
     {
      "file": "debris/concrete_02.mp3",
      "duration": 0.72,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -30.4,
      "channels": 1,
      "loop": false,
      "bytes": 10088,
-     "source": "freesound:179341"
+     "source": "freesound:179341",
+     "onset": 0.045,
+     "peakAt": 0.059,
+     "tailEnd": 0.692
     },
     {
      "file": "debris/concrete_03.mp3",
      "duration": 0.86,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -32.9,
      "channels": 1,
      "loop": false,
      "bytes": 11470,
-     "source": "freesound:179341"
+     "source": "freesound:179341",
+     "onset": 0.003,
+     "peakAt": 0.326,
+     "tailEnd": 0.722
     },
     {
      "file": "debris/concrete_04.mp3",
      "duration": 1.15,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -31.3,
      "channels": 1,
      "loop": false,
      "bytes": 14703,
-     "source": "freesound:179341"
+     "source": "freesound:179341",
+     "onset": 0.007,
+     "peakAt": 0.264,
+     "tailEnd": 1.113
     },
     {
      "file": "debris/concrete_05.mp3",
      "duration": 1.19,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -29.7,
      "channels": 1,
      "loop": false,
      "bytes": 16342,
-     "source": "freesound:179341"
+     "source": "freesound:179341",
+     "onset": 0.039,
+     "peakAt": 0.048,
+     "tailEnd": 1.133
     }
    ],
    "desc": "concrete chunks / dust falling after an impact"
@@ -292,52 +361,67 @@
     {
      "file": "door/close_01.mp3",
      "duration": 2.4,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -22.2,
      "channels": 1,
      "loop": false,
      "bytes": 18366,
-     "source": "freesound:344360"
+     "source": "freesound:344360",
+     "onset": 0.004,
+     "peakAt": 0.475,
+     "tailEnd": 0.892
     },
     {
      "file": "door/close_02.mp3",
      "duration": 0.53,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -16.7,
      "channels": 1,
      "loop": false,
      "bytes": 5365,
-     "source": "kenney:rpg-audio"
+     "source": "kenney:rpg-audio",
+     "onset": 0.006,
+     "peakAt": 0.21,
+     "tailEnd": 0.431
     },
     {
      "file": "door/close_03.mp3",
      "duration": 0.6,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -18.7,
      "channels": 1,
      "loop": false,
      "bytes": 6696,
-     "source": "kenney:rpg-audio"
+     "source": "kenney:rpg-audio",
+     "onset": 0.026,
+     "peakAt": 0.074,
+     "tailEnd": 0.501
     },
     {
      "file": "door/close_04.mp3",
      "duration": 0.7,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -14.9,
      "channels": 1,
      "loop": false,
      "bytes": 7554,
-     "source": "kenney:rpg-audio"
+     "source": "kenney:rpg-audio",
+     "onset": 0.024,
+     "peakAt": 0.292,
+     "tailEnd": 0.672
     },
     {
      "file": "door/close_05.mp3",
      "duration": 0.59,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -20.1,
      "channels": 1,
      "loop": false,
      "bytes": 6618,
-     "source": "kenney:rpg-audio"
+     "source": "kenney:rpg-audio",
+     "onset": 0.04,
+     "peakAt": 0.098,
+     "tailEnd": 0.491
     }
    ],
    "desc": "interior door close"
@@ -348,42 +432,54 @@
     {
      "file": "door/kick_01.mp3",
      "duration": 0.91,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -17.3,
      "channels": 1,
      "loop": false,
      "bytes": 8540,
-     "source": "freesound:160213"
+     "source": "freesound:160213",
+     "onset": 0.07,
+     "peakAt": 0.212,
+     "tailEnd": 0.732
     },
     {
      "file": "door/kick_02.mp3",
      "duration": 1.88,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -20.8,
      "channels": 1,
      "loop": false,
      "bytes": 15200,
-     "source": "freesound:452600"
+     "source": "freesound:452600",
+     "onset": 0.042,
+     "peakAt": 0.044,
+     "tailEnd": 1.774
     },
     {
      "file": "door/kick_03.mp3",
      "duration": 4.61,
-     "peak_db": -2.0,
-     "lufs": -19.0,
+     "peak_db": -2,
+     "lufs": -19,
      "channels": 1,
      "loop": false,
      "bytes": 30126,
-     "source": "freesound:450786"
+     "source": "freesound:450786",
+     "onset": 0.041,
+     "peakAt": 3.155,
+     "tailEnd": 4.37
     },
     {
      "file": "door/kick_04.mp3",
      "duration": 1.79,
-     "peak_db": -2.0,
-     "lufs": -19.0,
+     "peak_db": -2,
+     "lufs": -19,
      "channels": 1,
      "loop": false,
      "bytes": 16273,
-     "source": "freesound:452596"
+     "source": "freesound:452596",
+     "onset": 0.005,
+     "peakAt": 0.094,
+     "tailEnd": 1.704
     }
    ],
    "desc": "door kicked / forced open"
@@ -394,22 +490,28 @@
     {
      "file": "door/metal_01.mp3",
      "duration": 7.65,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -27.7,
      "channels": 1,
      "loop": false,
      "bytes": 51814,
-     "source": "freesound:15315"
+     "source": "freesound:15315",
+     "onset": 0.296,
+     "peakAt": 5.977,
+     "tailEnd": 7.517
     },
     {
      "file": "door/metal_02.mp3",
      "duration": 7.83,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -27.7,
      "channels": 1,
      "loop": false,
      "bytes": 52126,
-     "source": "freesound:15316"
+     "source": "freesound:15316",
+     "onset": 0.073,
+     "peakAt": 6.902,
+     "tailEnd": 7.798
     }
    ],
    "desc": "industrial steel push door open + close (full sequence)"
@@ -420,32 +522,41 @@
     {
      "file": "door/open_01.mp3",
      "duration": 2.3,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -26.2,
      "channels": 1,
      "loop": false,
      "bytes": 20772,
-     "source": "freesound:344360"
+     "source": "freesound:344360",
+     "onset": 0.002,
+     "peakAt": 0.825,
+     "tailEnd": 2.275
     },
     {
      "file": "door/open_02.mp3",
      "duration": 0.9,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -20.8,
      "channels": 1,
      "loop": false,
      "bytes": 8799,
-     "source": "kenney:rpg-audio"
+     "source": "kenney:rpg-audio",
+     "onset": 0.041,
+     "peakAt": 0.19,
+     "tailEnd": 0.872
     },
     {
      "file": "door/open_03.mp3",
      "duration": 1.39,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -20.4,
      "channels": 1,
      "loop": false,
      "bytes": 11896,
-     "source": "kenney:rpg-audio"
+     "source": "kenney:rpg-audio",
+     "onset": 0.04,
+     "peakAt": 0.219,
+     "tailEnd": 1.353
     }
    ],
    "desc": "interior door open"
@@ -456,12 +567,15 @@
     {
      "file": "door/roller_close_01.mp3",
      "duration": 14.98,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -18.8,
      "channels": 1,
      "loop": false,
      "bytes": 123187,
-     "source": "freesound:202667"
+     "source": "freesound:202667",
+     "onset": 0.051,
+     "peakAt": 10.992,
+     "tailEnd": 14.854
     }
    ],
    "desc": "motorised roller door closing"
@@ -472,12 +586,15 @@
     {
      "file": "door/roller_open_01.mp3",
      "duration": 16.7,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -24.1,
      "channels": 1,
      "loop": false,
      "bytes": 138987,
-     "source": "freesound:202666"
+     "source": "freesound:202666",
+     "onset": 0.189,
+     "peakAt": 11.432,
+     "tailEnd": 16.588
     }
    ],
    "desc": "motorised roller door opening (full ~15 s)"
@@ -488,12 +605,15 @@
     {
      "file": "door/roller_rattle_01.mp3",
      "duration": 19.85,
-     "peak_db": -2.0,
-     "lufs": -28.0,
+     "peak_db": -2,
+     "lufs": -28,
      "channels": 1,
      "loop": false,
      "bytes": 160780,
-     "source": "freesound:617980"
+     "source": "freesound:617980",
+     "onset": 0.925,
+     "peakAt": 7.921,
+     "tailEnd": 19.805
     }
    ],
    "desc": "roller shutter rattling up by hand"
@@ -504,12 +624,15 @@
     {
      "file": "door/roller_slam_01.mp3",
      "duration": 8.39,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -26.1,
      "channels": 1,
      "loop": false,
      "bytes": 60389,
-     "source": "freesound:593200"
+     "source": "freesound:593200",
+     "onset": 0.474,
+     "peakAt": 2.741,
+     "tailEnd": 8.249
     }
    ],
    "desc": "roller door pulled down and slammed shut by hand"
@@ -520,12 +643,15 @@
     {
      "file": "door/slam_01.mp3",
      "duration": 1.4,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -19.2,
      "channels": 1,
      "loop": false,
      "bytes": 12230,
-     "source": "freesound:395653"
+     "source": "freesound:395653",
+     "onset": 0.046,
+     "peakAt": 0.111,
+     "tailEnd": 1.333
     }
    ],
    "desc": "door slammed shut"
@@ -536,72 +662,93 @@
     {
      "file": "foley/bodyfall_01.mp3",
      "duration": 1.01,
-     "peak_db": -3.0,
-     "lufs": -29.0,
+     "peak_db": -3,
+     "lufs": -29,
      "channels": 1,
      "loop": false,
      "bytes": 8039,
-     "source": "freesound:325270"
+     "source": "freesound:325270",
+     "onset": 0.246,
+     "peakAt": 0.434,
+     "tailEnd": 0.641
     },
     {
      "file": "foley/bodyfall_02.mp3",
      "duration": 0.67,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -27.6,
      "channels": 1,
      "loop": false,
      "bytes": 5908,
-     "source": "freesound:325269"
+     "source": "freesound:325269",
+     "onset": 0.074,
+     "peakAt": 0.226,
+     "tailEnd": 0.601
     },
     {
      "file": "foley/bodyfall_03.mp3",
      "duration": 0.35,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -20.4,
      "channels": 1,
      "loop": false,
      "bytes": 4038,
-     "source": "freesound:82027"
+     "source": "freesound:82027",
+     "onset": 0.001,
+     "peakAt": 0.177,
+     "tailEnd": 0.341
     },
     {
      "file": "foley/bodyfall_04.mp3",
      "duration": 1.08,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -28.9,
      "channels": 1,
      "loop": false,
      "bytes": 8457,
-     "source": "freesound:268166"
+     "source": "freesound:268166",
+     "onset": 0.012,
+     "peakAt": 0.121,
+     "tailEnd": 1.052
     },
     {
      "file": "foley/bodyfall_05.mp3",
      "duration": 0.3,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -23.3,
      "channels": 1,
      "loop": false,
      "bytes": 2968,
-     "source": "freesound:268166"
+     "source": "freesound:268166",
+     "onset": 0.04,
+     "peakAt": 0.064,
+     "tailEnd": 0.281
     },
     {
      "file": "foley/bodyfall_06.mp3",
      "duration": 0.52,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -20.9,
      "channels": 1,
      "loop": false,
      "bytes": 2966,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.001,
+     "peakAt": 0.006,
+     "tailEnd": 0.501
     },
     {
      "file": "foley/bodyfall_07.mp3",
      "duration": 0.56,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -23.3,
      "channels": 1,
      "loop": false,
      "bytes": 3174,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.001,
+     "peakAt": 0.006,
+     "tailEnd": 0.531
     }
    ],
    "desc": "body hitting the floor"
@@ -612,62 +759,80 @@
     {
      "file": "foley/cloth_01.mp3",
      "duration": 1.6,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -25.4,
      "channels": 1,
      "loop": false,
      "bytes": 15363,
-     "source": "freesound:19291"
+     "source": "freesound:19291",
+     "onset": 0.019,
+     "peakAt": 0.119,
+     "tailEnd": 1.584
     },
     {
      "file": "foley/cloth_02.mp3",
      "duration": 1.71,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -28.2,
      "channels": 1,
      "loop": false,
      "bytes": 14987,
-     "source": "freesound:334219"
+     "source": "freesound:334219",
+     "onset": 0.006,
+     "peakAt": 0.165,
+     "tailEnd": 1.704
     },
     {
      "file": "foley/cloth_03.mp3",
      "duration": 0.64,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -26.4,
      "channels": 1,
      "loop": false,
      "bytes": 6304,
-     "source": "kenney:rpg-audio"
+     "source": "kenney:rpg-audio",
+     "onset": 0.077,
+     "peakAt": 0.131,
+     "tailEnd": 0.551
     },
     {
      "file": "foley/cloth_04.mp3",
      "duration": 0.39,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -22.6,
      "channels": 1,
      "loop": false,
      "bytes": 4144,
-     "source": "kenney:rpg-audio"
+     "source": "kenney:rpg-audio",
+     "onset": 0.051,
+     "peakAt": 0.104,
+     "tailEnd": 0.351
     },
     {
      "file": "foley/cloth_05.mp3",
      "duration": 0.46,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -23.2,
      "channels": 1,
      "loop": false,
      "bytes": 4555,
-     "source": "kenney:rpg-audio"
+     "source": "kenney:rpg-audio",
+     "onset": 0.014,
+     "peakAt": 0.159,
+     "tailEnd": 0.441
     },
     {
      "file": "foley/cloth_06.mp3",
      "duration": 0.38,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -23.3,
      "channels": 1,
      "loop": false,
      "bytes": 4272,
-     "source": "kenney:rpg-audio"
+     "source": "kenney:rpg-audio",
+     "onset": 0.007,
+     "peakAt": 0.091,
+     "tailEnd": 0.361
     }
    ],
    "desc": "clothing / gear rustle on movement"
@@ -678,122 +843,158 @@
     {
      "file": "foley/gear_01.mp3",
      "duration": 1.5,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -29.9,
      "channels": 1,
      "loop": false,
      "bytes": 16725,
-     "source": "freesound:517150"
+     "source": "freesound:517150",
+     "onset": 0.043,
+     "peakAt": 0.485,
+     "tailEnd": 1.483
     },
     {
      "file": "foley/gear_02.mp3",
      "duration": 1.5,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -30.3,
      "channels": 1,
      "loop": false,
      "bytes": 17955,
-     "source": "freesound:517150"
+     "source": "freesound:517150",
+     "onset": 0.039,
+     "peakAt": 0.431,
+     "tailEnd": 1.493
     },
     {
      "file": "foley/gear_03.mp3",
      "duration": 1.5,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -29.4,
      "channels": 1,
      "loop": false,
      "bytes": 17592,
-     "source": "freesound:517150"
+     "source": "freesound:517150",
+     "onset": 0.004,
+     "peakAt": 0.837,
+     "tailEnd": 1.483
     },
     {
      "file": "foley/gear_04.mp3",
      "duration": 0.74,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -23.5,
      "channels": 1,
      "loop": false,
      "bytes": 7736,
-     "source": "freesound:517150"
+     "source": "freesound:517150",
+     "onset": 0.002,
+     "peakAt": 0.219,
+     "tailEnd": 0.722
     },
     {
      "file": "foley/gear_05.mp3",
      "duration": 1.5,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -31.5,
      "channels": 1,
      "loop": false,
      "bytes": 17538,
-     "source": "freesound:517150"
+     "source": "freesound:517150",
+     "onset": 0.042,
+     "peakAt": 0.36,
+     "tailEnd": 1.483
     },
     {
      "file": "foley/gear_06.mp3",
      "duration": 1.5,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -31.7,
      "channels": 1,
      "loop": false,
      "bytes": 15549,
-     "source": "freesound:517150"
+     "source": "freesound:517150",
+     "onset": 0.026,
+     "peakAt": 0.329,
+     "tailEnd": 1.493
     },
     {
      "file": "foley/gear_07.mp3",
      "duration": 0.48,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -31.6,
      "channels": 1,
      "loop": false,
      "bytes": 5338,
-     "source": "freesound:517150"
+     "source": "freesound:517150",
+     "onset": 0.038,
+     "peakAt": 0.171,
+     "tailEnd": 0.471
     },
     {
      "file": "foley/gear_08.mp3",
      "duration": 1.01,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -25.2,
      "channels": 1,
      "loop": false,
      "bytes": 10291,
-     "source": "freesound:517150"
+     "source": "freesound:517150",
+     "onset": 0.029,
+     "peakAt": 0.608,
+     "tailEnd": 0.992
     },
     {
      "file": "foley/gear_09.mp3",
      "duration": 0.26,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -23.6,
      "channels": 1,
      "loop": false,
      "bytes": 3805,
-     "source": "kenney:rpg-audio"
+     "source": "kenney:rpg-audio",
+     "onset": 0.019,
+     "peakAt": 0.119,
+     "tailEnd": 0.21
     },
     {
      "file": "foley/gear_10.mp3",
      "duration": 0.45,
-     "peak_db": -3.0,
-     "lufs": -27.0,
+     "peak_db": -3,
+     "lufs": -27,
      "channels": 1,
      "loop": false,
      "bytes": 5811,
-     "source": "kenney:rpg-audio"
+     "source": "kenney:rpg-audio",
+     "onset": 0.067,
+     "peakAt": 0.26,
+     "tailEnd": 0.351
     },
     {
      "file": "foley/gear_11.mp3",
      "duration": 0.69,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -27.7,
      "channels": 1,
      "loop": false,
      "bytes": 8966,
-     "source": "kenney:rpg-audio"
+     "source": "kenney:rpg-audio",
+     "onset": 0.032,
+     "peakAt": 0.542,
+     "tailEnd": 0.661
     },
     {
      "file": "foley/gear_12.mp3",
      "duration": 0.44,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -26.6,
      "channels": 1,
      "loop": false,
      "bytes": 4820,
-     "source": "kenney:rpg-audio"
+     "source": "kenney:rpg-audio",
+     "onset": 0.003,
+     "peakAt": 0.272,
+     "tailEnd": 0.341
     }
    ],
    "desc": "tactical gear / equipment friction"
@@ -804,42 +1005,54 @@
     {
      "file": "foley/lightswitch_01.mp3",
      "duration": 0.5,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -27.7,
      "channels": 1,
      "loop": false,
      "bytes": 3931,
-     "source": "freesound:257958"
+     "source": "freesound:257958",
+     "onset": 0.052,
+     "peakAt": 0.061,
+     "tailEnd": 0.351
     },
     {
      "file": "foley/lightswitch_02.mp3",
      "duration": 0.5,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -28.8,
      "channels": 1,
      "loop": false,
      "bytes": 3591,
-     "source": "freesound:257958"
+     "source": "freesound:257958",
+     "onset": 0.11,
+     "peakAt": 0.112,
+     "tailEnd": 0.17
     },
     {
      "file": "foley/lightswitch_03.mp3",
      "duration": 0.45,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -29.3,
      "channels": 1,
      "loop": false,
      "bytes": 3983,
-     "source": "freesound:257958"
+     "source": "freesound:257958",
+     "onset": 0.248,
+     "peakAt": 0.252,
+     "tailEnd": 0.321
     },
     {
      "file": "foley/lightswitch_04.mp3",
      "duration": 0.3,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -27.6,
      "channels": 1,
      "loop": false,
      "bytes": 2837,
-     "source": "freesound:257958"
+     "source": "freesound:257958",
+     "onset": 0.046,
+     "peakAt": 0.048,
+     "tailEnd": 0.11
     }
    ],
    "desc": "wall light switch"
@@ -850,72 +1063,93 @@
     {
      "file": "foley/switch_01.mp3",
      "duration": 0.39,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -21.9,
      "channels": 1,
      "loop": false,
      "bytes": 3827,
-     "source": "freesound:404049"
+     "source": "freesound:404049",
+     "onset": 0.003,
+     "peakAt": 0.033,
+     "tailEnd": 0.351
     },
     {
      "file": "foley/switch_02.mp3",
      "duration": 2.11,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -22.6,
      "channels": 1,
      "loop": false,
      "bytes": 16102,
-     "source": "freesound:131599"
+     "source": "freesound:131599",
+     "onset": 0.094,
+     "peakAt": 0.164,
+     "tailEnd": 0.922
     },
     {
      "file": "foley/switch_03.mp3",
      "duration": 0.6,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -25.6,
      "channels": 1,
      "loop": false,
      "bytes": 5258,
-     "source": "freesound:451933"
+     "source": "freesound:451933",
+     "onset": 0.136,
+     "peakAt": 0.153,
+     "tailEnd": 0.391
     },
     {
      "file": "foley/switch_04.mp3",
      "duration": 0.69,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -24.6,
      "channels": 1,
      "loop": false,
      "bytes": 5517,
-     "source": "freesound:451933"
+     "source": "freesound:451933",
+     "onset": 0.073,
+     "peakAt": 0.086,
+     "tailEnd": 0.581
     },
     {
      "file": "foley/switch_05.mp3",
      "duration": 0.47,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -22.9,
      "channels": 1,
      "loop": false,
      "bytes": 4923,
-     "source": "freesound:451933"
+     "source": "freesound:451933",
+     "onset": 0.001,
+     "peakAt": 0.204,
+     "tailEnd": 0.461
     },
     {
      "file": "foley/switch_06.mp3",
      "duration": 0.49,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -22.4,
      "channels": 1,
      "loop": false,
      "bytes": 4399,
-     "source": "freesound:130152"
+     "source": "freesound:130152",
+     "onset": 0.042,
+     "peakAt": 0.049,
+     "tailEnd": 0.461
     },
     {
      "file": "foley/switch_07.mp3",
      "duration": 0.72,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -22.1,
      "channels": 1,
      "loop": false,
      "bytes": 5908,
-     "source": "freesound:130153"
+     "source": "freesound:130153",
+     "onset": 0.027,
+     "peakAt": 0.1,
+     "tailEnd": 0.692
     }
    ],
    "desc": "breaker / heavy switch clunk"
@@ -926,52 +1160,67 @@
     {
      "file": "glass/debris_01.mp3",
      "duration": 1.49,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -20.7,
      "channels": 1,
      "loop": false,
      "bytes": 17082,
-     "source": "freesound:156579"
+     "source": "freesound:156579",
+     "onset": 0.043,
+     "peakAt": 0.325,
+     "tailEnd": 1.243
     },
     {
      "file": "glass/debris_02.mp3",
      "duration": 0.22,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -18.7,
      "channels": 1,
      "loop": false,
      "bytes": 2005,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.001,
+     "peakAt": 0.008,
+     "tailEnd": 0.12
     },
     {
      "file": "glass/debris_03.mp3",
      "duration": 0.2,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -18.5,
      "channels": 1,
      "loop": false,
      "bytes": 2005,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0,
+     "peakAt": 0.006,
+     "tailEnd": 0.14
     },
     {
      "file": "glass/debris_04.mp3",
      "duration": 0.54,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -24.8,
      "channels": 1,
      "loop": false,
      "bytes": 3306,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0,
+     "peakAt": 0.003,
+     "tailEnd": 0.511
     },
     {
      "file": "glass/debris_05.mp3",
      "duration": 0.54,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -24.1,
      "channels": 1,
      "loop": false,
      "bytes": 3332,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0,
+     "peakAt": 0.002,
+     "tailEnd": 0.511
     }
    ],
    "desc": "glass shards tinkling / settling"
@@ -987,47 +1236,62 @@
      "channels": 1,
      "loop": false,
      "bytes": 35449,
-     "source": "freesound:173560"
+     "source": "freesound:173560",
+     "onset": 0.033,
+     "peakAt": 0.048,
+     "tailEnd": 2.887
     },
     {
      "file": "glass/shatter_02.mp3",
      "duration": 2.2,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -23.5,
      "channels": 1,
      "loop": false,
      "bytes": 25249,
-     "source": "freesound:173559"
+     "source": "freesound:173559",
+     "onset": 0.043,
+     "peakAt": 0.049,
+     "tailEnd": 2.095
     },
     {
      "file": "glass/shatter_03.mp3",
      "duration": 2.71,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -11.9,
      "channels": 1,
      "loop": false,
      "bytes": 28222,
-     "source": "freesound:536763"
+     "source": "freesound:536763",
+     "onset": 0.001,
+     "peakAt": 0.771,
+     "tailEnd": 2.686
     },
     {
      "file": "glass/shatter_04.mp3",
      "duration": 0.75,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -24.4,
      "channels": 1,
      "loop": false,
      "bytes": 8292,
-     "source": "freesound:221528"
+     "source": "freesound:221528",
+     "onset": 0.049,
+     "peakAt": 0.05,
+     "tailEnd": 0.441
     },
     {
      "file": "glass/shatter_05.mp3",
      "duration": 1.03,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -20.8,
      "channels": 1,
      "loop": false,
      "bytes": 13481,
-     "source": "freesound:521341"
+     "source": "freesound:521341",
+     "onset": 0.048,
+     "peakAt": 0.117,
+     "tailEnd": 0.952
     }
    ]
   },
@@ -1037,92 +1301,119 @@
     {
      "file": "impact/cardboard_01.mp3",
      "duration": 0.24,
-     "peak_db": -2.0,
-     "lufs": -19.0,
+     "peak_db": -2,
+     "lufs": -19,
      "channels": 1,
      "loop": false,
      "bytes": 3258,
-     "source": "freesound:364932"
+     "source": "freesound:364932",
+     "onset": 0.023,
+     "peakAt": 0.031,
+     "tailEnd": 0.22
     },
     {
      "file": "impact/cardboard_02.mp3",
      "duration": 0.29,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -20.9,
      "channels": 1,
      "loop": false,
      "bytes": 4119,
-     "source": "freesound:364932"
+     "source": "freesound:364932",
+     "onset": 0.041,
+     "peakAt": 0.049,
+     "tailEnd": 0.261
     },
     {
      "file": "impact/cardboard_03.mp3",
      "duration": 0.28,
-     "peak_db": -2.0,
-     "lufs": -19.0,
+     "peak_db": -2,
+     "lufs": -19,
      "channels": 1,
      "loop": false,
      "bytes": 3677,
-     "source": "freesound:364932"
+     "source": "freesound:364932",
+     "onset": 0.046,
+     "peakAt": 0.065,
+     "tailEnd": 0.241
     },
     {
      "file": "impact/cardboard_04.mp3",
      "duration": 0.34,
-     "peak_db": -2.0,
-     "lufs": -18.0,
+     "peak_db": -2,
+     "lufs": -18,
      "channels": 1,
      "loop": false,
      "bytes": 4354,
-     "source": "freesound:364932"
+     "source": "freesound:364932",
+     "onset": 0.047,
+     "peakAt": 0.052,
+     "tailEnd": 0.231
     },
     {
      "file": "impact/cardboard_05.mp3",
      "duration": 0.38,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -22.2,
      "channels": 1,
      "loop": false,
      "bytes": 4668,
-     "source": "freesound:364932"
+     "source": "freesound:364932",
+     "onset": 0.047,
+     "peakAt": 0.055,
+     "tailEnd": 0.341
     },
     {
      "file": "impact/cardboard_06.mp3",
      "duration": 0.26,
-     "peak_db": -2.0,
-     "lufs": -20.0,
+     "peak_db": -2,
+     "lufs": -20,
      "channels": 1,
      "loop": false,
      "bytes": 3416,
-     "source": "freesound:364932"
+     "source": "freesound:364932",
+     "onset": 0.048,
+     "peakAt": 0.048,
+     "tailEnd": 0.231
     },
     {
      "file": "impact/cardboard_07.mp3",
      "duration": 0.55,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -20.6,
      "channels": 1,
      "loop": false,
      "bytes": 5314,
-     "source": "freesound:500283"
+     "source": "freesound:500283",
+     "onset": 0.001,
+     "peakAt": 0.01,
+     "tailEnd": 0.371
     },
     {
      "file": "impact/cardboard_08.mp3",
      "duration": 0.63,
-     "peak_db": -2.0,
-     "lufs": -26.0,
+     "peak_db": -2,
+     "lufs": -26,
      "channels": 1,
      "loop": false,
      "bytes": 7015,
-     "source": "freesound:215475"
+     "source": "freesound:215475",
+     "onset": 0.009,
+     "peakAt": 0.02,
+     "tailEnd": 0.601
     },
     {
      "file": "impact/cardboard_09.mp3",
      "duration": 0.51,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -25.7,
      "channels": 1,
      "loop": false,
      "bytes": 6361,
-     "source": "freesound:215475"
+     "source": "freesound:215475",
+     "onset": 0.046,
+     "peakAt": 0.065,
+     "tailEnd": 0.421
     }
    ],
    "desc": "cardboard boxes"
@@ -1133,112 +1424,145 @@
     {
      "file": "impact/concrete_01.mp3",
      "duration": 0.78,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -23.9,
      "channels": 1,
      "loop": false,
      "bytes": 6715,
-     "source": "freesound:321477"
+     "source": "freesound:321477",
+     "onset": 0.004,
+     "peakAt": 0.018,
+     "tailEnd": 0.431
     },
     {
      "file": "impact/concrete_02.mp3",
      "duration": 0.28,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -21.8,
      "channels": 1,
      "loop": false,
      "bytes": 3598,
-     "source": "freesound:321478"
+     "source": "freesound:321478",
+     "onset": 0.047,
+     "peakAt": 0.051,
+     "tailEnd": 0.261
     },
     {
      "file": "impact/concrete_03.mp3",
      "duration": 0.57,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -25.8,
      "channels": 1,
      "loop": false,
      "bytes": 7432,
-     "source": "freesound:179365"
+     "source": "freesound:179365",
+     "onset": 0.047,
+     "peakAt": 0.048,
+     "tailEnd": 0.521
     },
     {
      "file": "impact/concrete_04.mp3",
      "duration": 0.6,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -24.7,
      "channels": 1,
      "loop": false,
      "bytes": 6989,
-     "source": "freesound:179365"
+     "source": "freesound:179365",
+     "onset": 0.227,
+     "peakAt": 0.357,
+     "tailEnd": 0.591
     },
     {
      "file": "impact/concrete_05.mp3",
      "duration": 0.6,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -28.7,
      "channels": 1,
      "loop": false,
      "bytes": 6857,
-     "source": "freesound:179365"
+     "source": "freesound:179365",
+     "onset": 0.076,
+     "peakAt": 0.183,
+     "tailEnd": 0.561
     },
     {
      "file": "impact/concrete_06.mp3",
      "duration": 0.41,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -26.6,
      "channels": 1,
      "loop": false,
      "bytes": 5292,
-     "source": "freesound:179365"
+     "source": "freesound:179365",
+     "onset": 0.248,
+     "peakAt": 0.249,
+     "tailEnd": 0.301
     },
     {
      "file": "impact/concrete_07.mp3",
      "duration": 0.6,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -28.2,
      "channels": 1,
      "loop": false,
      "bytes": 7902,
-     "source": "freesound:179365"
+     "source": "freesound:179365",
+     "onset": 0.045,
+     "peakAt": 0.467,
+     "tailEnd": 0.591
     },
     {
      "file": "impact/concrete_08.mp3",
      "duration": 0.6,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -30.7,
      "channels": 1,
      "loop": false,
      "bytes": 6278,
-     "source": "freesound:179365"
+     "source": "freesound:179365",
+     "onset": 0.48,
+     "peakAt": 0.48,
+     "tailEnd": 0.551
     },
     {
      "file": "impact/concrete_09.mp3",
      "duration": 0.93,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -25.9,
      "channels": 1,
      "loop": false,
      "bytes": 5698,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.001,
+     "peakAt": 0.013,
+     "tailEnd": 0.571
     },
     {
      "file": "impact/concrete_10.mp3",
      "duration": 0.8,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -27.1,
      "channels": 1,
      "loop": false,
      "bytes": 4841,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.001,
+     "peakAt": 0.008,
+     "tailEnd": 0.461
     },
     {
      "file": "impact/concrete_11.mp3",
      "duration": 0.83,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -26.8,
      "channels": 1,
      "loop": false,
      "bytes": 5022,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.001,
+     "peakAt": 0.011,
+     "tailEnd": 0.531
     }
    ],
    "desc": "bullet / hard hit on concrete (layer with debris.concrete)"
@@ -1249,82 +1573,106 @@
     {
      "file": "impact/flesh_01.mp3",
      "duration": 0.32,
-     "peak_db": -2.0,
-     "lufs": -16.0,
+     "peak_db": -2,
+     "lufs": -16,
      "channels": 1,
      "loop": false,
      "bytes": 4068,
-     "source": "freesound:423301"
+     "source": "freesound:423301",
+     "onset": 0.049,
+     "peakAt": 0.218,
+     "tailEnd": 0.301
     },
     {
      "file": "impact/flesh_02.mp3",
      "duration": 0.33,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -18.5,
      "channels": 1,
      "loop": false,
      "bytes": 4146,
-     "source": "freesound:423301"
+     "source": "freesound:423301",
+     "onset": 0.045,
+     "peakAt": 0.195,
+     "tailEnd": 0.301
     },
     {
      "file": "impact/flesh_03.mp3",
      "duration": 0.38,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -15.8,
      "channels": 1,
      "loop": false,
      "bytes": 4773,
-     "source": "freesound:423301"
+     "source": "freesound:423301",
+     "onset": 0.048,
+     "peakAt": 0.216,
+     "tailEnd": 0.361
     },
     {
      "file": "impact/flesh_04.mp3",
      "duration": 0.96,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -28.8,
      "channels": 1,
      "loop": false,
      "bytes": 12306,
-     "source": "freesound:511194"
+     "source": "freesound:511194",
+     "onset": 0.047,
+     "peakAt": 0.061,
+     "tailEnd": 0.802
     },
     {
      "file": "impact/flesh_05.mp3",
      "duration": 0.64,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -21.9,
      "channels": 1,
      "loop": false,
      "bytes": 4844,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.011,
+     "peakAt": 0.024,
+     "tailEnd": 0.451
     },
     {
      "file": "impact/flesh_06.mp3",
      "duration": 0.53,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -21.9,
      "channels": 1,
      "loop": false,
      "bytes": 4478,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.008,
+     "peakAt": 0.02,
+     "tailEnd": 0.371
     },
     {
      "file": "impact/flesh_07.mp3",
      "duration": 0.45,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -19.1,
      "channels": 1,
      "loop": false,
      "bytes": 3514,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.006,
+     "peakAt": 0.018,
+     "tailEnd": 0.321
     },
     {
      "file": "impact/flesh_08.mp3",
      "duration": 0.47,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -19.5,
      "channels": 1,
      "loop": false,
      "bytes": 4010,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.007,
+     "peakAt": 0.018,
+     "tailEnd": 0.331
     }
    ],
    "desc": "bullet into body"
@@ -1335,72 +1683,93 @@
     {
      "file": "impact/metal_01.mp3",
      "duration": 1.2,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -20.2,
      "channels": 1,
      "loop": false,
      "bytes": 13536,
-     "source": "freesound:182262"
+     "source": "freesound:182262",
+     "onset": 0.001,
+     "peakAt": 0.005,
+     "tailEnd": 1.193
     },
     {
      "file": "impact/metal_02.mp3",
      "duration": 1.2,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -18.3,
      "channels": 1,
      "loop": false,
      "bytes": 13533,
-     "source": "freesound:182262"
+     "source": "freesound:182262",
+     "onset": 0.042,
+     "peakAt": 0.043,
+     "tailEnd": 1.173
     },
     {
      "file": "impact/metal_03.mp3",
      "duration": 1.2,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -23.2,
      "channels": 1,
      "loop": false,
      "bytes": 13372,
-     "source": "freesound:182262"
+     "source": "freesound:182262",
+     "onset": 0.04,
+     "peakAt": 0.041,
+     "tailEnd": 1.153
     },
     {
      "file": "impact/metal_04.mp3",
      "duration": 1.2,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -21.9,
      "channels": 1,
      "loop": false,
      "bytes": 13114,
-     "source": "freesound:182262"
+     "source": "freesound:182262",
+     "onset": 0.04,
+     "peakAt": 0.041,
+     "tailEnd": 1.143
     },
     {
      "file": "impact/metal_05.mp3",
      "duration": 1.05,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -22.3,
      "channels": 1,
      "loop": false,
      "bytes": 12675,
-     "source": "freesound:182262"
+     "source": "freesound:182262",
+     "onset": 0.048,
+     "peakAt": 0.049,
+     "tailEnd": 0.872
     },
     {
      "file": "impact/metal_06.mp3",
      "duration": 1.2,
-     "peak_db": -2.0,
-     "lufs": -22.0,
+     "peak_db": -2,
+     "lufs": -22,
      "channels": 1,
      "loop": false,
      "bytes": 13717,
-     "source": "freesound:182262"
+     "source": "freesound:182262",
+     "onset": 0.04,
+     "peakAt": 0.041,
+     "tailEnd": 0.982
     },
     {
      "file": "impact/metal_07.mp3",
      "duration": 0.34,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -15.6,
      "channels": 1,
      "loop": false,
      "bytes": 4351,
-     "source": "freesound:144444"
+     "source": "freesound:144444",
+     "onset": 0.025,
+     "peakAt": 0.088,
+     "tailEnd": 0.311
     },
     {
      "file": "impact/metal_08.mp3",
@@ -1410,77 +1779,101 @@
      "channels": 1,
      "loop": false,
      "bytes": 18855,
-     "source": "freesound:144444"
+     "source": "freesound:144444",
+     "onset": 0.043,
+     "peakAt": 0.262,
+     "tailEnd": 1.163
     },
     {
      "file": "impact/metal_09.mp3",
      "duration": 0.3,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -18.8,
      "channels": 1,
      "loop": false,
      "bytes": 4198,
-     "source": "freesound:144444"
+     "source": "freesound:144444",
+     "onset": 0.044,
+     "peakAt": 0.045,
+     "tailEnd": 0.231
     },
     {
      "file": "impact/metal_10.mp3",
      "duration": 0.37,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -19.4,
      "channels": 1,
      "loop": false,
      "bytes": 4953,
-     "source": "freesound:144444"
+     "source": "freesound:144444",
+     "onset": 0.041,
+     "peakAt": 0.042,
+     "tailEnd": 0.251
     },
     {
      "file": "impact/metal_11.mp3",
      "duration": 0.62,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -18.6,
      "channels": 1,
      "loop": false,
      "bytes": 8368,
-     "source": "freesound:144444"
+     "source": "freesound:144444",
+     "onset": 0.043,
+     "peakAt": 0.055,
+     "tailEnd": 0.561
     },
     {
      "file": "impact/metal_12.mp3",
      "duration": 0.77,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -17.8,
      "channels": 1,
      "loop": false,
      "bytes": 8470,
-     "source": "freesound:144444"
+     "source": "freesound:144444",
+     "onset": 0.049,
+     "peakAt": 0.278,
+     "tailEnd": 0.742
     },
     {
      "file": "impact/metal_13.mp3",
      "duration": 0.16,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -25.3,
      "channels": 1,
      "loop": false,
      "bytes": 1771,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.001,
+     "peakAt": 0.002,
+     "tailEnd": 0.15
     },
     {
      "file": "impact/metal_14.mp3",
      "duration": 0.11,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -22.9,
      "channels": 1,
      "loop": false,
      "bytes": 1590,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0,
+     "peakAt": 0.002,
+     "tailEnd": 0.1
     },
     {
      "file": "impact/metal_15.mp3",
      "duration": 0.13,
-     "peak_db": -2.0,
-     "lufs": -24.0,
+     "peak_db": -2,
+     "lufs": -24,
      "channels": 1,
      "loop": false,
      "bytes": 1589,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0,
+     "peakAt": 0.002,
+     "tailEnd": 0.12
     }
    ],
    "desc": "bullet hits on steel (racks, pipes)"
@@ -1491,72 +1884,93 @@
     {
      "file": "impact/sheetmetal_01.mp3",
      "duration": 0.42,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -19.7,
      "channels": 1,
      "loop": false,
      "bytes": 4586,
-     "source": "freesound:262516"
+     "source": "freesound:262516",
+     "onset": 0,
+     "peakAt": 0.005,
+     "tailEnd": 0.21
     },
     {
      "file": "impact/sheetmetal_02.mp3",
      "duration": 1.1,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -19.7,
      "channels": 1,
      "loop": false,
      "bytes": 10500,
-     "source": "freesound:587442"
+     "source": "freesound:587442",
+     "onset": 0.004,
+     "peakAt": 0.034,
+     "tailEnd": 0.962
     },
     {
      "file": "impact/sheetmetal_03.mp3",
      "duration": 1.15,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -17.7,
      "channels": 1,
      "loop": false,
      "bytes": 11340,
-     "source": "freesound:587442"
+     "source": "freesound:587442",
+     "onset": 0.045,
+     "peakAt": 0.222,
+     "tailEnd": 0.972
     },
     {
      "file": "impact/sheetmetal_04.mp3",
      "duration": 1.96,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -21.3,
      "channels": 1,
      "loop": false,
      "bytes": 18896,
-     "source": "freesound:587442"
+     "source": "freesound:587442",
+     "onset": 0.041,
+     "peakAt": 0.092,
+     "tailEnd": 1.614
     },
     {
      "file": "impact/sheetmetal_05.mp3",
      "duration": 0.48,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -24.5,
      "channels": 1,
      "loop": false,
      "bytes": 4505,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0,
+     "peakAt": 0.004,
+     "tailEnd": 0.411
     },
     {
      "file": "impact/sheetmetal_06.mp3",
      "duration": 0.34,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -23.6,
      "channels": 1,
      "loop": false,
      "bytes": 3725,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.001,
+     "peakAt": 0.004,
+     "tailEnd": 0.321
     },
     {
      "file": "impact/sheetmetal_07.mp3",
      "duration": 0.34,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -23.2,
      "channels": 1,
      "loop": false,
      "bytes": 3464,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0,
+     "peakAt": 0.003,
+     "tailEnd": 0.301
     }
    ],
    "desc": "thin sheet metal / cladding / shutters"
@@ -1567,146 +1981,182 @@
     {
      "file": "impact/wood_01.mp3",
      "duration": 0.51,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -23.4,
      "channels": 1,
      "loop": false,
      "bytes": 3619,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.001,
+     "peakAt": 0.009,
+     "tailEnd": 0.18
     },
     {
      "file": "impact/wood_02.mp3",
      "duration": 0.5,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -20.5,
      "channels": 1,
      "loop": false,
      "bytes": 3592,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.001,
+     "peakAt": 0.024,
+     "tailEnd": 0.391
     },
     {
      "file": "impact/wood_03.mp3",
      "duration": 0.5,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -20.9,
      "channels": 1,
      "loop": false,
      "bytes": 3618,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.001,
+     "peakAt": 0.002,
+     "tailEnd": 0.19
     },
     {
      "file": "impact/wood_04.mp3",
      "duration": 0.31,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -23.6,
      "channels": 1,
      "loop": false,
      "bytes": 2160,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.001,
+     "peakAt": 0.004,
+     "tailEnd": 0.291
     },
     {
      "file": "impact/wood_05.mp3",
      "duration": 0.31,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -23.6,
      "channels": 1,
      "loop": false,
      "bytes": 2187,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.001,
+     "peakAt": 0.004,
+     "tailEnd": 0.291
     },
     {
      "file": "impact/wood_06.mp3",
      "duration": 0.31,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -24.1,
      "channels": 1,
      "loop": false,
      "bytes": 2187,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.001,
+     "peakAt": 0.003,
+     "tailEnd": 0.291
     },
     {
      "file": "impact/wood_07.mp3",
      "duration": 0.2,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -19.9,
      "channels": 1,
      "loop": false,
      "bytes": 2344,
-     "source": "freesound:339363"
+     "source": "freesound:339363",
+     "onset": 0.051,
+     "peakAt": 0.067,
+     "tailEnd": 0.15
     },
     {
      "file": "impact/wood_08.mp3",
      "duration": 0.16,
-     "peak_db": -2.0,
+     "peak_db": -2,
      "lufs": -22.1,
      "channels": 1,
      "loop": false,
      "bytes": 2528,
-     "source": "freesound:339364"
+     "source": "freesound:339364",
+     "onset": 0.02,
+     "peakAt": 0.03,
+     "tailEnd": 0.12
     }
    ],
    "desc": "pallets, crates, wooden doors"
   },
   "ir.basement": {
-   "gain": 1.0,
+   "gain": 1,
    "variations": [
     {
      "file": "ir/basement_01.mp3",
      "duration": 7.36,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -16.2,
      "channels": 2,
      "loop": false,
      "bytes": 58610,
-     "source": "freesound:732027"
+     "source": "freesound:732027",
+     "onset": 0.177,
+     "peakAt": 6.14,
+     "tailEnd": 7.347
     }
    ],
    "desc": "impulse response: large unfurnished concrete basement"
   },
   "ir.hall": {
-   "gain": 1.0,
+   "gain": 1,
    "variations": [
     {
      "file": "ir/hall_01.mp3",
      "duration": 3.16,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -16.1,
      "channels": 2,
      "loop": false,
      "bytes": 38464,
-     "source": "freesound:416212"
+     "source": "freesound:416212",
+     "onset": 0.001,
+     "peakAt": 0.004,
+     "tailEnd": 2.476
     },
     {
      "file": "ir/hall_02.mp3",
      "duration": 1.5,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -22.5,
      "channels": 2,
      "loop": false,
      "bytes": 28695,
-     "source": "freesound:579132"
+     "source": "freesound:579132",
+     "onset": 0.001,
+     "peakAt": 0.008,
+     "tailEnd": 1.403
     }
    ],
    "desc": "impulse response: multi-storey concrete car park (large hall)"
   },
   "ir.small": {
-   "gain": 1.0,
+   "gain": 1,
    "variations": [
     {
      "file": "ir/small_01.mp3",
      "duration": 0.59,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -17.8,
      "channels": 2,
      "loop": false,
      "bytes": 9389,
-     "source": "freesound:382908"
+     "source": "freesound:382908",
+     "onset": 0.002,
+     "peakAt": 0.009,
+     "tailEnd": 0.261
     }
    ],
    "desc": "impulse response: tiny basement room (use for small offices)"
   },
   "ir.stairwell": {
-   "gain": 1.0,
+   "gain": 1,
    "variations": [
     {
      "file": "ir/stairwell_01.mp3",
@@ -1716,7 +2166,10 @@
      "channels": 2,
      "loop": false,
      "bytes": 29992,
-     "source": "freesound:579151"
+     "source": "freesound:579151",
+     "onset": 0.001,
+     "peakAt": 0.011,
+     "tailEnd": 1.744
     }
    ],
    "desc": "impulse response: hand clap in a stairwell"
@@ -1726,15 +2179,19 @@
    "variations": [
     {
      "file": "loop/beeper_01.mp3",
-     "duration": 9.0,
-     "peak_db": -6.0,
+     "duration": 9,
+     "peak_db": -6,
      "lufs": -28.7,
      "channels": 1,
      "loop": true,
      "bytes": 67579,
      "source": "freesound:221927",
      "loopStart": 0.25,
-     "loopEnd": 9.25
+     "loopEnd": 9.25,
+     "seamDb": -15.1,
+     "onset": 0,
+     "peakAt": 5.634,
+     "tailEnd": 9.491
     }
    ],
    "desc": "vehicle reverse beeper (forklift / AGV warning)"
@@ -1744,15 +2201,19 @@
    "variations": [
     {
      "file": "loop/conveyor_01.mp3",
-     "duration": 24.0,
+     "duration": 24,
      "peak_db": -8.7,
-     "lufs": -23.0,
+     "lufs": -23,
      "channels": 2,
      "loop": true,
      "bytes": 357403,
      "source": "freesound:519027",
      "loopStart": 0.25,
-     "loopEnd": 24.25
+     "loopEnd": 24.25,
+     "seamDb": -16.6,
+     "onset": 0,
+     "peakAt": 15.649,
+     "tailEnd": 24.495
     }
    ],
    "desc": "large package-centre conveyor running (stereo bed; engine fades/pitch-ramps for start/stop)"
@@ -1762,15 +2223,19 @@
    "variations": [
     {
      "file": "loop/conveyor_rollers_01.mp3",
-     "duration": 14.0,
-     "peak_db": -6.0,
+     "duration": 14,
+     "peak_db": -6,
      "lufs": -22.7,
      "channels": 1,
      "loop": true,
      "bytes": 117674,
      "source": "freesound:454082",
      "loopStart": 0.25,
-     "loopEnd": 14.25
+     "loopEnd": 14.25,
+     "seamDb": -17.7,
+     "onset": 0,
+     "peakAt": 10.39,
+     "tailEnd": 14.493
     }
    ],
    "desc": "roller conveyor with boxes (mono, positional)"
@@ -1780,7 +2245,7 @@
    "variations": [
     {
      "file": "loop/crane_01.mp3",
-     "duration": 18.0,
+     "duration": 18,
      "peak_db": -8.78,
      "lufs": -26.6,
      "channels": 1,
@@ -1788,7 +2253,11 @@
      "bytes": 110529,
      "source": "freesound:438133",
      "loopStart": 0.25,
-     "loopEnd": 18.25
+     "loopEnd": 18.25,
+     "seamDb": -150.4,
+     "onset": 0,
+     "peakAt": 1.946,
+     "tailEnd": 18.492
     }
    ],
    "desc": "overhead / stacker crane travelling (steady whine)"
@@ -1798,7 +2267,7 @@
    "variations": [
     {
      "file": "loop/fluorescent_01.mp3",
-     "duration": 12.0,
+     "duration": 12,
      "peak_db": -15.97,
      "lufs": -28.9,
      "channels": 1,
@@ -1806,7 +2275,11 @@
      "bytes": 90354,
      "source": "freesound:119910",
      "loopStart": 0.25,
-     "loopEnd": 12.25
+     "loopEnd": 12.25,
+     "seamDb": -19.3,
+     "onset": 0,
+     "peakAt": 7.113,
+     "tailEnd": 12.498
     }
    ],
    "desc": "fluorescent tube hum / buzz"
@@ -1816,7 +2289,7 @@
    "variations": [
     {
      "file": "loop/forklift_idle_01.mp3",
-     "duration": 12.0,
+     "duration": 12,
      "peak_db": -13.85,
      "lufs": -28.7,
      "channels": 1,
@@ -1824,7 +2297,11 @@
      "bytes": 101961,
      "source": "freesound:571002",
      "loopStart": 0.25,
-     "loopEnd": 12.25
+     "loopEnd": 12.25,
+     "seamDb": -157.2,
+     "onset": 0.001,
+     "peakAt": 0.54,
+     "tailEnd": 12.498
     }
    ],
    "desc": "forklift running / idling"
@@ -1834,7 +2311,7 @@
    "variations": [
     {
      "file": "loop/fridge_01.mp3",
-     "duration": 20.0,
+     "duration": 20,
      "peak_db": -18.42,
      "lufs": -30.3,
      "channels": 1,
@@ -1842,7 +2319,11 @@
      "bytes": 149581,
      "source": "freesound:133827",
      "loopStart": 0.25,
-     "loopEnd": 20.25
+     "loopEnd": 20.25,
+     "seamDb": -13.6,
+     "onset": 0,
+     "peakAt": 2.682,
+     "tailEnd": 20.496
     }
    ],
    "desc": "compressor / cold store hum"
@@ -1860,7 +2341,11 @@
      "bytes": 31804,
      "source": "freesound:211096",
      "loopStart": 0.25,
-     "loopEnd": 3.75
+     "loopEnd": 3.75,
+     "seamDb": -2,
+     "onset": 0,
+     "peakAt": 3.575,
+     "tailEnd": 3.999
     }
    ],
    "desc": "steady compressed-air leak hiss"
@@ -1870,7 +2355,7 @@
    "variations": [
     {
      "file": "loop/motor_01.mp3",
-     "duration": 12.0,
+     "duration": 12,
      "peak_db": -11.23,
      "lufs": -26.8,
      "channels": 1,
@@ -1878,7 +2363,11 @@
      "bytes": 100049,
      "source": "freesound:824119",
      "loopStart": 0.25,
-     "loopEnd": 12.25
+     "loopEnd": 12.25,
+     "seamDb": -156.1,
+     "onset": 0,
+     "peakAt": 1.175,
+     "tailEnd": 12.498
     }
    ],
    "desc": "electric motor hum (mono)"
@@ -1889,14 +2378,18 @@
     {
      "file": "loop/palletjack_01.mp3",
      "duration": 6.5,
-     "peak_db": -6.0,
+     "peak_db": -6,
      "lufs": -30.9,
      "channels": 1,
      "loop": true,
      "bytes": 51617,
      "source": "freesound:877389",
      "loopStart": 0.25,
-     "loopEnd": 6.75
+     "loopEnd": 6.75,
+     "seamDb": -143.7,
+     "onset": 0,
+     "peakAt": 6.146,
+     "tailEnd": 6.996
     }
    ],
    "desc": "pallet jack rolling on concrete"
@@ -1906,7 +2399,7 @@
    "variations": [
     {
      "file": "loop/servo_01.mp3",
-     "duration": 10.0,
+     "duration": 10,
      "peak_db": -14.39,
      "lufs": -26.6,
      "channels": 1,
@@ -1914,7 +2407,11 @@
      "bytes": 73326,
      "source": "freesound:160718",
      "loopStart": 0.25,
-     "loopEnd": 10.25
+     "loopEnd": 10.25,
+     "seamDb": -147.9,
+     "onset": 0,
+     "peakAt": 6.921,
+     "tailEnd": 10.494
     }
    ],
    "desc": "robot servo running (mono)"
@@ -1924,7 +2421,7 @@
    "variations": [
     {
      "file": "loop/static_01.mp3",
-     "duration": 10.0,
+     "duration": 10,
      "peak_db": -13.04,
      "lufs": -23.3,
      "channels": 1,
@@ -1932,7 +2429,11 @@
      "bytes": 74495,
      "source": "freesound:116395",
      "loopStart": 0.25,
-     "loopEnd": 10.25
+     "loopEnd": 10.25,
+     "seamDb": -150.7,
+     "onset": 0,
+     "peakAt": 6.251,
+     "tailEnd": 10.494
     }
    ],
    "desc": "TV static (play through a muffle filter for 'TV in the next room')"
@@ -1948,7 +2449,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 181919,
-     "source": "freesound:635483"
+     "source": "freesound:635483",
+     "onset": 0.002,
+     "peakAt": 12.829,
+     "tailEnd": 23.714
     }
    ],
    "desc": "motorised cart passing in an interior corridor (AGV stand-in)"
@@ -1964,7 +2468,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 19847,
-     "source": "freesound:832414"
+     "source": "freesound:832414",
+     "onset": 0.006,
+     "peakAt": 0.276,
+     "tailEnd": 2.506
     }
    ],
    "desc": "factory warning buzzer"
@@ -1976,11 +2483,14 @@
      "file": "machine/alarm_siren_01.mp3",
      "duration": 28.14,
      "peak_db": -6.04,
-     "lufs": -17.0,
+     "lufs": -17,
      "channels": 2,
      "loop": false,
      "bytes": 380835,
-     "source": "freesound:336640"
+     "source": "freesound:336640",
+     "onset": 0.001,
+     "peakAt": 8.834,
+     "tailEnd": 28.134
     }
    ],
    "desc": "outdoor air-raid siren (heard far away)"
@@ -1991,12 +2501,15 @@
     {
      "file": "machine/forklift_lift_01.mp3",
      "duration": 14.86,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -26.1,
      "channels": 1,
      "loop": false,
      "bytes": 113911,
-     "source": "freesound:493082"
+     "source": "freesound:493082",
+     "onset": 0.001,
+     "peakAt": 14.175,
+     "tailEnd": 14.793
     },
     {
      "file": "machine/forklift_lift_02.mp3",
@@ -2006,7 +2519,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 85581,
-     "source": "freesound:221925"
+     "source": "freesound:221925",
+     "onset": 0.001,
+     "peakAt": 6.392,
+     "tailEnd": 9.862
     }
    ],
    "desc": "electric forklift mast up / down (full sequence)"
@@ -2018,11 +2534,14 @@
      "file": "machine/forklift_start_01.mp3",
      "duration": 10.66,
      "peak_db": -10.8,
-     "lufs": -26.0,
+     "lufs": -26,
      "channels": 1,
      "loop": false,
      "bytes": 88442,
-     "source": "freesound:570979"
+     "source": "freesound:570979",
+     "onset": 0.046,
+     "peakAt": 7.139,
+     "tailEnd": 9.792
     }
    ],
    "desc": "forklift start and shut-off"
@@ -2038,7 +2557,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 29347,
-     "source": "freesound:125064"
+     "source": "freesound:125064",
+     "onset": 0.038,
+     "peakAt": 0.35,
+     "tailEnd": 3.508
     }
    ],
    "desc": "fluorescent tube starter ticking + strike"
@@ -2054,7 +2576,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 61678,
-     "source": "freesound:275163"
+     "source": "freesound:275163",
+     "onset": 0.042,
+     "peakAt": 3.808,
+     "tailEnd": 9.973
     },
     {
      "file": "machine/phone_02.mp3",
@@ -2064,7 +2589,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 88806,
-     "source": "freesound:456433"
+     "source": "freesound:456433",
+     "onset": 5.524,
+     "peakAt": 6.331,
+     "tailEnd": 9.231
     }
    ],
    "desc": "old landline phone ringing"
@@ -2080,7 +2608,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 35089,
-     "source": "freesound:457294"
+     "source": "freesound:457294",
+     "onset": 0.018,
+     "peakAt": 0.218,
+     "tailEnd": 3.287
     },
     {
      "file": "machine/pneumatic_02.mp3",
@@ -2090,17 +2621,23 @@
      "channels": 1,
      "loop": false,
      "bytes": 119340,
-     "source": "freesound:457294"
+     "source": "freesound:457294",
+     "onset": 0.045,
+     "peakAt": 3.69,
+     "tailEnd": 9.371
     },
     {
      "file": "machine/pneumatic_03.mp3",
      "duration": 3.6,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -24.6,
      "channels": 1,
      "loop": false,
      "bytes": 30123,
-     "source": "freesound:341200"
+     "source": "freesound:341200",
+     "onset": 0.005,
+     "peakAt": 0.058,
+     "tailEnd": 3.588
     }
    ],
    "desc": "pneumatic hiss / air release"
@@ -2116,27 +2653,36 @@
      "channels": 1,
      "loop": false,
      "bytes": 14001,
-     "source": "freesound:160719"
+     "source": "freesound:160719",
+     "onset": 0.003,
+     "peakAt": 0.8,
+     "tailEnd": 1.604
     },
     {
      "file": "machine/servo_02.mp3",
      "duration": 1.55,
      "peak_db": -11.26,
-     "lufs": -24.0,
+     "lufs": -24,
      "channels": 1,
      "loop": false,
      "bytes": 13452,
-     "source": "freesound:160719"
+     "source": "freesound:160719",
+     "onset": 0.002,
+     "peakAt": 0.677,
+     "tailEnd": 1.523
     },
     {
      "file": "machine/servo_03.mp3",
      "duration": 1.63,
      "peak_db": -10.34,
-     "lufs": -24.0,
+     "lufs": -24,
      "channels": 1,
      "loop": false,
      "bytes": 14002,
-     "source": "freesound:160719"
+     "source": "freesound:160719",
+     "onset": 0.002,
+     "peakAt": 0.868,
+     "tailEnd": 1.614
     },
     {
      "file": "machine/servo_04.mp3",
@@ -2146,7 +2692,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 12676,
-     "source": "freesound:160719"
+     "source": "freesound:160719",
+     "onset": 0.007,
+     "peakAt": 0.179,
+     "tailEnd": 1.423
     },
     {
      "file": "machine/servo_05.mp3",
@@ -2156,7 +2705,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 14418,
-     "source": "freesound:160719"
+     "source": "freesound:160719",
+     "onset": 0.002,
+     "peakAt": 0.719,
+     "tailEnd": 1.644
     },
     {
      "file": "machine/servo_06.mp3",
@@ -2166,7 +2718,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 13631,
-     "source": "freesound:160719"
+     "source": "freesound:160719",
+     "onset": 0.01,
+     "peakAt": 0.362,
+     "tailEnd": 1.604
     },
     {
      "file": "machine/servo_07.mp3",
@@ -2176,7 +2731,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 13452,
-     "source": "freesound:160719"
+     "source": "freesound:160719",
+     "onset": 0.003,
+     "peakAt": 0.198,
+     "tailEnd": 1.564
     },
     {
      "file": "machine/servo_08.mp3",
@@ -2186,7 +2744,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 13558,
-     "source": "freesound:160719"
+     "source": "freesound:160719",
+     "onset": 0.002,
+     "peakAt": 0.285,
+     "tailEnd": 1.543
     },
     {
      "file": "machine/servo_09.mp3",
@@ -2196,7 +2757,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 12594,
-     "source": "freesound:160719"
+     "source": "freesound:160719",
+     "onset": 0.015,
+     "peakAt": 0.756,
+     "tailEnd": 1.423
     },
     {
      "file": "machine/servo_10.mp3",
@@ -2206,7 +2770,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 99583,
-     "source": "freesound:804931"
+     "source": "freesound:804931",
+     "onset": 0.023,
+     "peakAt": 3.48,
+     "tailEnd": 12.127
     },
     {
      "file": "machine/servo_11.mp3",
@@ -2216,7 +2783,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 96836,
-     "source": "freesound:754342"
+     "source": "freesound:754342",
+     "onset": 0.041,
+     "peakAt": 9.93,
+     "tailEnd": 11.797
     }
    ],
    "desc": "robot arm / servo moves"
@@ -2232,7 +2802,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 10344,
-     "source": "freesound:433742"
+     "source": "freesound:433742",
+     "onset": 0.002,
+     "peakAt": 0.129,
+     "tailEnd": 1.012
     },
     {
      "file": "machine/sorter_clack_02.mp3",
@@ -2242,17 +2815,23 @@
      "channels": 1,
      "loop": false,
      "bytes": 8929,
-     "source": "freesound:433736"
+     "source": "freesound:433736",
+     "onset": 0.018,
+     "peakAt": 0.161,
+     "tailEnd": 0.972
     },
     {
      "file": "machine/sorter_clack_03.mp3",
      "duration": 0.74,
      "peak_db": -9.87,
-     "lufs": -21.0,
+     "lufs": -21,
      "channels": 1,
      "loop": false,
      "bytes": 7244,
-     "source": "freesound:433743"
+     "source": "freesound:433743",
+     "onset": 0.026,
+     "peakAt": 0.106,
+     "tailEnd": 0.692
     },
     {
      "file": "machine/sorter_clack_04.mp3",
@@ -2262,7 +2841,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 32751,
-     "source": "freesound:123253"
+     "source": "freesound:123253",
+     "onset": 0.028,
+     "peakAt": 2.539,
+     "tailEnd": 3.859
     },
     {
      "file": "machine/sorter_clack_05.mp3",
@@ -2272,7 +2854,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 14613,
-     "source": "freesound:454082"
+     "source": "freesound:454082",
+     "onset": 0.001,
+     "peakAt": 0.432,
+     "tailEnd": 1.493
     },
     {
      "file": "machine/sorter_clack_06.mp3",
@@ -2282,7 +2867,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 14402,
-     "source": "freesound:454082"
+     "source": "freesound:454082",
+     "onset": 0.002,
+     "peakAt": 1.039,
+     "tailEnd": 1.493
     }
    ],
    "desc": "sorter / roller diverter clacks and clunks"
@@ -2293,82 +2881,106 @@
     {
      "file": "step/asphalt_01.mp3",
      "duration": 0.29,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -28.7,
      "channels": 1,
      "loop": false,
      "bytes": 3724,
-     "source": "freesound:637556"
+     "source": "freesound:637556",
+     "onset": 0.047,
+     "peakAt": 0.053,
+     "tailEnd": 0.271
     },
     {
      "file": "step/asphalt_02.mp3",
      "duration": 0.29,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -27.9,
      "channels": 1,
      "loop": false,
      "bytes": 3698,
-     "source": "freesound:637556"
+     "source": "freesound:637556",
+     "onset": 0.044,
+     "peakAt": 0.045,
+     "tailEnd": 0.271
     },
     {
      "file": "step/asphalt_03.mp3",
      "duration": 0.29,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -28.2,
      "channels": 1,
      "loop": false,
      "bytes": 3672,
-     "source": "freesound:637556"
+     "source": "freesound:637556",
+     "onset": 0.03,
+     "peakAt": 0.05,
+     "tailEnd": 0.271
     },
     {
      "file": "step/asphalt_04.mp3",
      "duration": 0.24,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -27.9,
      "channels": 1,
      "loop": false,
      "bytes": 3362,
-     "source": "freesound:637556"
+     "source": "freesound:637556",
+     "onset": 0.048,
+     "peakAt": 0.049,
+     "tailEnd": 0.22
     },
     {
      "file": "step/asphalt_05.mp3",
      "duration": 0.26,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -28.4,
      "channels": 1,
      "loop": false,
      "bytes": 3178,
-     "source": "freesound:637556"
+     "source": "freesound:637556",
+     "onset": 0.049,
+     "peakAt": 0.05,
+     "tailEnd": 0.241
     },
     {
      "file": "step/asphalt_06.mp3",
      "duration": 0.45,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -31.2,
      "channels": 1,
      "loop": false,
      "bytes": 4921,
-     "source": "freesound:637556"
+     "source": "freesound:637556",
+     "onset": 0.043,
+     "peakAt": 0.044,
+     "tailEnd": 0.431
     },
     {
      "file": "step/asphalt_07.mp3",
      "duration": 0.45,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -28.8,
      "channels": 1,
      "loop": false,
      "bytes": 5103,
-     "source": "freesound:637556"
+     "source": "freesound:637556",
+     "onset": 0.042,
+     "peakAt": 0.044,
+     "tailEnd": 0.441
     },
     {
      "file": "step/asphalt_08.mp3",
      "duration": 0.45,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -29.4,
      "channels": 1,
      "loop": false,
      "bytes": 4660,
-     "source": "freesound:637556"
+     "source": "freesound:637556",
+     "onset": 0.041,
+     "peakAt": 0.042,
+     "tailEnd": 0.431
     }
    ],
    "desc": "hard shoes on asphalt outside"
@@ -2379,202 +2991,262 @@
     {
      "file": "step/concrete_01.mp3",
      "duration": 0.32,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -28.2,
      "channels": 1,
      "loop": false,
      "bytes": 3254,
-     "source": "freesound:459964"
+     "source": "freesound:459964",
+     "onset": 0.014,
+     "peakAt": 0.015,
+     "tailEnd": 0.17
     },
     {
      "file": "step/concrete_02.mp3",
      "duration": 0.45,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -27.9,
      "channels": 1,
      "loop": false,
      "bytes": 4818,
-     "source": "freesound:459964"
+     "source": "freesound:459964",
+     "onset": 0.045,
+     "peakAt": 0.059,
+     "tailEnd": 0.421
     },
     {
      "file": "step/concrete_03.mp3",
      "duration": 0.34,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -24.4,
      "channels": 1,
      "loop": false,
      "bytes": 3722,
-     "source": "freesound:459964"
+     "source": "freesound:459964",
+     "onset": 0.043,
+     "peakAt": 0.047,
+     "tailEnd": 0.281
     },
     {
      "file": "step/concrete_04.mp3",
      "duration": 0.41,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -26.2,
      "channels": 1,
      "loop": false,
      "bytes": 4870,
-     "source": "freesound:459964"
+     "source": "freesound:459964",
+     "onset": 0.045,
+     "peakAt": 0.046,
+     "tailEnd": 0.391
     },
     {
      "file": "step/concrete_05.mp3",
      "duration": 0.34,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -30.2,
      "channels": 1,
      "loop": false,
      "bytes": 4507,
-     "source": "freesound:459964"
+     "source": "freesound:459964",
+     "onset": 0.047,
+     "peakAt": 0.149,
+     "tailEnd": 0.311
     },
     {
      "file": "step/concrete_06.mp3",
      "duration": 0.39,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -27.9,
      "channels": 1,
      "loop": false,
      "bytes": 4035,
-     "source": "freesound:459964"
+     "source": "freesound:459964",
+     "onset": 0.041,
+     "peakAt": 0.08,
+     "tailEnd": 0.241
     },
     {
      "file": "step/concrete_07.mp3",
      "duration": 0.33,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -23.8,
      "channels": 1,
      "loop": false,
      "bytes": 3932,
-     "source": "freesound:459964"
+     "source": "freesound:459964",
+     "onset": 0.043,
+     "peakAt": 0.131,
+     "tailEnd": 0.271
     },
     {
      "file": "step/concrete_08.mp3",
      "duration": 0.43,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -27.5,
      "channels": 1,
      "loop": false,
      "bytes": 4557,
-     "source": "freesound:459964"
+     "source": "freesound:459964",
+     "onset": 0.049,
+     "peakAt": 0.077,
+     "tailEnd": 0.371
     },
     {
      "file": "step/concrete_09.mp3",
      "duration": 0.32,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -27.1,
      "channels": 1,
      "loop": false,
      "bytes": 3515,
-     "source": "freesound:459964"
+     "source": "freesound:459964",
+     "onset": 0.019,
+     "peakAt": 0.048,
+     "tailEnd": 0.21
     },
     {
      "file": "step/concrete_10.mp3",
      "duration": 0.19,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -25.1,
      "channels": 1,
      "loop": false,
      "bytes": 2475,
-     "source": "freesound:521590"
+     "source": "freesound:521590",
+     "onset": 0.041,
+     "peakAt": 0.042,
+     "tailEnd": 0.15
     },
     {
      "file": "step/concrete_11.mp3",
      "duration": 0.27,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -27.6,
      "channels": 1,
      "loop": false,
      "bytes": 2890,
-     "source": "freesound:521590"
+     "source": "freesound:521590",
+     "onset": 0.047,
+     "peakAt": 0.049,
+     "tailEnd": 0.11
     },
     {
      "file": "step/concrete_12.mp3",
      "duration": 0.27,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -26.8,
      "channels": 1,
      "loop": false,
      "bytes": 2916,
-     "source": "freesound:521590"
+     "source": "freesound:521590",
+     "onset": 0.041,
+     "peakAt": 0.051,
+     "tailEnd": 0.12
     },
     {
      "file": "step/concrete_13.mp3",
      "duration": 0.33,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -29.8,
      "channels": 1,
      "loop": false,
      "bytes": 3462,
-     "source": "freesound:521590"
+     "source": "freesound:521590",
+     "onset": 0.043,
+     "peakAt": 0.043,
+     "tailEnd": 0.18
     },
     {
      "file": "step/concrete_14.mp3",
      "duration": 0.35,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -31.2,
      "channels": 1,
      "loop": false,
      "bytes": 3568,
-     "source": "freesound:521590"
+     "source": "freesound:521590",
+     "onset": 0.041,
+     "peakAt": 0.042,
+     "tailEnd": 0.251
     },
     {
      "file": "step/concrete_15.mp3",
      "duration": 0.31,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -29.7,
      "channels": 1,
      "loop": false,
      "bytes": 3020,
-     "source": "freesound:521590"
+     "source": "freesound:521590",
+     "onset": 0.049,
+     "peakAt": 0.05,
+     "tailEnd": 0.21
     },
     {
      "file": "step/concrete_16.mp3",
      "duration": 0.1,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -23.9,
      "channels": 1,
      "loop": false,
      "bytes": 1511,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0,
+     "peakAt": 0.002,
+     "tailEnd": 0.09
     },
     {
      "file": "step/concrete_17.mp3",
      "duration": 0.1,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -23.1,
      "channels": 1,
      "loop": false,
      "bytes": 1590,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0,
+     "peakAt": 0.001,
+     "tailEnd": 0.09
     },
     {
      "file": "step/concrete_18.mp3",
      "duration": 0.1,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -23.4,
      "channels": 1,
      "loop": false,
      "bytes": 1590,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0,
+     "peakAt": 0.001,
+     "tailEnd": 0.09
     },
     {
      "file": "step/concrete_19.mp3",
      "duration": 0.1,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -23.9,
      "channels": 1,
      "loop": false,
      "bytes": 1564,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0,
+     "peakAt": 0.001,
+     "tailEnd": 0.09
     },
     {
      "file": "step/concrete_20.mp3",
      "duration": 0.11,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -23.8,
      "channels": 1,
      "loop": false,
      "bytes": 1615,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0,
+     "peakAt": 0.001,
+     "tailEnd": 0.1
     }
    ],
    "desc": "boots on concrete"
@@ -2585,122 +3257,158 @@
     {
      "file": "step/gravel_01.mp3",
      "duration": 0.61,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -23.1,
      "channels": 1,
      "loop": false,
      "bytes": 6615,
-     "source": "freesound:353799"
+     "source": "freesound:353799",
+     "onset": 0.043,
+     "peakAt": 0.142,
+     "tailEnd": 0.521
     },
     {
      "file": "step/gravel_02.mp3",
      "duration": 0.63,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -21.7,
      "channels": 1,
      "loop": false,
      "bytes": 6798,
-     "source": "freesound:353799"
+     "source": "freesound:353799",
+     "onset": 0.042,
+     "peakAt": 0.119,
+     "tailEnd": 0.601
     },
     {
      "file": "step/gravel_03.mp3",
      "duration": 0.6,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -28.6,
      "channels": 1,
      "loop": false,
      "bytes": 5910,
-     "source": "freesound:353799"
+     "source": "freesound:353799",
+     "onset": 0.047,
+     "peakAt": 0.051,
+     "tailEnd": 0.561
     },
     {
      "file": "step/gravel_04.mp3",
      "duration": 0.56,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -26.7,
      "channels": 1,
      "loop": false,
      "bytes": 6043,
-     "source": "freesound:353799"
+     "source": "freesound:353799",
+     "onset": 0.042,
+     "peakAt": 0.2,
+     "tailEnd": 0.501
     },
     {
      "file": "step/gravel_05.mp3",
      "duration": 0.56,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -23.1,
      "channels": 1,
      "loop": false,
      "bytes": 5781,
-     "source": "freesound:353799"
+     "source": "freesound:353799",
+     "onset": 0.041,
+     "peakAt": 0.238,
+     "tailEnd": 0.491
     },
     {
      "file": "step/gravel_06.mp3",
      "duration": 0.61,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -24.7,
      "channels": 1,
      "loop": false,
      "bytes": 6275,
-     "source": "freesound:353799"
+     "source": "freesound:353799",
+     "onset": 0.042,
+     "peakAt": 0.253,
+     "tailEnd": 0.511
     },
     {
      "file": "step/gravel_07.mp3",
      "duration": 0.29,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -29.7,
      "channels": 1,
      "loop": false,
      "bytes": 3726,
-     "source": "freesound:688594"
+     "source": "freesound:688594",
+     "onset": 0.003,
+     "peakAt": 0.081,
+     "tailEnd": 0.281
     },
     {
      "file": "step/gravel_08.mp3",
      "duration": 0.45,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -31.1,
      "channels": 1,
      "loop": false,
      "bytes": 5183,
-     "source": "freesound:688594"
+     "source": "freesound:688594",
+     "onset": 0.002,
+     "peakAt": 0.055,
+     "tailEnd": 0.441
     },
     {
      "file": "step/gravel_09.mp3",
      "duration": 0.36,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -30.9,
      "channels": 1,
      "loop": false,
      "bytes": 4742,
-     "source": "freesound:688594"
+     "source": "freesound:688594",
+     "onset": 0.016,
+     "peakAt": 0.086,
+     "tailEnd": 0.351
     },
     {
      "file": "step/gravel_10.mp3",
      "duration": 0.33,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -29.4,
      "channels": 1,
      "loop": false,
      "bytes": 4509,
-     "source": "freesound:688594"
+     "source": "freesound:688594",
+     "onset": 0.001,
+     "peakAt": 0.041,
+     "tailEnd": 0.321
     },
     {
      "file": "step/gravel_11.mp3",
      "duration": 0.42,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -27.3,
      "channels": 1,
      "loop": false,
      "bytes": 5787,
-     "source": "freesound:688594"
+     "source": "freesound:688594",
+     "onset": 0.023,
+     "peakAt": 0.185,
+     "tailEnd": 0.411
     },
     {
      "file": "step/gravel_12.mp3",
      "duration": 0.4,
-     "peak_db": -4.0,
-     "lufs": -28.0,
+     "peak_db": -4,
+     "lufs": -28,
      "channels": 1,
      "loop": false,
      "bytes": 4584,
-     "source": "freesound:688594"
+     "source": "freesound:688594",
+     "onset": 0.032,
+     "peakAt": 0.124,
+     "tailEnd": 0.381
     }
    ],
    "desc": "gravel / dirt outside"
@@ -2711,222 +3419,288 @@
     {
      "file": "step/metal_01.mp3",
      "duration": 0.6,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -28.5,
      "channels": 1,
      "loop": false,
      "bytes": 4632,
-     "source": "freesound:698697"
+     "source": "freesound:698697",
+     "onset": 0.002,
+     "peakAt": 0.002,
+     "tailEnd": 0.561
     },
     {
      "file": "step/metal_02.mp3",
      "duration": 0.6,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -27.2,
      "channels": 1,
      "loop": false,
      "bytes": 4683,
-     "source": "freesound:698697"
+     "source": "freesound:698697",
+     "onset": 0.041,
+     "peakAt": 0.044,
+     "tailEnd": 0.451
     },
     {
      "file": "step/metal_03.mp3",
      "duration": 0.6,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -27.6,
      "channels": 1,
      "loop": false,
      "bytes": 4657,
-     "source": "freesound:698697"
+     "source": "freesound:698697",
+     "onset": 0.044,
+     "peakAt": 0.046,
+     "tailEnd": 0.581
     },
     {
      "file": "step/metal_04.mp3",
      "duration": 0.6,
-     "peak_db": -4.0,
-     "lufs": -29.0,
+     "peak_db": -4,
+     "lufs": -29,
      "channels": 1,
      "loop": false,
      "bytes": 4501,
-     "source": "freesound:698697"
+     "source": "freesound:698697",
+     "onset": 0.044,
+     "peakAt": 0.047,
+     "tailEnd": 0.571
     },
     {
      "file": "step/metal_05.mp3",
      "duration": 0.6,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -28.3,
      "channels": 1,
      "loop": false,
      "bytes": 4371,
-     "source": "freesound:698697"
+     "source": "freesound:698697",
+     "onset": 0.049,
+     "peakAt": 0.052,
+     "tailEnd": 0.571
     },
     {
      "file": "step/metal_06.mp3",
      "duration": 0.6,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -26.2,
      "channels": 1,
      "loop": false,
      "bytes": 4267,
-     "source": "freesound:698697"
+     "source": "freesound:698697",
+     "onset": 0.041,
+     "peakAt": 0.043,
+     "tailEnd": 0.501
     },
     {
      "file": "step/metal_07.mp3",
      "duration": 0.6,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -27.5,
      "channels": 1,
      "loop": false,
      "bytes": 4424,
-     "source": "freesound:698697"
+     "source": "freesound:698697",
+     "onset": 0.042,
+     "peakAt": 0.044,
+     "tailEnd": 0.511
     },
     {
      "file": "step/metal_08.mp3",
      "duration": 0.39,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -27.1,
      "channels": 1,
      "loop": false,
      "bytes": 4010,
-     "source": "freesound:398937"
+     "source": "freesound:398937",
+     "onset": 0.049,
+     "peakAt": 0.051,
+     "tailEnd": 0.281
     },
     {
      "file": "step/metal_09.mp3",
      "duration": 0.5,
-     "peak_db": -4.0,
-     "lufs": -29.0,
+     "peak_db": -4,
+     "lufs": -29,
      "channels": 1,
      "loop": false,
      "bytes": 4971,
-     "source": "freesound:398937"
+     "source": "freesound:398937",
+     "onset": 0.044,
+     "peakAt": 0.045,
+     "tailEnd": 0.471
     },
     {
      "file": "step/metal_10.mp3",
      "duration": 0.5,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -21.6,
      "channels": 1,
      "loop": false,
      "bytes": 5810,
-     "source": "freesound:398937"
+     "source": "freesound:398937",
+     "onset": 0.044,
+     "peakAt": 0.33,
+     "tailEnd": 0.491
     },
     {
      "file": "step/metal_11.mp3",
      "duration": 0.5,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -28.2,
      "channels": 1,
      "loop": false,
      "bytes": 5495,
-     "source": "freesound:398937"
+     "source": "freesound:398937",
+     "onset": 0.041,
+     "peakAt": 0.042,
+     "tailEnd": 0.481
     },
     {
      "file": "step/metal_12.mp3",
      "duration": 0.43,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -23.5,
      "channels": 1,
      "loop": false,
      "bytes": 4843,
-     "source": "freesound:398937"
+     "source": "freesound:398937",
+     "onset": 0.04,
+     "peakAt": 0.041,
+     "tailEnd": 0.401
     },
     {
      "file": "step/metal_13.mp3",
      "duration": 0.5,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -25.5,
      "channels": 1,
      "loop": false,
      "bytes": 4998,
-     "source": "freesound:398937"
+     "source": "freesound:398937",
+     "onset": 0.044,
+     "peakAt": 0.234,
+     "tailEnd": 0.421
     },
     {
      "file": "step/metal_14.mp3",
      "duration": 0.5,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -25.3,
      "channels": 1,
      "loop": false,
      "bytes": 5023,
-     "source": "freesound:398937"
+     "source": "freesound:398937",
+     "onset": 0.046,
+     "peakAt": 0.048,
+     "tailEnd": 0.481
     },
     {
      "file": "step/metal_15.mp3",
      "duration": 0.5,
-     "peak_db": -4.0,
-     "lufs": -27.0,
+     "peak_db": -4,
+     "lufs": -27,
      "channels": 1,
      "loop": false,
      "bytes": 5182,
-     "source": "freesound:398937"
+     "source": "freesound:398937",
+     "onset": 0.153,
+     "peakAt": 0.327,
+     "tailEnd": 0.481
     },
     {
      "file": "step/metal_16.mp3",
      "duration": 0.5,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -24.6,
      "channels": 1,
      "loop": false,
      "bytes": 5180,
-     "source": "freesound:398937"
+     "source": "freesound:398937",
+     "onset": 0.054,
+     "peakAt": 0.443,
+     "tailEnd": 0.491
     },
     {
      "file": "step/metal_17.mp3",
      "duration": 0.5,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -24.7,
      "channels": 1,
      "loop": false,
      "bytes": 5310,
-     "source": "freesound:452421"
+     "source": "freesound:452421",
+     "onset": 0.04,
+     "peakAt": 0.042,
+     "tailEnd": 0.491
     },
     {
      "file": "step/metal_18.mp3",
      "duration": 0.5,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -24.4,
      "channels": 1,
      "loop": false,
      "bytes": 5208,
-     "source": "freesound:452421"
+     "source": "freesound:452421",
+     "onset": 0.003,
+     "peakAt": 0.05,
+     "tailEnd": 0.491
     },
     {
      "file": "step/metal_19.mp3",
      "duration": 0.46,
-     "peak_db": -4.0,
-     "lufs": -24.0,
+     "peak_db": -4,
+     "lufs": -24,
      "channels": 1,
      "loop": false,
      "bytes": 4974,
-     "source": "freesound:452421"
+     "source": "freesound:452421",
+     "onset": 0.002,
+     "peakAt": 0.042,
+     "tailEnd": 0.451
     },
     {
      "file": "step/metal_20.mp3",
      "duration": 0.33,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -23.3,
      "channels": 1,
      "loop": false,
      "bytes": 3880,
-     "source": "freesound:452421"
+     "source": "freesound:452421",
+     "onset": 0.003,
+     "peakAt": 0.041,
+     "tailEnd": 0.321
     },
     {
      "file": "step/metal_21.mp3",
      "duration": 0.37,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -26.9,
      "channels": 1,
      "loop": false,
      "bytes": 4165,
-     "source": "freesound:452421"
+     "source": "freesound:452421",
+     "onset": 0.004,
+     "peakAt": 0.041,
+     "tailEnd": 0.361
     },
     {
      "file": "step/metal_22.mp3",
      "duration": 0.36,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -26.2,
      "channels": 1,
      "loop": false,
      "bytes": 3879,
-     "source": "freesound:452421"
+     "source": "freesound:452421",
+     "onset": 0.007,
+     "peakAt": 0.066,
+     "tailEnd": 0.351
     }
    ],
    "desc": "boots on steel grating / mezzanine / stairs"
@@ -2937,52 +3711,67 @@
     {
      "file": "step/wood_01.mp3",
      "duration": 0.26,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -26.9,
      "channels": 1,
      "loop": false,
      "bytes": 1900,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.001,
+     "peakAt": 0.003,
+     "tailEnd": 0.241
     },
     {
      "file": "step/wood_02.mp3",
      "duration": 0.24,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -25.4,
      "channels": 1,
      "loop": false,
      "bytes": 1900,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.001,
+     "peakAt": 0.003,
+     "tailEnd": 0.21
     },
     {
      "file": "step/wood_03.mp3",
      "duration": 0.24,
-     "peak_db": -4.0,
-     "lufs": -25.0,
+     "peak_db": -4,
+     "lufs": -25,
      "channels": 1,
      "loop": false,
      "bytes": 1900,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.001,
+     "peakAt": 0.003,
+     "tailEnd": 0.22
     },
     {
      "file": "step/wood_04.mp3",
      "duration": 0.24,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -27.4,
      "channels": 1,
      "loop": false,
      "bytes": 1926,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.001,
+     "peakAt": 0.002,
+     "tailEnd": 0.22
     },
     {
      "file": "step/wood_05.mp3",
      "duration": 0.24,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -25.5,
      "channels": 1,
      "loop": false,
      "bytes": 1874,
-     "source": "kenney:impact-sounds"
+     "source": "kenney:impact-sounds",
+     "onset": 0.001,
+     "peakAt": 0.003,
+     "tailEnd": 0.22
     }
    ],
    "desc": "boots on wooden floor / pallets"
@@ -2999,7 +3788,10 @@
      "loop": false,
      "bytes": 5680,
      "source": "freesound:457973",
-     "text": "Hey!"
+     "text": "Hey!",
+     "onset": 0.024,
+     "peakAt": 0.256,
+     "tailEnd": 0.511
     },
     {
      "file": "voice/alert_02.mp3",
@@ -3010,7 +3802,10 @@
      "loop": false,
      "bytes": 6281,
      "source": "freesound:457973",
-     "text": "Hey!"
+     "text": "Hey!",
+     "onset": 0.033,
+     "peakAt": 0.254,
+     "tailEnd": 0.491
     },
     {
      "file": "voice/alert_03.mp3",
@@ -3021,7 +3816,10 @@
      "loop": false,
      "bytes": 7169,
      "source": "freesound:457973",
-     "text": "Hey!"
+     "text": "Hey!",
+     "onset": 0.037,
+     "peakAt": 0.146,
+     "tailEnd": 0.631
     },
     {
      "file": "voice/alert_04.mp3",
@@ -3032,7 +3830,10 @@
      "loop": false,
      "bytes": 4321,
      "source": "freesound:345083",
-     "text": "Hey!"
+     "text": "Hey!",
+     "onset": 0.061,
+     "peakAt": 0.117,
+     "tailEnd": 0.421
     },
     {
      "file": "voice/alert_05.mp3",
@@ -3043,7 +3844,10 @@
      "loop": false,
      "bytes": 13359,
      "source": "freesound:219719",
-     "text": "(wordless shout)"
+     "text": "(wordless shout)",
+     "onset": 0.037,
+     "peakAt": 0.105,
+     "tailEnd": 1.293
     },
     {
      "file": "voice/alert_06.mp3",
@@ -3054,18 +3858,24 @@
      "loop": false,
      "bytes": 8989,
      "source": "freesound:203594",
-     "text": "(angry yell)"
+     "text": "(angry yell)",
+     "onset": 0.048,
+     "peakAt": 0.275,
+     "tailEnd": 0.812
     },
     {
      "file": "voice/alert_07.mp3",
      "duration": 1.66,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -19.3,
      "channels": 1,
      "loop": false,
      "bytes": 18841,
      "source": "freesound:527737",
-     "text": "(angry shout)"
+     "text": "(angry shout)",
+     "onset": 0.043,
+     "peakAt": 0.903,
+     "tailEnd": 1.574
     },
     {
      "file": "voice/alert_08.mp3",
@@ -3076,18 +3886,24 @@
      "loop": false,
      "bytes": 11257,
      "source": "freesound:527737",
-     "text": "(angry shout)"
+     "text": "(angry shout)",
+     "onset": 0.038,
+     "peakAt": 0.64,
+     "tailEnd": 0.902
     },
     {
      "file": "voice/alert_09.mp3",
      "duration": 0.75,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -18.8,
      "channels": 1,
      "loop": false,
      "bytes": 7079,
      "source": "freesound:527737",
-     "text": "(angry shout)"
+     "text": "(angry shout)",
+     "onset": 0.043,
+     "peakAt": 0.513,
+     "tailEnd": 0.712
     }
    ],
    "desc": "enemy spots the player: shouted 'hey!' / wordless alarm yells"
@@ -3098,32 +3914,41 @@
     {
      "file": "voice/breath_panic_01.mp3",
      "duration": 7.11,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -32.3,
      "channels": 1,
      "loop": false,
      "bytes": 57411,
-     "source": "freesound:317478"
+     "source": "freesound:317478",
+     "onset": 0.044,
+     "peakAt": 0.065,
+     "tailEnd": 7.056
     },
     {
      "file": "voice/breath_panic_02.mp3",
      "duration": 5.77,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -36.3,
      "channels": 1,
      "loop": false,
      "bytes": 47345,
-     "source": "freesound:317477"
+     "source": "freesound:317477",
+     "onset": 0.012,
+     "peakAt": 3.671,
+     "tailEnd": 5.753
     },
     {
      "file": "voice/breath_panic_03.mp3",
      "duration": 4.68,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -24.9,
      "channels": 1,
      "loop": false,
      "bytes": 41003,
-     "source": "freesound:716947"
+     "source": "freesound:716947",
+     "onset": 0.002,
+     "peakAt": 2.702,
+     "tailEnd": 4.47
     }
    ],
    "desc": "panicked / out-of-breath enemy (one-shot phrases)"
@@ -3140,7 +3965,10 @@
      "loop": false,
      "bytes": 7192,
      "source": "freesound:814225",
-     "text": "Hit 'em!"
+     "text": "Hit 'em!",
+     "onset": 0.046,
+     "peakAt": 0.315,
+     "tailEnd": 0.581
     },
     {
      "file": "voice/command_02.mp3",
@@ -3151,7 +3979,10 @@
      "loop": false,
      "bytes": 11548,
      "source": "freesound:814223",
-     "text": "Covering fire!"
+     "text": "Covering fire!",
+     "onset": 0.053,
+     "peakAt": 0.355,
+     "tailEnd": 1.062
     },
     {
      "file": "voice/command_03.mp3",
@@ -3162,7 +3993,10 @@
      "loop": false,
      "bytes": 8967,
      "source": "freesound:814226",
-     "text": "Take cover!"
+     "text": "Take cover!",
+     "onset": 0.042,
+     "peakAt": 0.193,
+     "tailEnd": 0.832
     },
     {
      "file": "voice/command_04.mp3",
@@ -3173,7 +4007,10 @@
      "loop": false,
      "bytes": 11312,
      "source": "freesound:800876",
-     "text": "Incoming!"
+     "text": "Incoming!",
+     "onset": 0.036,
+     "peakAt": 0.267,
+     "tailEnd": 1.062
     },
     {
      "file": "voice/command_05.mp3",
@@ -3184,7 +4021,10 @@
      "loop": false,
      "bytes": 7898,
      "source": "freesound:800863",
-     "text": "Guns up!"
+     "text": "Guns up!",
+     "onset": 0.064,
+     "peakAt": 0.145,
+     "tailEnd": 0.732
     },
     {
      "file": "voice/command_06.mp3",
@@ -3195,18 +4035,24 @@
      "loop": false,
      "bytes": 18763,
      "source": "freesound:800864",
-     "text": "Fire, right side!"
+     "text": "Fire, right side!",
+     "onset": 0.041,
+     "peakAt": 1.595,
+     "tailEnd": 1.914
     },
     {
      "file": "voice/command_07.mp3",
      "duration": 2.64,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -19.8,
      "channels": 1,
      "loop": false,
      "bytes": 26074,
      "source": "freesound:875075",
-     "text": "Shoot him in the leg!"
+     "text": "Shoot him in the leg!",
+     "onset": 0.269,
+     "peakAt": 1.579,
+     "tailEnd": 2.536
     }
    ],
    "desc": "combat callouts for enemies (English)"
@@ -3217,42 +4063,54 @@
     {
      "file": "voice/cough_01.mp3",
      "duration": 1.29,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -18.6,
      "channels": 1,
      "loop": false,
      "bytes": 12635,
-     "source": "freesound:184871"
+     "source": "freesound:184871",
+     "onset": 0.045,
+     "peakAt": 0.644,
+     "tailEnd": 1.223
     },
     {
      "file": "voice/cough_02.mp3",
      "duration": 1.4,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -19.3,
      "channels": 1,
      "loop": false,
      "bytes": 13073,
-     "source": "freesound:184871"
+     "source": "freesound:184871",
+     "onset": 0.007,
+     "peakAt": 0.119,
+     "tailEnd": 1.283
     },
     {
      "file": "voice/cough_03.mp3",
      "duration": 1.39,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -18.2,
      "channels": 1,
      "loop": false,
      "bytes": 13494,
-     "source": "freesound:184871"
+     "source": "freesound:184871",
+     "onset": 0.038,
+     "peakAt": 0.346,
+     "tailEnd": 1.343
     },
     {
      "file": "voice/cough_04.mp3",
      "duration": 1.33,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -24.1,
      "channels": 1,
      "loop": false,
      "bytes": 12422,
-     "source": "freesound:184871"
+     "source": "freesound:184871",
+     "onset": 0.032,
+     "peakAt": 0.162,
+     "tailEnd": 1.253
     },
     {
      "file": "voice/cough_05.mp3",
@@ -3262,7 +4120,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 16820,
-     "source": "freesound:51136"
+     "source": "freesound:51136",
+     "onset": 0.046,
+     "peakAt": 0.234,
+     "tailEnd": 1.864
     },
     {
      "file": "voice/cough_06.mp3",
@@ -3272,7 +4133,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 5076,
-     "source": "freesound:51136"
+     "source": "freesound:51136",
+     "onset": 0.046,
+     "peakAt": 0.068,
+     "tailEnd": 0.481
     },
     {
      "file": "voice/cough_07.mp3",
@@ -3282,57 +4146,75 @@
      "channels": 1,
      "loop": false,
      "bytes": 8508,
-     "source": "freesound:743360"
+     "source": "freesound:743360",
+     "onset": 0.038,
+     "peakAt": 0.377,
+     "tailEnd": 0.802
     },
     {
      "file": "voice/cough_08.mp3",
      "duration": 1.42,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -22.4,
      "channels": 1,
      "loop": false,
      "bytes": 11555,
-     "source": "freesound:146873"
+     "source": "freesound:146873",
+     "onset": 0.054,
+     "peakAt": 0.5,
+     "tailEnd": 1.243
     },
     {
      "file": "voice/cough_09.mp3",
      "duration": 2.11,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -19.4,
      "channels": 1,
      "loop": false,
      "bytes": 19485,
-     "source": "freesound:369295"
+     "source": "freesound:369295",
+     "onset": 0.038,
+     "peakAt": 0.536,
+     "tailEnd": 2.085
     },
     {
      "file": "voice/cough_10.mp3",
      "duration": 1.49,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -20.8,
      "channels": 1,
      "loop": false,
      "bytes": 13859,
-     "source": "freesound:369295"
+     "source": "freesound:369295",
+     "onset": 0.04,
+     "peakAt": 0.062,
+     "tailEnd": 1.473
     },
     {
      "file": "voice/cough_11.mp3",
      "duration": 1.13,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -19.5,
      "channels": 1,
      "loop": false,
      "bytes": 10624,
-     "source": "freesound:369295"
+     "source": "freesound:369295",
+     "onset": 0.046,
+     "peakAt": 0.314,
+     "tailEnd": 1.113
     },
     {
      "file": "voice/cough_12.mp3",
      "duration": 0.51,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -20.7,
      "channels": 1,
      "loop": false,
      "bytes": 5365,
-     "source": "freesound:814222"
+     "source": "freesound:814222",
+     "onset": 0.002,
+     "peakAt": 0.388,
+     "tailEnd": 0.501
     },
     {
      "file": "voice/cough_13.mp3",
@@ -3342,7 +4224,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 29985,
-     "source": "freesound:814222"
+     "source": "freesound:814222",
+     "onset": 0.043,
+     "peakAt": 0.367,
+     "tailEnd": 3.277
     },
     {
      "file": "voice/cough_14.mp3",
@@ -3352,7 +4237,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 15806,
-     "source": "freesound:827098"
+     "source": "freesound:827098",
+     "onset": 0.047,
+     "peakAt": 0.577,
+     "tailEnd": 1.343
     }
    ],
    "desc": "coughs (dust, smoker)"
@@ -3368,17 +4256,23 @@
      "channels": 1,
      "loop": false,
      "bytes": 11568,
-     "source": "freesound:547182"
+     "source": "freesound:547182",
+     "onset": 0.036,
+     "peakAt": 0.373,
+     "tailEnd": 1.153
     },
     {
      "file": "voice/death_02.mp3",
-     "duration": 1.0,
+     "duration": 1,
      "peak_db": -4.22,
      "lufs": -18.1,
      "channels": 1,
      "loop": false,
      "bytes": 9188,
-     "source": "freesound:345456"
+     "source": "freesound:345456",
+     "onset": 0.041,
+     "peakAt": 0.255,
+     "tailEnd": 0.842
     },
     {
      "file": "voice/death_03.mp3",
@@ -3388,17 +4282,23 @@
      "channels": 1,
      "loop": false,
      "bytes": 14144,
-     "source": "freesound:345451"
+     "source": "freesound:345451",
+     "onset": 0.039,
+     "peakAt": 0.623,
+     "tailEnd": 1.513
     },
     {
      "file": "voice/death_04.mp3",
      "duration": 1.81,
      "peak_db": -4.94,
-     "lufs": -17.0,
+     "lufs": -17,
      "channels": 1,
      "loop": false,
      "bytes": 14620,
-     "source": "freesound:345455"
+     "source": "freesound:345455",
+     "onset": 0.038,
+     "peakAt": 0.614,
+     "tailEnd": 1.734
     },
     {
      "file": "voice/death_05.mp3",
@@ -3408,7 +4308,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 14677,
-     "source": "freesound:345434"
+     "source": "freesound:345434",
+     "onset": 0.042,
+     "peakAt": 0.103,
+     "tailEnd": 1.724
     },
     {
      "file": "voice/death_06.mp3",
@@ -3418,7 +4321,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 9665,
-     "source": "freesound:396798"
+     "source": "freesound:396798",
+     "onset": 0.003,
+     "peakAt": 0.213,
+     "tailEnd": 0.982
     },
     {
      "file": "voice/death_07.mp3",
@@ -3428,7 +4334,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 11538,
-     "source": "freesound:396799"
+     "source": "freesound:396799",
+     "onset": 0.01,
+     "peakAt": 0.271,
+     "tailEnd": 1.193
     },
     {
      "file": "voice/death_08.mp3",
@@ -3438,7 +4347,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 23605,
-     "source": "freesound:396800"
+     "source": "freesound:396800",
+     "onset": 0.002,
+     "peakAt": 0.111,
+     "tailEnd": 2.085
     },
     {
      "file": "voice/death_09.mp3",
@@ -3448,7 +4360,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 12147,
-     "source": "freesound:800871"
+     "source": "freesound:800871",
+     "onset": 0.061,
+     "peakAt": 0.474,
+     "tailEnd": 1.163
     },
     {
      "file": "voice/death_10.mp3",
@@ -3458,7 +4373,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 7376,
-     "source": "freesound:800870"
+     "source": "freesound:800870",
+     "onset": 0.068,
+     "peakAt": 0.366,
+     "tailEnd": 0.631
     },
     {
      "file": "voice/death_11.mp3",
@@ -3468,7 +4386,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 15298,
-     "source": "freesound:221544"
+     "source": "freesound:221544",
+     "onset": 0.104,
+     "peakAt": 0.429,
+     "tailEnd": 1.293
     },
     {
      "file": "voice/death_12.mp3",
@@ -3478,7 +4399,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 41773,
-     "source": "freesound:243377"
+     "source": "freesound:243377",
+     "onset": 0.071,
+     "peakAt": 0.455,
+     "tailEnd": 4.55
     },
     {
      "file": "voice/death_13.mp3",
@@ -3488,7 +4412,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 26199,
-     "source": "freesound:243376"
+     "source": "freesound:243376",
+     "onset": 0.051,
+     "peakAt": 0.47,
+     "tailEnd": 2.866
     },
     {
      "file": "voice/death_14.mp3",
@@ -3498,17 +4425,23 @@
      "channels": 1,
      "loop": false,
      "bytes": 28216,
-     "source": "freesound:243381"
+     "source": "freesound:243381",
+     "onset": 0.048,
+     "peakAt": 0.123,
+     "tailEnd": 2.315
     },
     {
      "file": "voice/death_15.mp3",
      "duration": 2.07,
      "peak_db": -6.91,
-     "lufs": -17.0,
+     "lufs": -17,
      "channels": 1,
      "loop": false,
      "bytes": 18504,
-     "source": "freesound:243380"
+     "source": "freesound:243380",
+     "onset": 0.062,
+     "peakAt": 0.806,
+     "tailEnd": 1.894
     },
     {
      "file": "voice/death_16.mp3",
@@ -3518,7 +4451,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 22371,
-     "source": "freesound:243382"
+     "source": "freesound:243382",
+     "onset": 0.05,
+     "peakAt": 0.37,
+     "tailEnd": 1.964
     }
    ],
    "desc": "death cries (one per kill)"
@@ -3534,7 +4470,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 18384,
-     "source": "freesound:401211"
+     "source": "freesound:401211",
+     "onset": 0.071,
+     "peakAt": 0.77,
+     "tailEnd": 2.806
     },
     {
      "file": "voice/distant_scream_02.mp3",
@@ -3544,7 +4483,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 19190,
-     "source": "freesound:325548"
+     "source": "freesound:325548",
+     "onset": 0.054,
+     "peakAt": 0.316,
+     "tailEnd": 2.887
     },
     {
      "file": "voice/distant_scream_03.mp3",
@@ -3554,7 +4496,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 18305,
-     "source": "freesound:325548"
+     "source": "freesound:325548",
+     "onset": 0.05,
+     "peakAt": 1.335,
+     "tailEnd": 2.917
     },
     {
      "file": "voice/distant_scream_04.mp3",
@@ -3564,7 +4509,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 17994,
-     "source": "freesound:556976"
+     "source": "freesound:556976",
+     "onset": 0.059,
+     "peakAt": 0.472,
+     "tailEnd": 2.877
     },
     {
      "file": "voice/distant_scream_05.mp3",
@@ -3574,7 +4522,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 25585,
-     "source": "freesound:243377"
+     "source": "freesound:243377",
+     "onset": 0.073,
+     "peakAt": 0.635,
+     "tailEnd": 4.049
     }
    ],
    "desc": "scream heard from another room / far end of the hall"
@@ -3586,11 +4537,14 @@
      "file": "voice/distant_shout_01.mp3",
      "duration": 2.89,
      "peak_db": -7.07,
-     "lufs": -23.0,
+     "lufs": -23,
      "channels": 1,
      "loop": false,
      "bytes": 14614,
-     "source": "freesound:527737"
+     "source": "freesound:527737",
+     "onset": 0.085,
+     "peakAt": 1.022,
+     "tailEnd": 2.305
     },
     {
      "file": "voice/distant_shout_02.mp3",
@@ -3600,7 +4554,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 11104,
-     "source": "freesound:527737"
+     "source": "freesound:527737",
+     "onset": 0.126,
+     "peakAt": 0.801,
+     "tailEnd": 1.814
     },
     {
      "file": "voice/distant_shout_03.mp3",
@@ -3611,7 +4568,10 @@
      "loop": false,
      "bytes": 10558,
      "source": "freesound:457973",
-     "text": "Hey!"
+     "text": "Hey!",
+     "onset": 0.058,
+     "peakAt": 0.364,
+     "tailEnd": 1.343
     },
     {
      "file": "voice/distant_shout_04.mp3",
@@ -3622,7 +4582,10 @@
      "loop": false,
      "bytes": 10350,
      "source": "freesound:457973",
-     "text": "Hey!"
+     "text": "Hey!",
+     "onset": 0.076,
+     "peakAt": 0.455,
+     "tailEnd": 1.493
     }
    ],
    "desc": "shouts from far away inside the building"
@@ -3634,21 +4597,27 @@
      "file": "voice/dying_01.mp3",
      "duration": 1.61,
      "peak_db": -4.58,
-     "lufs": -19.0,
+     "lufs": -19,
      "channels": 1,
      "loop": false,
      "bytes": 13584,
-     "source": "freesound:255322"
+     "source": "freesound:255322",
+     "onset": 0.044,
+     "peakAt": 0.1,
+     "tailEnd": 1.584
     },
     {
      "file": "voice/dying_02.mp3",
      "duration": 1.9,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -17.9,
      "channels": 1,
      "loop": false,
      "bytes": 15689,
-     "source": "freesound:255322"
+     "source": "freesound:255322",
+     "onset": 0.032,
+     "peakAt": 0.54,
+     "tailEnd": 1.884
     },
     {
      "file": "voice/dying_03.mp3",
@@ -3658,7 +4627,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 10616,
-     "source": "freesound:255322"
+     "source": "freesound:255322",
+     "onset": 0.039,
+     "peakAt": 0.513,
+     "tailEnd": 1.193
     },
     {
      "file": "voice/dying_04.mp3",
@@ -3668,7 +4640,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 9055,
-     "source": "freesound:255322"
+     "source": "freesound:255322",
+     "onset": 0.045,
+     "peakAt": 0.313,
+     "tailEnd": 1.072
     },
     {
      "file": "voice/dying_05.mp3",
@@ -3678,17 +4653,23 @@
      "channels": 1,
      "loop": false,
      "bytes": 15062,
-     "source": "freesound:255323"
+     "source": "freesound:255323",
+     "onset": 0.035,
+     "peakAt": 1.214,
+     "tailEnd": 1.804
     },
     {
      "file": "voice/dying_06.mp3",
      "duration": 1.62,
      "peak_db": -2.96,
-     "lufs": -18.0,
+     "lufs": -18,
      "channels": 1,
      "loop": false,
      "bytes": 13999,
-     "source": "freesound:255323"
+     "source": "freesound:255323",
+     "onset": 0.03,
+     "peakAt": 0.334,
+     "tailEnd": 1.594
     },
     {
      "file": "voice/dying_07.mp3",
@@ -3698,7 +4679,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 11987,
-     "source": "freesound:800872"
+     "source": "freesound:800872",
+     "onset": 0.036,
+     "peakAt": 0.433,
+     "tailEnd": 1.223
     },
     {
      "file": "voice/dying_08.mp3",
@@ -3708,18 +4692,24 @@
      "channels": 1,
      "loop": false,
      "bytes": 17562,
-     "source": "freesound:131710"
+     "source": "freesound:131710",
+     "onset": 0.031,
+     "peakAt": 0.744,
+     "tailEnd": 1.734
     },
     {
      "file": "voice/dying_09.mp3",
      "duration": 13.15,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -25.2,
      "channels": 1,
      "loop": false,
      "bytes": 101819,
      "source": "freesound:800862",
-     "text": "(throat shot, choking)"
+     "text": "(throat shot, choking)",
+     "onset": 0.142,
+     "peakAt": 6.749,
+     "tailEnd": 13.08
     }
    ],
    "desc": "groans of the badly wounded / dying"
@@ -3735,7 +4725,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 6301,
-     "source": "freesound:218895"
+     "source": "freesound:218895",
+     "onset": 0.007,
+     "peakAt": 0.076,
+     "tailEnd": 0.591
     },
     {
      "file": "voice/effort_02.mp3",
@@ -3745,17 +4738,23 @@
      "channels": 1,
      "loop": false,
      "bytes": 4793,
-     "source": "freesound:218895"
+     "source": "freesound:218895",
+     "onset": 0.046,
+     "peakAt": 0.073,
+     "tailEnd": 0.411
     },
     {
      "file": "voice/effort_03.mp3",
      "duration": 0.43,
      "peak_db": -5.31,
-     "lufs": -19.0,
+     "lufs": -19,
      "channels": 1,
      "loop": false,
      "bytes": 4113,
-     "source": "freesound:218895"
+     "source": "freesound:218895",
+     "onset": 0.046,
+     "peakAt": 0.182,
+     "tailEnd": 0.401
     },
     {
      "file": "voice/effort_04.mp3",
@@ -3765,7 +4764,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 4038,
-     "source": "freesound:218895"
+     "source": "freesound:218895",
+     "onset": 0.046,
+     "peakAt": 0.109,
+     "tailEnd": 0.301
     },
     {
      "file": "voice/effort_05.mp3",
@@ -3775,7 +4777,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 3853,
-     "source": "freesound:218895"
+     "source": "freesound:218895",
+     "onset": 0.027,
+     "peakAt": 0.13,
+     "tailEnd": 0.331
     },
     {
      "file": "voice/effort_06.mp3",
@@ -3785,7 +4790,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 6590,
-     "source": "freesound:218894"
+     "source": "freesound:218894",
+     "onset": 0.01,
+     "peakAt": 0.086,
+     "tailEnd": 0.561
     },
     {
      "file": "voice/effort_07.mp3",
@@ -3795,7 +4803,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 3724,
-     "source": "freesound:218894"
+     "source": "freesound:218894",
+     "onset": 0.029,
+     "peakAt": 0.122,
+     "tailEnd": 0.311
     },
     {
      "file": "voice/effort_08.mp3",
@@ -3805,7 +4816,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 5050,
-     "source": "freesound:218894"
+     "source": "freesound:218894",
+     "onset": 0.03,
+     "peakAt": 0.196,
+     "tailEnd": 0.471
     },
     {
      "file": "voice/effort_09.mp3",
@@ -3815,7 +4829,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 3570,
-     "source": "freesound:218894"
+     "source": "freesound:218894",
+     "onset": 0.027,
+     "peakAt": 0.101,
+     "tailEnd": 0.271
     },
     {
      "file": "voice/effort_10.mp3",
@@ -3825,7 +4842,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 3725,
-     "source": "freesound:511023"
+     "source": "freesound:511023",
+     "onset": 0.044,
+     "peakAt": 0.079,
+     "tailEnd": 0.341
     },
     {
      "file": "voice/effort_11.mp3",
@@ -3835,7 +4855,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 3411,
-     "source": "freesound:511023"
+     "source": "freesound:511023",
+     "onset": 0.04,
+     "peakAt": 0.074,
+     "tailEnd": 0.301
     },
     {
      "file": "voice/effort_12.mp3",
@@ -3845,17 +4868,23 @@
      "channels": 1,
      "loop": false,
      "bytes": 3984,
-     "source": "freesound:511023"
+     "source": "freesound:511023",
+     "onset": 0.037,
+     "peakAt": 0.087,
+     "tailEnd": 0.351
     },
     {
      "file": "voice/effort_13.mp3",
      "duration": 0.4,
      "peak_db": -5.89,
-     "lufs": -21.0,
+     "lufs": -21,
      "channels": 1,
      "loop": false,
      "bytes": 3854,
-     "source": "freesound:511023"
+     "source": "freesound:511023",
+     "onset": 0.045,
+     "peakAt": 0.082,
+     "tailEnd": 0.351
     },
     {
      "file": "voice/effort_14.mp3",
@@ -3865,17 +4894,23 @@
      "channels": 1,
      "loop": false,
      "bytes": 3464,
-     "source": "freesound:511023"
+     "source": "freesound:511023",
+     "onset": 0.031,
+     "peakAt": 0.079,
+     "tailEnd": 0.291
     },
     {
      "file": "voice/effort_15.mp3",
      "duration": 0.38,
-     "peak_db": -5.0,
+     "peak_db": -5,
      "lufs": -21.2,
      "channels": 1,
      "loop": false,
      "bytes": 3672,
-     "source": "freesound:511023"
+     "source": "freesound:511023",
+     "onset": 0.034,
+     "peakAt": 0.083,
+     "tailEnd": 0.321
     },
     {
      "file": "voice/effort_16.mp3",
@@ -3885,7 +4920,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 3672,
-     "source": "freesound:511023"
+     "source": "freesound:511023",
+     "onset": 0.044,
+     "peakAt": 0.085,
+     "tailEnd": 0.331
     },
     {
      "file": "voice/effort_17.mp3",
@@ -3895,7 +4933,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 5858,
-     "source": "freesound:511023"
+     "source": "freesound:511023",
+     "onset": 0.043,
+     "peakAt": 0.083,
+     "tailEnd": 0.561
     },
     {
      "file": "voice/effort_18.mp3",
@@ -3905,7 +4946,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 5312,
-     "source": "freesound:474651"
+     "source": "freesound:474651",
+     "onset": 0.03,
+     "peakAt": 0.263,
+     "tailEnd": 0.491
     },
     {
      "file": "voice/effort_19.mp3",
@@ -3915,7 +4959,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 4973,
-     "source": "freesound:474651"
+     "source": "freesound:474651",
+     "onset": 0.037,
+     "peakAt": 0.202,
+     "tailEnd": 0.461
     },
     {
      "file": "voice/effort_20.mp3",
@@ -3925,7 +4972,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 6873,
-     "source": "freesound:474651"
+     "source": "freesound:474651",
+     "onset": 0.035,
+     "peakAt": 0.427,
+     "tailEnd": 0.682
     },
     {
      "file": "voice/effort_21.mp3",
@@ -3935,7 +4985,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 5415,
-     "source": "freesound:474651"
+     "source": "freesound:474651",
+     "onset": 0.048,
+     "peakAt": 0.243,
+     "tailEnd": 0.521
     },
     {
      "file": "voice/effort_22.mp3",
@@ -3945,7 +4998,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 4686,
-     "source": "freesound:474650"
+     "source": "freesound:474650",
+     "onset": 0.038,
+     "peakAt": 0.085,
+     "tailEnd": 0.441
     },
     {
      "file": "voice/effort_23.mp3",
@@ -3955,7 +5011,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 6482,
-     "source": "freesound:474650"
+     "source": "freesound:474650",
+     "onset": 0.046,
+     "peakAt": 0.1,
+     "tailEnd": 0.641
     },
     {
      "file": "voice/effort_24.mp3",
@@ -3965,7 +5024,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 5207,
-     "source": "freesound:474650"
+     "source": "freesound:474650",
+     "onset": 0.04,
+     "peakAt": 0.121,
+     "tailEnd": 0.481
     }
    ],
    "desc": "effort grunts (vaulting, pushing, melee)"
@@ -3982,7 +5044,10 @@
      "loop": false,
      "bytes": 11005,
      "source": "freesound:800866",
-     "text": "I'm hit!"
+     "text": "I'm hit!",
+     "onset": 0.093,
+     "peakAt": 0.643,
+     "tailEnd": 1.002
     }
    ],
    "desc": "enemy wounded callout"
@@ -3992,19 +5057,23 @@
    "variations": [
     {
      "file": "voice/muffled_argue_01.mp3",
-     "duration": 24.0,
-     "peak_db": -6.0,
+     "duration": 24,
+     "peak_db": -6,
      "lufs": -27.1,
      "channels": 1,
      "loop": true,
      "bytes": 100128,
      "source": "freesound:480803",
      "loopStart": 0.25,
-     "loopEnd": 24.25
+     "loopEnd": 24.25,
+     "seamDb": -22.5,
+     "onset": 0,
+     "peakAt": 0.973,
+     "tailEnd": 24.495
     },
     {
      "file": "voice/muffled_argue_02.mp3",
-     "duration": 25.0,
+     "duration": 25,
      "peak_db": -10.94,
      "lufs": -26.3,
      "channels": 1,
@@ -4012,7 +5081,11 @@
      "bytes": 104574,
      "source": "freesound:480798",
      "loopStart": 0.25,
-     "loopEnd": 25.25
+     "loopEnd": 25.25,
+     "seamDb": -36,
+     "onset": 0,
+     "peakAt": 6.942,
+     "tailEnd": 25.498
     }
    ],
    "desc": "men arguing behind a closed door (loop, mono, positional)"
@@ -4022,7 +5095,7 @@
    "variations": [
     {
      "file": "voice/muffled_laugh_01.mp3",
-     "duration": 40.0,
+     "duration": 40,
      "peak_db": -9.6,
      "lufs": -26.7,
      "channels": 1,
@@ -4030,7 +5103,11 @@
      "bytes": 163048,
      "source": "freesound:438408",
      "loopStart": 0.25,
-     "loopEnd": 40.25
+     "loopEnd": 40.25,
+     "seamDb": -26.5,
+     "onset": 0,
+     "peakAt": 16.667,
+     "tailEnd": 40.492
     },
     {
      "file": "voice/muffled_laugh_02.mp3",
@@ -4040,7 +5117,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 29200,
-     "source": "freesound:480783"
+     "source": "freesound:480783",
+     "onset": 0.046,
+     "peakAt": 4.088,
+     "tailEnd": 6.705
     }
    ],
    "desc": "men talking and laughing behind a door (loop)"
@@ -4050,7 +5130,7 @@
    "variations": [
     {
      "file": "voice/muffled_talk_01.mp3",
-     "duration": 18.0,
+     "duration": 18,
      "peak_db": -7.72,
      "lufs": -26.7,
      "channels": 1,
@@ -4058,11 +5138,15 @@
      "bytes": 74856,
      "source": "freesound:480782",
      "loopStart": 0.25,
-     "loopEnd": 18.25
+     "loopEnd": 18.25,
+     "seamDb": -51.1,
+     "onset": 0.001,
+     "peakAt": 12.368,
+     "tailEnd": 18.492
     },
     {
      "file": "voice/muffled_talk_02.mp3",
-     "duration": 30.0,
+     "duration": 30,
      "peak_db": -9.89,
      "lufs": -26.7,
      "channels": 1,
@@ -4070,7 +5154,11 @@
      "bytes": 123814,
      "source": "freesound:480727",
      "loopStart": 0.25,
-     "loopEnd": 30.25
+     "loopEnd": 30.25,
+     "seamDb": -25.1,
+     "onset": 0,
+     "peakAt": 2.294,
+     "tailEnd": 30.499
     }
    ],
    "desc": "men talking behind a door (loop)"
@@ -4086,7 +5174,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 3439,
-     "source": "freesound:547203"
+     "source": "freesound:547203",
+     "onset": 0.017,
+     "peakAt": 0.062,
+     "tailEnd": 0.22
     },
     {
      "file": "voice/pain_02.mp3",
@@ -4096,7 +5187,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 3595,
-     "source": "freesound:547209"
+     "source": "freesound:547209",
+     "onset": 0.016,
+     "peakAt": 0.136,
+     "tailEnd": 0.261
     },
     {
      "file": "voice/pain_03.mp3",
@@ -4106,7 +5200,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 3985,
-     "source": "freesound:547208"
+     "source": "freesound:547208",
+     "onset": 0.026,
+     "peakAt": 0.2,
+     "tailEnd": 0.351
     },
     {
      "file": "voice/pain_04.mp3",
@@ -4116,7 +5213,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 5366,
-     "source": "freesound:823508"
+     "source": "freesound:823508",
+     "onset": 0.044,
+     "peakAt": 0.162,
+     "tailEnd": 0.501
     },
     {
      "file": "voice/pain_05.mp3",
@@ -4126,7 +5226,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 14039,
-     "source": "freesound:610998"
+     "source": "freesound:610998",
+     "onset": 0.036,
+     "peakAt": 0.309,
+     "tailEnd": 1.433
     },
     {
      "file": "voice/pain_06.mp3",
@@ -4136,7 +5239,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 13518,
-     "source": "freesound:610998"
+     "source": "freesound:610998",
+     "onset": 0.027,
+     "peakAt": 0.1,
+     "tailEnd": 1.473
     },
     {
      "file": "voice/pain_07.mp3",
@@ -4146,7 +5252,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 14195,
-     "source": "freesound:610998"
+     "source": "freesound:610998",
+     "onset": 0.041,
+     "peakAt": 0.124,
+     "tailEnd": 1.503
     },
     {
      "file": "voice/pain_08.mp3",
@@ -4156,7 +5265,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 13065,
-     "source": "freesound:610998"
+     "source": "freesound:610998",
+     "onset": 0.04,
+     "peakAt": 0.187,
+     "tailEnd": 1.493
     },
     {
      "file": "voice/pain_09.mp3",
@@ -4166,7 +5278,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 11246,
-     "source": "freesound:610998"
+     "source": "freesound:610998",
+     "onset": 0.035,
+     "peakAt": 0.247,
+     "tailEnd": 1.273
     },
     {
      "file": "voice/pain_10.mp3",
@@ -4176,17 +5291,23 @@
      "channels": 1,
      "loop": false,
      "bytes": 11770,
-     "source": "freesound:610998"
+     "source": "freesound:610998",
+     "onset": 0.033,
+     "peakAt": 0.168,
+     "tailEnd": 1.233
     },
     {
      "file": "voice/pain_11.mp3",
      "duration": 0.46,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -19.2,
      "channels": 1,
      "loop": false,
      "bytes": 4741,
-     "source": "freesound:610991"
+     "source": "freesound:610991",
+     "onset": 0.048,
+     "peakAt": 0.194,
+     "tailEnd": 0.361
     },
     {
      "file": "voice/pain_12.mp3",
@@ -4196,7 +5317,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 4793,
-     "source": "freesound:610991"
+     "source": "freesound:610991",
+     "onset": 0.039,
+     "peakAt": 0.178,
+     "tailEnd": 0.371
     },
     {
      "file": "voice/pain_13.mp3",
@@ -4206,7 +5330,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 4638,
-     "source": "freesound:610991"
+     "source": "freesound:610991",
+     "onset": 0.053,
+     "peakAt": 0.121,
+     "tailEnd": 0.331
     },
     {
      "file": "voice/pain_14.mp3",
@@ -4216,27 +5343,36 @@
      "channels": 1,
      "loop": false,
      "bytes": 5132,
-     "source": "freesound:610991"
+     "source": "freesound:610991",
+     "onset": 0.036,
+     "peakAt": 0.105,
+     "tailEnd": 0.431
     },
     {
      "file": "voice/pain_15.mp3",
      "duration": 0.54,
      "peak_db": -6.39,
-     "lufs": -19.0,
+     "lufs": -19,
      "channels": 1,
      "loop": false,
      "bytes": 5158,
-     "source": "freesound:610991"
+     "source": "freesound:610991",
+     "onset": 0.027,
+     "peakAt": 0.145,
+     "tailEnd": 0.371
     },
     {
      "file": "voice/pain_16.mp3",
      "duration": 0.51,
      "peak_db": -5.7,
-     "lufs": -19.0,
+     "lufs": -19,
      "channels": 1,
      "loop": false,
      "bytes": 4895,
-     "source": "freesound:442288"
+     "source": "freesound:442288",
+     "onset": 0.044,
+     "peakAt": 0.114,
+     "tailEnd": 0.471
     },
     {
      "file": "voice/pain_17.mp3",
@@ -4246,7 +5382,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 4584,
-     "source": "freesound:442288"
+     "source": "freesound:442288",
+     "onset": 0.03,
+     "peakAt": 0.094,
+     "tailEnd": 0.301
     },
     {
      "file": "voice/pain_18.mp3",
@@ -4256,7 +5395,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 5858,
-     "source": "freesound:442288"
+     "source": "freesound:442288",
+     "onset": 0.039,
+     "peakAt": 0.128,
+     "tailEnd": 0.511
     },
     {
      "file": "voice/pain_19.mp3",
@@ -4266,7 +5408,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 5366,
-     "source": "freesound:442288"
+     "source": "freesound:442288",
+     "onset": 0.037,
+     "peakAt": 0.096,
+     "tailEnd": 0.421
     },
     {
      "file": "voice/pain_20.mp3",
@@ -4276,7 +5421,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 7948,
-     "source": "freesound:442288"
+     "source": "freesound:442288",
+     "onset": 0.03,
+     "peakAt": 0.15,
+     "tailEnd": 0.621
     },
     {
      "file": "voice/pain_21.mp3",
@@ -4286,7 +5434,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 8337,
-     "source": "freesound:442288"
+     "source": "freesound:442288",
+     "onset": 0.03,
+     "peakAt": 0.082,
+     "tailEnd": 0.752
     },
     {
      "file": "voice/pain_22.mp3",
@@ -4296,7 +5447,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 7085,
-     "source": "freesound:442288"
+     "source": "freesound:442288",
+     "onset": 0.036,
+     "peakAt": 0.152,
+     "tailEnd": 0.651
     },
     {
      "file": "voice/pain_23.mp3",
@@ -4306,7 +5460,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 10163,
-     "source": "freesound:131710"
+     "source": "freesound:131710",
+     "onset": 0.035,
+     "peakAt": 0.452,
+     "tailEnd": 0.992
     },
     {
      "file": "voice/pain_24.mp3",
@@ -4316,7 +5473,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 8074,
-     "source": "freesound:131710"
+     "source": "freesound:131710",
+     "onset": 0.041,
+     "peakAt": 0.345,
+     "tailEnd": 0.762
     },
     {
      "file": "voice/pain_25.mp3",
@@ -4326,7 +5486,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 10530,
-     "source": "freesound:131710"
+     "source": "freesound:131710",
+     "onset": 0.034,
+     "peakAt": 0.57,
+     "tailEnd": 1.062
     },
     {
      "file": "voice/pain_26.mp3",
@@ -4336,7 +5499,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 10184,
-     "source": "freesound:131710"
+     "source": "freesound:131710",
+     "onset": 0.03,
+     "peakAt": 0.567,
+     "tailEnd": 0.962
     },
     {
      "file": "voice/pain_27.mp3",
@@ -4346,7 +5512,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 3099,
-     "source": "freesound:528732"
+     "source": "freesound:528732",
+     "onset": 0.036,
+     "peakAt": 0.057,
+     "tailEnd": 0.251
     },
     {
      "file": "voice/pain_28.mp3",
@@ -4356,17 +5525,23 @@
      "channels": 1,
      "loop": false,
      "bytes": 3334,
-     "source": "freesound:528732"
+     "source": "freesound:528732",
+     "onset": 0.044,
+     "peakAt": 0.071,
+     "tailEnd": 0.231
     },
     {
      "file": "voice/pain_29.mp3",
      "duration": 0.41,
      "peak_db": -5.19,
-     "lufs": -19.0,
+     "lufs": -19,
      "channels": 1,
      "loop": false,
      "bytes": 4820,
-     "source": "freesound:528732"
+     "source": "freesound:528732",
+     "onset": 0.027,
+     "peakAt": 0.113,
+     "tailEnd": 0.381
     },
     {
      "file": "voice/pain_30.mp3",
@@ -4376,7 +5551,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 5733,
-     "source": "freesound:528732"
+     "source": "freesound:528732",
+     "onset": 0.044,
+     "peakAt": 0.237,
+     "tailEnd": 0.461
     },
     {
      "file": "voice/pain_31.mp3",
@@ -4386,7 +5564,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 3648,
-     "source": "freesound:528732"
+     "source": "freesound:528732",
+     "onset": 0.008,
+     "peakAt": 0.094,
+     "tailEnd": 0.241
     },
     {
      "file": "voice/pain_32.mp3",
@@ -4396,7 +5577,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 5649,
-     "source": "freesound:257709"
+     "source": "freesound:257709",
+     "onset": 0.05,
+     "peakAt": 0.202,
+     "tailEnd": 0.491
     },
     {
      "file": "voice/pain_33.mp3",
@@ -4406,7 +5590,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 7342,
-     "source": "freesound:257710"
+     "source": "freesound:257710",
+     "onset": 0.051,
+     "peakAt": 0.188,
+     "tailEnd": 0.641
     },
     {
      "file": "voice/pain_34.mp3",
@@ -4416,7 +5603,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 5049,
-     "source": "freesound:413175"
+     "source": "freesound:413175",
+     "onset": 0.032,
+     "peakAt": 0.149,
+     "tailEnd": 0.291
     },
     {
      "file": "voice/pain_35.mp3",
@@ -4426,7 +5616,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 4529,
-     "source": "freesound:413173"
+     "source": "freesound:413173",
+     "onset": 0.023,
+     "peakAt": 0.094,
+     "tailEnd": 0.301
     }
    ],
    "desc": "short hit reactions (enemy takes a bullet)"
@@ -4438,13 +5631,17 @@
      "file": "voice/player_breath_calm_01.mp3",
      "duration": 5.6,
      "peak_db": -3.45,
-     "lufs": -21.0,
+     "lufs": -21,
      "channels": 1,
      "loop": true,
      "bytes": 52209,
      "source": "freesound:345464",
      "loopStart": 0.25,
-     "loopEnd": 5.85
+     "loopEnd": 5.85,
+     "seamDb": -160.3,
+     "onset": 0,
+     "peakAt": 4.007,
+     "tailEnd": 6.094
     }
    ],
    "desc": "player calm breathing (loop)"
@@ -4454,27 +5651,35 @@
    "variations": [
     {
      "file": "voice/player_breath_exert_01.mp3",
-     "duration": 7.0,
-     "peak_db": -3.0,
+     "duration": 7,
+     "peak_db": -3,
      "lufs": -23.5,
      "channels": 1,
      "loop": true,
      "bytes": 64744,
      "source": "freesound:566400",
      "loopStart": 0.25,
-     "loopEnd": 7.25
+     "loopEnd": 7.25,
+     "seamDb": -155.8,
+     "onset": 0.001,
+     "peakAt": 2.539,
+     "tailEnd": 7.497
     },
     {
      "file": "voice/player_breath_exert_02.mp3",
-     "duration": 11.0,
-     "peak_db": -3.0,
+     "duration": 11,
+     "peak_db": -3,
      "lufs": -31.3,
      "channels": 1,
      "loop": true,
      "bytes": 94607,
      "source": "freesound:395563",
      "loopStart": 0.25,
-     "loopEnd": 11.25
+     "loopEnd": 11.25,
+     "seamDb": -7.7,
+     "onset": 0.003,
+     "peakAt": 8.391,
+     "tailEnd": 11.496
     }
    ],
    "desc": "player breathing after sprinting (loop)"
@@ -4485,12 +5690,15 @@
     {
      "file": "voice/player_breath_recover_01.mp3",
      "duration": 23.98,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -31.1,
      "channels": 1,
      "loop": false,
      "bytes": 178026,
-     "source": "freesound:33939"
+     "source": "freesound:33939",
+     "onset": 1.453,
+     "peakAt": 1.544,
+     "tailEnd": 21.859
     }
    ],
    "desc": "hard breathing that calms down (one-shot, ~25 s)"
@@ -4507,7 +5715,10 @@
      "loop": false,
      "bytes": 8982,
      "source": "freesound:217231",
-     "text": "Freeze!"
+     "text": "Freeze!",
+     "onset": 0.37,
+     "peakAt": 0.573,
+     "tailEnd": 1.002
     }
    ],
    "desc": "player shouts"
@@ -4523,7 +5734,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 3435,
-     "source": "freesound:800979"
+     "source": "freesound:800979",
+     "onset": 0.001,
+     "peakAt": 0.017,
+     "tailEnd": 0.22
     },
     {
      "file": "voice/player_pain_02.mp3",
@@ -4533,7 +5747,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 3828,
-     "source": "freesound:818195"
+     "source": "freesound:818195",
+     "onset": 0.001,
+     "peakAt": 0.054,
+     "tailEnd": 0.2
     },
     {
      "file": "voice/player_pain_03.mp3",
@@ -4543,7 +5760,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 4503,
-     "source": "freesound:818196"
+     "source": "freesound:818196",
+     "onset": 0.001,
+     "peakAt": 0.011,
+     "tailEnd": 0.241
     },
     {
      "file": "voice/player_pain_04.mp3",
@@ -4553,7 +5773,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 4892,
-     "source": "freesound:800983"
+     "source": "freesound:800983",
+     "onset": 0.002,
+     "peakAt": 0.07,
+     "tailEnd": 0.2
     },
     {
      "file": "voice/player_pain_05.mp3",
@@ -4563,7 +5786,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 7996,
-     "source": "freesound:800980"
+     "source": "freesound:800980",
+     "onset": 0.041,
+     "peakAt": 0.186,
+     "tailEnd": 0.591
     },
     {
      "file": "voice/player_pain_06.mp3",
@@ -4573,7 +5799,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 3438,
-     "source": "freesound:803168"
+     "source": "freesound:803168",
+     "onset": 0.006,
+     "peakAt": 0.161,
+     "tailEnd": 0.291
     },
     {
      "file": "voice/player_pain_07.mp3",
@@ -4583,7 +5812,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 4453,
-     "source": "freesound:803168"
+     "source": "freesound:803168",
+     "onset": 0.04,
+     "peakAt": 0.18,
+     "tailEnd": 0.311
     },
     {
      "file": "voice/player_pain_08.mp3",
@@ -4593,7 +5825,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 4168,
-     "source": "freesound:803168"
+     "source": "freesound:803168",
+     "onset": 0.024,
+     "peakAt": 0.197,
+     "tailEnd": 0.331
     },
     {
      "file": "voice/player_pain_09.mp3",
@@ -4603,7 +5838,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 4218,
-     "source": "freesound:803168"
+     "source": "freesound:803168",
+     "onset": 0.029,
+     "peakAt": 0.133,
+     "tailEnd": 0.281
     },
     {
      "file": "voice/player_pain_10.mp3",
@@ -4613,7 +5851,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 5208,
-     "source": "freesound:803168"
+     "source": "freesound:803168",
+     "onset": 0.039,
+     "peakAt": 0.18,
+     "tailEnd": 0.461
     },
     {
      "file": "voice/player_pain_11.mp3",
@@ -4623,7 +5864,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 5908,
-     "source": "freesound:803168"
+     "source": "freesound:803168",
+     "onset": 0.036,
+     "peakAt": 0.18,
+     "tailEnd": 0.471
     }
    ],
    "desc": "player hurt grunts (one voice actor, close mic)"
@@ -4640,18 +5884,24 @@
      "loop": false,
      "bytes": 11279,
      "source": "freesound:474314",
-     "text": "Wait, wait!"
+     "text": "Wait, wait!",
+     "onset": 0.039,
+     "peakAt": 0.425,
+     "tailEnd": 0.912
     },
     {
      "file": "voice/plead_02.mp3",
      "duration": 1.48,
      "peak_db": -8.51,
-     "lufs": -19.0,
+     "lufs": -19,
      "channels": 1,
      "loop": false,
      "bytes": 11768,
      "source": "freesound:474314",
-     "text": "Calm down!"
+     "text": "Calm down!",
+     "onset": 0.049,
+     "peakAt": 0.148,
+     "tailEnd": 1.283
     },
     {
      "file": "voice/plead_03.mp3",
@@ -4662,7 +5912,10 @@
      "loop": false,
      "bytes": 18596,
      "source": "freesound:867418",
-     "text": "Nooo!"
+     "text": "Nooo!",
+     "onset": 0.043,
+     "peakAt": 0.249,
+     "tailEnd": 2.175
     },
     {
      "file": "voice/plead_04.mp3",
@@ -4673,7 +5926,10 @@
      "loop": false,
      "bytes": 48096,
      "source": "freesound:814235",
-     "text": "(wounded, asking for help)"
+     "text": "(wounded, asking for help)",
+     "onset": 0.068,
+     "peakAt": 2.542,
+     "tailEnd": 6.354
     }
    ],
    "desc": "panicked / pleading"
@@ -4690,7 +5946,10 @@
      "loop": false,
      "bytes": 7215,
      "source": "freesound:67629",
-     "text": "Drop the weapon."
+     "text": "Drop the weapon.",
+     "onset": 0.003,
+     "peakAt": 0.108,
+     "tailEnd": 0.661
     },
     {
      "file": "voice/radio_02.mp3",
@@ -4701,7 +5960,10 @@
      "loop": false,
      "bytes": 8181,
      "source": "freesound:67648",
-     "text": "Movement right there."
+     "text": "Movement right there.",
+     "onset": 0.003,
+     "peakAt": 0.244,
+     "tailEnd": 0.672
     },
     {
      "file": "voice/radio_03.mp3",
@@ -4712,7 +5974,10 @@
      "loop": false,
      "bytes": 5059,
      "source": "freesound:67633",
-     "text": "Get him."
+     "text": "Get him.",
+     "onset": 0.006,
+     "peakAt": 0.231,
+     "tailEnd": 0.301
     },
     {
      "file": "voice/radio_04.mp3",
@@ -4723,7 +5988,10 @@
      "loop": false,
      "bytes": 2945,
      "source": "freesound:67638",
-     "text": "Got 'em."
+     "text": "Got 'em.",
+     "onset": 0.002,
+     "peakAt": 0.021,
+     "tailEnd": 0.19
     },
     {
      "file": "voice/radio_05.mp3",
@@ -4734,7 +6002,10 @@
      "loop": false,
      "bytes": 7190,
      "source": "freesound:67639",
-     "text": "He's wounded."
+     "text": "He's wounded.",
+     "onset": 0.002,
+     "peakAt": 0.243,
+     "tailEnd": 0.601
     },
     {
      "file": "voice/radio_06.mp3",
@@ -4745,7 +6016,10 @@
      "loop": false,
      "bytes": 5886,
      "source": "freesound:67662",
-     "text": "Roger that."
+     "text": "Roger that.",
+     "onset": 0.007,
+     "peakAt": 0.061,
+     "tailEnd": 0.521
     },
     {
      "file": "voice/radio_07.mp3",
@@ -4756,7 +6030,10 @@
      "loop": false,
      "bytes": 6337,
      "source": "freesound:67665",
-     "text": "Stand by."
+     "text": "Stand by.",
+     "onset": 0.02,
+     "peakAt": 0.245,
+     "tailEnd": 0.341
     },
     {
      "file": "voice/radio_08.mp3",
@@ -4767,18 +6044,24 @@
      "loop": false,
      "bytes": 7241,
      "source": "freesound:67667",
-     "text": "Wait for movement."
+     "text": "Wait for movement.",
+     "onset": 0.01,
+     "peakAt": 0.424,
+     "tailEnd": 0.661
     },
     {
      "file": "voice/radio_09.mp3",
      "duration": 0.7,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -19.8,
      "channels": 1,
      "loop": false,
      "bytes": 8050,
      "source": "freesound:67649",
-     "text": "Not seeing any."
+     "text": "Not seeing any.",
+     "onset": 0.003,
+     "peakAt": 0.027,
+     "tailEnd": 0.672
     }
    ],
    "desc": "radio-processed male voice lines (US military PD recordings): police/team radio chatter on the bodycam"
@@ -4795,7 +6078,10 @@
      "loop": false,
      "bytes": 6854,
      "source": "freesound:800861",
-     "text": "Reloading!"
+     "text": "Reloading!",
+     "onset": 0.057,
+     "peakAt": 0.358,
+     "tailEnd": 0.601
     },
     {
      "file": "voice/reload_02.mp3",
@@ -4806,7 +6092,10 @@
      "loop": false,
      "bytes": 9619,
      "source": "freesound:814236",
-     "text": "Changing mag!"
+     "text": "Changing mag!",
+     "onset": 0.049,
+     "peakAt": 0.154,
+     "tailEnd": 0.882
     },
     {
      "file": "voice/reload_03.mp3",
@@ -4817,7 +6106,10 @@
      "loop": false,
      "bytes": 8543,
      "source": "freesound:800869",
-     "text": "Jammed!"
+     "text": "Jammed!",
+     "onset": 0.046,
+     "peakAt": 0.42,
+     "tailEnd": 0.822
     }
    ],
    "desc": "enemy reload / weapon trouble callouts"
@@ -4833,17 +6125,23 @@
      "channels": 1,
      "loop": false,
      "bytes": 18808,
-     "source": "freesound:325548"
+     "source": "freesound:325548",
+     "onset": 0.041,
+     "peakAt": 0.208,
+     "tailEnd": 1.954
     },
     {
      "file": "voice/scream_02.mp3",
      "duration": 2.4,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -17.3,
      "channels": 1,
      "loop": false,
      "bytes": 21645,
-     "source": "freesound:325548"
+     "source": "freesound:325548",
+     "onset": 0.046,
+     "peakAt": 0.2,
+     "tailEnd": 2.325
     },
     {
      "file": "voice/scream_03.mp3",
@@ -4853,17 +6151,23 @@
      "channels": 1,
      "loop": false,
      "bytes": 18088,
-     "source": "freesound:325548"
+     "source": "freesound:325548",
+     "onset": 0.043,
+     "peakAt": 0.511,
+     "tailEnd": 1.844
     },
     {
      "file": "voice/scream_04.mp3",
      "duration": 2.44,
-     "peak_db": -4.0,
+     "peak_db": -4,
      "lufs": -17.3,
      "channels": 1,
      "loop": false,
      "bytes": 21147,
-     "source": "freesound:325548"
+     "source": "freesound:325548",
+     "onset": 0.039,
+     "peakAt": 0.957,
+     "tailEnd": 2.385
     },
     {
      "file": "voice/scream_05.mp3",
@@ -4873,17 +6177,23 @@
      "channels": 1,
      "loop": false,
      "bytes": 25094,
-     "source": "freesound:325548"
+     "source": "freesound:325548",
+     "onset": 0.038,
+     "peakAt": 0.537,
+     "tailEnd": 2.676
     },
     {
      "file": "voice/scream_06.mp3",
      "duration": 2.61,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -19.3,
      "channels": 1,
      "loop": false,
      "bytes": 23498,
-     "source": "freesound:325548"
+     "source": "freesound:325548",
+     "onset": 0.041,
+     "peakAt": 0.246,
+     "tailEnd": 2.536
     },
     {
      "file": "voice/scream_07.mp3",
@@ -4893,7 +6203,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 22476,
-     "source": "freesound:556976"
+     "source": "freesound:556976",
+     "onset": 0.042,
+     "peakAt": 0.998,
+     "tailEnd": 2.425
     },
     {
      "file": "voice/scream_08.mp3",
@@ -4903,7 +6216,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 21605,
-     "source": "freesound:556976"
+     "source": "freesound:556976",
+     "onset": 0.042,
+     "peakAt": 0.16,
+     "tailEnd": 2.365
     },
     {
      "file": "voice/scream_09.mp3",
@@ -4913,27 +6229,36 @@
      "channels": 1,
      "loop": false,
      "bytes": 6616,
-     "source": "freesound:556976"
+     "source": "freesound:556976",
+     "onset": 0.032,
+     "peakAt": 0.198,
+     "tailEnd": 0.551
     },
     {
      "file": "voice/scream_10.mp3",
      "duration": 0.69,
      "peak_db": -6.8,
-     "lufs": -17.0,
+     "lufs": -17,
      "channels": 1,
      "loop": false,
      "bytes": 6563,
-     "source": "freesound:556976"
+     "source": "freesound:556976",
+     "onset": 0.041,
+     "peakAt": 0.097,
+     "tailEnd": 0.571
     },
     {
      "file": "voice/scream_11.mp3",
      "duration": 0.72,
      "peak_db": -7.8,
-     "lufs": -18.0,
+     "lufs": -18,
      "channels": 1,
      "loop": false,
      "bytes": 6667,
-     "source": "freesound:556976"
+     "source": "freesound:556976",
+     "onset": 0.04,
+     "peakAt": 0.316,
+     "tailEnd": 0.621
     },
     {
      "file": "voice/scream_12.mp3",
@@ -4943,17 +6268,23 @@
      "channels": 1,
      "loop": false,
      "bytes": 6380,
-     "source": "freesound:556976"
+     "source": "freesound:556976",
+     "onset": 0.042,
+     "peakAt": 0.173,
+     "tailEnd": 0.591
     },
     {
      "file": "voice/scream_13.mp3",
      "duration": 3.4,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -16.9,
      "channels": 1,
      "loop": false,
      "bytes": 29597,
-     "source": "freesound:173944"
+     "source": "freesound:173944",
+     "onset": 0.04,
+     "peakAt": 0.369,
+     "tailEnd": 3.378
     },
     {
      "file": "voice/scream_14.mp3",
@@ -4963,7 +6294,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 23205,
-     "source": "freesound:173944"
+     "source": "freesound:173944",
+     "onset": 0.037,
+     "peakAt": 0.726,
+     "tailEnd": 2.746
     },
     {
      "file": "voice/scream_15.mp3",
@@ -4973,7 +6307,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 16576,
-     "source": "freesound:173944"
+     "source": "freesound:173944",
+     "onset": 0.037,
+     "peakAt": 0.493,
+     "tailEnd": 1.704
     },
     {
      "file": "voice/scream_16.mp3",
@@ -4983,7 +6320,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 24260,
-     "source": "freesound:530471"
+     "source": "freesound:530471",
+     "onset": 0.008,
+     "peakAt": 1.55,
+     "tailEnd": 2.566
     },
     {
      "file": "voice/scream_17.mp3",
@@ -4993,7 +6333,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 9482,
-     "source": "freesound:530471"
+     "source": "freesound:530471",
+     "onset": 0.029,
+     "peakAt": 0.677,
+     "tailEnd": 0.772
     },
     {
      "file": "voice/scream_18.mp3",
@@ -5003,7 +6346,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 18204,
-     "source": "freesound:530471"
+     "source": "freesound:530471",
+     "onset": 0.037,
+     "peakAt": 0.368,
+     "tailEnd": 1.974
     },
     {
      "file": "voice/scream_19.mp3",
@@ -5013,7 +6359,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 9381,
-     "source": "freesound:416545"
+     "source": "freesound:416545",
+     "onset": 0.02,
+     "peakAt": 0.358,
+     "tailEnd": 0.852
     },
     {
      "file": "voice/scream_20.mp3",
@@ -5023,7 +6372,11 @@
      "channels": 1,
      "loop": false,
      "bytes": 26698,
-     "source": "freesound:178313"
+     "source": "freesound:178313",
+     "onset": 1.024,
+     "peakAt": 3.234,
+     "tailEnd": 3.257,
+     "disabled": "qc: 1 s lead silence, isolated -4 dBFS spike 0.1 s after the scream ends (click / cut artefact)"
     }
    ],
    "desc": "long screams of pain / fear"
@@ -5033,27 +6386,35 @@
    "variations": [
     {
      "file": "voice/snore_01.mp3",
-     "duration": 30.0,
-     "peak_db": -6.0,
-     "lufs": -28.0,
+     "duration": 30,
+     "peak_db": -6,
+     "lufs": -28,
      "channels": 1,
      "loop": true,
      "bytes": 171131,
      "source": "freesound:432997",
      "loopStart": 0.25,
-     "loopEnd": 30.25
+     "loopEnd": 30.25,
+     "seamDb": -97.7,
+     "onset": 0.582,
+     "peakAt": 11.437,
+     "tailEnd": 29.166
     },
     {
      "file": "voice/snore_02.mp3",
-     "duration": 24.0,
-     "peak_db": -6.0,
+     "duration": 24,
+     "peak_db": -6,
      "lufs": -29.8,
      "channels": 1,
      "loop": true,
      "bytes": 161328,
      "source": "freesound:432996",
      "loopStart": 0.25,
-     "loopEnd": 24.25
+     "loopEnd": 24.25,
+     "seamDb": 4.6,
+     "onset": 0.68,
+     "peakAt": 5.445,
+     "tailEnd": 23.664
     }
    ],
    "desc": "sleeping guard snoring (loop)"
@@ -5065,12 +6426,15 @@
      "file": "voice/surprise_01.mp3",
      "duration": 0.36,
      "peak_db": -5.86,
-     "lufs": -20.0,
+     "lufs": -20,
      "channels": 1,
      "loop": false,
      "bytes": 3670,
      "source": "freesound:798752",
-     "text": "(startled)"
+     "text": "(startled)",
+     "onset": 0.035,
+     "peakAt": 0.09,
+     "tailEnd": 0.341
     },
     {
      "file": "voice/surprise_02.mp3",
@@ -5081,18 +6445,24 @@
      "loop": false,
      "bytes": 3668,
      "source": "freesound:171942",
-     "text": "(gasp)"
+     "text": "(gasp)",
+     "onset": 0.038,
+     "peakAt": 0.196,
+     "tailEnd": 0.331
     },
     {
      "file": "voice/surprise_03.mp3",
      "duration": 0.58,
      "peak_db": -1.96,
-     "lufs": -15.0,
+     "lufs": -15,
      "channels": 1,
      "loop": false,
      "bytes": 5991,
      "source": "freesound:318077",
-     "text": "(whimper gasp)"
+     "text": "(whimper gasp)",
+     "onset": 0.002,
+     "peakAt": 0.347,
+     "tailEnd": 0.561
     }
    ],
    "desc": "startled gasps / yelps"
@@ -5103,13 +6473,16 @@
     {
      "file": "voice/taunt_01.mp3",
      "duration": 0.93,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -19.1,
      "channels": 1,
      "loop": false,
      "bytes": 9328,
      "source": "freesound:844208",
-     "text": "Fuck you, man!"
+     "text": "Fuck you, man!",
+     "onset": 0.046,
+     "peakAt": 0.117,
+     "tailEnd": 0.902
     },
     {
      "file": "voice/taunt_02.mp3",
@@ -5120,7 +6493,10 @@
      "loop": false,
      "bytes": 7399,
      "source": "freesound:844208",
-     "text": "Fuck you!"
+     "text": "Fuck you!",
+     "onset": 0.032,
+     "peakAt": 0.096,
+     "tailEnd": 0.712
     },
     {
      "file": "voice/taunt_03.mp3",
@@ -5131,18 +6507,24 @@
      "loop": false,
      "bytes": 29547,
      "source": "freesound:822686",
-     "text": "You fucking bitch, you will die!"
+     "text": "You fucking bitch, you will die!",
+     "onset": 0.042,
+     "peakAt": 2.577,
+     "tailEnd": 3.137
     },
     {
      "file": "voice/taunt_04.mp3",
      "duration": 1.53,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -20.6,
      "channels": 1,
      "loop": false,
      "bytes": 15815,
      "source": "freesound:826398",
-     "text": "Stop it, you motherfucker!"
+     "text": "Stop it, you motherfucker!",
+     "onset": 0.002,
+     "peakAt": 0.257,
+     "tailEnd": 1.513
     }
    ],
    "desc": "aggressive gang lines"
@@ -5153,142 +6535,184 @@
     {
      "file": "weapon/casing_01.mp3",
      "duration": 1.43,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -29.2,
      "channels": 1,
      "loop": false,
      "bytes": 15722,
-     "source": "freesound:210102"
+     "source": "freesound:210102",
+     "onset": 0.038,
+     "peakAt": 0.05,
+     "tailEnd": 1.413
     },
     {
      "file": "weapon/casing_02.mp3",
      "duration": 1.05,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -30.9,
      "channels": 1,
      "loop": false,
      "bytes": 9867,
-     "source": "freesound:210102"
+     "source": "freesound:210102",
+     "onset": 0.042,
+     "peakAt": 0.042,
+     "tailEnd": 1.022
     },
     {
      "file": "weapon/casing_03.mp3",
      "duration": 2.87,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -28.5,
      "channels": 1,
      "loop": false,
      "bytes": 25890,
-     "source": "freesound:210102"
+     "source": "freesound:210102",
+     "onset": 0.155,
+     "peakAt": 0.27,
+     "tailEnd": 2.846
     },
     {
      "file": "weapon/casing_04.mp3",
      "duration": 0.9,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -25.6,
      "channels": 1,
      "loop": false,
      "bytes": 8909,
-     "source": "freesound:210102"
+     "source": "freesound:210102",
+     "onset": 0.001,
+     "peakAt": 0.442,
+     "tailEnd": 0.892
     },
     {
      "file": "weapon/casing_05.mp3",
      "duration": 0.9,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -20.6,
      "channels": 1,
      "loop": false,
      "bytes": 9193,
-     "source": "freesound:210102"
+     "source": "freesound:210102",
+     "onset": 0.003,
+     "peakAt": 0.048,
+     "tailEnd": 0.872
     },
     {
      "file": "weapon/casing_06.mp3",
      "duration": 1.27,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -23.2,
      "channels": 1,
      "loop": false,
      "bytes": 11354,
-     "source": "freesound:210102"
+     "source": "freesound:210102",
+     "onset": 0.043,
+     "peakAt": 0.046,
+     "tailEnd": 0.992
     },
     {
      "file": "weapon/casing_07.mp3",
      "duration": 1.01,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -34.5,
      "channels": 1,
      "loop": false,
      "bytes": 7812,
-     "source": "freesound:318964"
+     "source": "freesound:318964",
+     "onset": 0.04,
+     "peakAt": 0.269,
+     "tailEnd": 0.902
     },
     {
      "file": "weapon/casing_08.mp3",
      "duration": 0.73,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -29.7,
      "channels": 1,
      "loop": false,
      "bytes": 7530,
-     "source": "freesound:318964"
+     "source": "freesound:318964",
+     "onset": 0.049,
+     "peakAt": 0.228,
+     "tailEnd": 0.692
     },
     {
      "file": "weapon/casing_09.mp3",
      "duration": 0.8,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -34.1,
      "channels": 1,
      "loop": false,
      "bytes": 7713,
-     "source": "freesound:318964"
+     "source": "freesound:318964",
+     "onset": 0.049,
+     "peakAt": 0.05,
+     "tailEnd": 0.752
     },
     {
      "file": "weapon/casing_10.mp3",
      "duration": 0.76,
-     "peak_db": -3.0,
-     "lufs": -31.0,
+     "peak_db": -3,
+     "lufs": -31,
      "channels": 1,
      "loop": false,
      "bytes": 6041,
-     "source": "freesound:318964"
+     "source": "freesound:318964",
+     "onset": 0.039,
+     "peakAt": 0.06,
+     "tailEnd": 0.692
     },
     {
      "file": "weapon/casing_11.mp3",
      "duration": 0.99,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -36.8,
      "channels": 1,
      "loop": false,
      "bytes": 5777,
-     "source": "freesound:318964"
+     "source": "freesound:318964",
+     "onset": 0.042,
+     "peakAt": 0.044,
+     "tailEnd": 0.962
     },
     {
      "file": "weapon/casing_12.mp3",
      "duration": 0.81,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -33.4,
      "channels": 1,
      "loop": false,
      "bytes": 6326,
-     "source": "freesound:318964"
+     "source": "freesound:318964",
+     "onset": 0.04,
+     "peakAt": 0.244,
+     "tailEnd": 0.732
     },
     {
      "file": "weapon/casing_13.mp3",
      "duration": 0.59,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -28.8,
      "channels": 1,
      "loop": false,
      "bytes": 6121,
-     "source": "freesound:318964"
+     "source": "freesound:318964",
+     "onset": 0.047,
+     "peakAt": 0.206,
+     "tailEnd": 0.551
     },
     {
      "file": "weapon/casing_14.mp3",
      "duration": 1.11,
-     "peak_db": -3.0,
+     "peak_db": -3,
      "lufs": -24.4,
      "channels": 1,
      "loop": false,
      "bytes": 9403,
-     "source": "freesound:318964"
+     "source": "freesound:318964",
+     "onset": 0.042,
+     "peakAt": 0.043,
+     "tailEnd": 1.072
     }
    ],
    "desc": "brass casing drop on concrete"
@@ -5299,52 +6723,67 @@
     {
      "file": "weapon/distant_indoor_01.mp3",
      "duration": 0.69,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -20.5,
      "channels": 1,
      "loop": false,
      "bytes": 5779,
-     "source": "freesound:803497"
+     "source": "freesound:803497",
+     "onset": 0.054,
+     "peakAt": 0.075,
+     "tailEnd": 0.431
     },
     {
      "file": "weapon/distant_indoor_02.mp3",
      "duration": 2.06,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -17.4,
      "channels": 1,
      "loop": false,
      "bytes": 13604,
-     "source": "freesound:427592"
+     "source": "freesound:427592",
+     "onset": 0.045,
+     "peakAt": 0.209,
+     "tailEnd": 1.684
     },
     {
      "file": "weapon/distant_indoor_03.mp3",
      "duration": 1.98,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -15.5,
      "channels": 1,
      "loop": false,
      "bytes": 12614,
-     "source": "freesound:344142"
+     "source": "freesound:344142",
+     "onset": 0.034,
+     "peakAt": 0.227,
+     "tailEnd": 1.543
     },
     {
      "file": "weapon/distant_indoor_04.mp3",
      "duration": 1.94,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -16.1,
      "channels": 1,
      "loop": false,
      "bytes": 12691,
-     "source": "freesound:812210"
+     "source": "freesound:812210",
+     "onset": 0.014,
+     "peakAt": 0.243,
+     "tailEnd": 1.523
     },
     {
      "file": "weapon/distant_indoor_05.mp3",
      "duration": 2.06,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -16.2,
      "channels": 1,
      "loop": false,
      "bytes": 12927,
-     "source": "freesound:402791"
+     "source": "freesound:402791",
+     "onset": 0.046,
+     "peakAt": 0.256,
+     "tailEnd": 1.634
     }
    ],
    "desc": "gunshots heard from another room / far side of the warehouse"
@@ -5355,12 +6794,15 @@
     {
      "file": "weapon/distant_outdoor_01.mp3",
      "duration": 0.81,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -21.6,
      "channels": 1,
      "loop": false,
      "bytes": 7130,
-     "source": "freesound:536630"
+     "source": "freesound:536630",
+     "onset": 0.012,
+     "peakAt": 0.026,
+     "tailEnd": 0.641
     },
     {
      "file": "weapon/distant_outdoor_02.mp3",
@@ -5370,37 +6812,49 @@
      "channels": 1,
      "loop": false,
      "bytes": 21408,
-     "source": "freesound:201672"
+     "source": "freesound:201672",
+     "onset": 0.046,
+     "peakAt": 0.804,
+     "tailEnd": 1.974
     },
     {
      "file": "weapon/distant_outdoor_03.mp3",
      "duration": 1.01,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -22.4,
      "channels": 1,
      "loop": false,
      "bytes": 6243,
-     "source": "freesound:337240"
+     "source": "freesound:337240",
+     "onset": 0.001,
+     "peakAt": 0.006,
+     "tailEnd": 0.802
     },
     {
      "file": "weapon/distant_outdoor_04.mp3",
      "duration": 2.2,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -15.3,
      "channels": 1,
      "loop": false,
      "bytes": 13420,
-     "source": "freesound:49513"
+     "source": "freesound:49513",
+     "onset": 0.074,
+     "peakAt": 0.202,
+     "tailEnd": 1.543
     },
     {
      "file": "weapon/distant_outdoor_05.mp3",
      "duration": 0.89,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -18.8,
      "channels": 1,
      "loop": false,
      "bytes": 6088,
-     "source": "freesound:163457"
+     "source": "freesound:163457",
+     "onset": 0,
+     "peakAt": 0.021,
+     "tailEnd": 0.702
     }
    ],
    "desc": "gunshots far away outdoors"
@@ -5411,22 +6865,28 @@
     {
      "file": "weapon/dryfire_01.mp3",
      "duration": 0.58,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -22.3,
      "channels": 1,
      "loop": false,
      "bytes": 6439,
-     "source": "freesound:171211"
+     "source": "freesound:171211",
+     "onset": 0.046,
+     "peakAt": 0.048,
+     "tailEnd": 0.22
     },
     {
      "file": "weapon/dryfire_02.mp3",
      "duration": 0.44,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -17.7,
      "channels": 1,
      "loop": false,
      "bytes": 5739,
-     "source": "freesound:725402"
+     "source": "freesound:725402",
+     "onset": 0.006,
+     "peakAt": 0.057,
+     "tailEnd": 0.231
     }
    ],
    "desc": "trigger click on empty chamber"
@@ -5437,92 +6897,119 @@
     {
      "file": "weapon/pistol_mag_01.mp3",
      "duration": 0.62,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -22.9,
      "channels": 1,
      "loop": false,
      "bytes": 8264,
-     "source": "freesound:456195"
+     "source": "freesound:456195",
+     "onset": 0.05,
+     "peakAt": 0.418,
+     "tailEnd": 0.521
     },
     {
      "file": "weapon/pistol_mag_02.mp3",
      "duration": 0.65,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -21.1,
      "channels": 1,
      "loop": false,
      "bytes": 8081,
-     "source": "freesound:456195"
+     "source": "freesound:456195",
+     "onset": 0.086,
+     "peakAt": 0.43,
+     "tailEnd": 0.541
     },
     {
      "file": "weapon/pistol_mag_03.mp3",
      "duration": 0.49,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -25.3,
      "channels": 1,
      "loop": false,
      "bytes": 6857,
-     "source": "freesound:456195"
+     "source": "freesound:456195",
+     "onset": 0.083,
+     "peakAt": 0.272,
+     "tailEnd": 0.371
     },
     {
      "file": "weapon/pistol_mag_04.mp3",
      "duration": 0.51,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -23.9,
      "channels": 1,
      "loop": false,
      "bytes": 6255,
-     "source": "freesound:456195"
+     "source": "freesound:456195",
+     "onset": 0.092,
+     "peakAt": 0.286,
+     "tailEnd": 0.391
     },
     {
      "file": "weapon/pistol_mag_05.mp3",
      "duration": 0.45,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -15.5,
      "channels": 1,
      "loop": false,
      "bytes": 7798,
-     "source": "freesound:854460"
+     "source": "freesound:854460",
+     "onset": 0.045,
+     "peakAt": 0.31,
+     "tailEnd": 0.421
     },
     {
      "file": "weapon/pistol_mag_06.mp3",
      "duration": 0.25,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -22.4,
      "channels": 1,
      "loop": false,
      "bytes": 4095,
-     "source": "freesound:854460"
+     "source": "freesound:854460",
+     "onset": 0.045,
+     "peakAt": 0.047,
+     "tailEnd": 0.22
     },
     {
      "file": "weapon/pistol_mag_07.mp3",
      "duration": 0.23,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -14.7,
      "channels": 1,
      "loop": false,
      "bytes": 4720,
-     "source": "freesound:854460"
+     "source": "freesound:854460",
+     "onset": 0.044,
+     "peakAt": 0.121,
+     "tailEnd": 0.2
     },
     {
      "file": "weapon/pistol_mag_08.mp3",
      "duration": 0.52,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -25.2,
      "channels": 1,
      "loop": false,
      "bytes": 7221,
-     "source": "freesound:854460"
+     "source": "freesound:854460",
+     "onset": 0.044,
+     "peakAt": 0.442,
+     "tailEnd": 0.491
     },
     {
      "file": "weapon/pistol_mag_09.mp3",
      "duration": 0.25,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -14.4,
      "channels": 1,
      "loop": false,
      "bytes": 5059,
-     "source": "freesound:854460"
+     "source": "freesound:854460",
+     "onset": 0.041,
+     "peakAt": 0.147,
+     "tailEnd": 0.22
     }
    ],
    "desc": "magazine handling (out or in - not labelled in the source)"
@@ -5533,28 +7020,34 @@
     {
      "file": "weapon/pistol_magin_01.mp3",
      "duration": 0.85,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -23.9,
      "channels": 1,
      "loop": false,
      "bytes": 10011,
-     "source": "freesound:171209"
+     "source": "freesound:171209",
+     "onset": 0.144,
+     "peakAt": 0.311,
+     "tailEnd": 0.481
     },
     {
      "file": "weapon/pistol_magin_02.mp3",
      "duration": 0.55,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -19.7,
      "channels": 1,
      "loop": false,
      "bytes": 6882,
-     "source": "freesound:171614"
+     "source": "freesound:171614",
+     "onset": 0.1,
+     "peakAt": 0.2,
+     "tailEnd": 0.501
     }
    ],
    "desc": "magazine inserted into pistol"
   },
   "weapon.pistol.shot": {
-   "gain": 1.0,
+   "gain": 1,
    "variations": [
     {
      "file": "weapon/pistol_shot_01.mp3",
@@ -5564,7 +7057,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 15799,
-     "source": "freesound:427592"
+     "source": "freesound:427592",
+     "onset": 0.044,
+     "peakAt": 0.057,
+     "tailEnd": 1.223
     },
     {
      "file": "weapon/pistol_shot_02.mp3",
@@ -5574,7 +7070,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 8805,
-     "source": "freesound:402789"
+     "source": "freesound:402789",
+     "onset": 0.057,
+     "peakAt": 0.072,
+     "tailEnd": 0.591
     },
     {
      "file": "weapon/pistol_shot_03.mp3",
@@ -5584,17 +7083,23 @@
      "channels": 1,
      "loop": false,
      "bytes": 6991,
-     "source": "freesound:344142"
+     "source": "freesound:344142",
+     "onset": 0.031,
+     "peakAt": 0.108,
+     "tailEnd": 0.521
     },
     {
      "file": "weapon/pistol_shot_04.mp3",
      "duration": 0.66,
      "peak_db": -2.03,
-     "lufs": -13.0,
+     "lufs": -13,
      "channels": 1,
      "loop": false,
      "bytes": 7852,
-     "source": "freesound:344143"
+     "source": "freesound:344143",
+     "onset": 0.027,
+     "peakAt": 0.049,
+     "tailEnd": 0.641
     },
     {
      "file": "weapon/pistol_shot_05.mp3",
@@ -5604,7 +7109,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 15215,
-     "source": "freesound:803495"
+     "source": "freesound:803495",
+     "onset": 0.046,
+     "peakAt": 0.079,
+     "tailEnd": 1.102
     },
     {
      "file": "weapon/pistol_shot_06.mp3",
@@ -5614,7 +7122,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 11439,
-     "source": "freesound:767900"
+     "source": "freesound:767900",
+     "onset": 0.051,
+     "peakAt": 0.09,
+     "tailEnd": 0.742
     },
     {
      "file": "weapon/pistol_shot_07.mp3",
@@ -5624,7 +7135,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 15469,
-     "source": "freesound:388051"
+     "source": "freesound:388051",
+     "onset": 0.041,
+     "peakAt": 0.045,
+     "tailEnd": 1.463
     },
     {
      "file": "weapon/pistol_shot_08.mp3",
@@ -5634,7 +7148,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 5710,
-     "source": "freesound:163456"
+     "source": "freesound:163456",
+     "onset": 0,
+     "peakAt": 0.002,
+     "tailEnd": 0.371
     }
    ],
    "desc": "player / enemy 9 mm pistol, close (indoor rooms and ranges)"
@@ -5645,12 +7162,15 @@
     {
      "file": "weapon/pistol_slide_01.mp3",
      "duration": 0.97,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -18.7,
      "channels": 1,
      "loop": false,
      "bytes": 13352,
-     "source": "freesound:442560"
+     "source": "freesound:442560",
+     "onset": 0.045,
+     "peakAt": 0.12,
+     "tailEnd": 0.621
     },
     {
      "file": "weapon/pistol_slide_02.mp3",
@@ -5660,27 +7180,36 @@
      "channels": 1,
      "loop": false,
      "bytes": 4275,
-     "source": "freesound:589849"
+     "source": "freesound:589849",
+     "onset": 0.043,
+     "peakAt": 0.073,
+     "tailEnd": 0.251
     },
     {
      "file": "weapon/pistol_slide_03.mp3",
      "duration": 0.44,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -16.3,
      "channels": 1,
      "loop": false,
      "bytes": 5083,
-     "source": "freesound:589849"
+     "source": "freesound:589849",
+     "onset": 0.047,
+     "peakAt": 0.071,
+     "tailEnd": 0.321
     },
     {
      "file": "weapon/pistol_slide_04.mp3",
      "duration": 0.5,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -16.3,
      "channels": 1,
      "loop": false,
      "bytes": 7067,
-     "source": "freesound:589849"
+     "source": "freesound:589849",
+     "onset": 0.04,
+     "peakAt": 0.267,
+     "tailEnd": 0.421
     },
     {
      "file": "weapon/pistol_slide_05.mp3",
@@ -5690,37 +7219,49 @@
      "channels": 1,
      "loop": false,
      "bytes": 6492,
-     "source": "freesound:589849"
+     "source": "freesound:589849",
+     "onset": 0.04,
+     "peakAt": 0.244,
+     "tailEnd": 0.401
     },
     {
      "file": "weapon/pistol_slide_06.mp3",
      "duration": 0.46,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -15.7,
      "channels": 1,
      "loop": false,
      "bytes": 5868,
-     "source": "freesound:589849"
+     "source": "freesound:589849",
+     "onset": 0.045,
+     "peakAt": 0.21,
+     "tailEnd": 0.371
     },
     {
      "file": "weapon/pistol_slide_07.mp3",
      "duration": 0.39,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -20.8,
      "channels": 1,
      "loop": false,
      "bytes": 6649,
-     "source": "freesound:842731"
+     "source": "freesound:842731",
+     "onset": 0.047,
+     "peakAt": 0.188,
+     "tailEnd": 0.301
     },
     {
      "file": "weapon/pistol_slide_08.mp3",
      "duration": 0.56,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -22.3,
      "channels": 1,
      "loop": false,
      "bytes": 7847,
-     "source": "freesound:842731"
+     "source": "freesound:842731",
+     "onset": 0.047,
+     "peakAt": 0.257,
+     "tailEnd": 0.401
     },
     {
      "file": "weapon/pistol_slide_09.mp3",
@@ -5730,7 +7271,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 7530,
-     "source": "freesound:842731"
+     "source": "freesound:842731",
+     "onset": 0.05,
+     "peakAt": 0.209,
+     "tailEnd": 0.311
     },
     {
      "file": "weapon/pistol_slide_10.mp3",
@@ -5740,7 +7284,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 4404,
-     "source": "freesound:842731"
+     "source": "freesound:842731",
+     "onset": 0.074,
+     "peakAt": 0.114,
+     "tailEnd": 0.14
     },
     {
      "file": "weapon/pistol_slide_11.mp3",
@@ -5750,7 +7297,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 3937,
-     "source": "freesound:842731"
+     "source": "freesound:842731",
+     "onset": 0.047,
+     "peakAt": 0.091,
+     "tailEnd": 0.11
     }
    ],
    "desc": "pistol slide rack / release"
@@ -5761,12 +7311,15 @@
     {
      "file": "weapon/rifle_burst_01.mp3",
      "duration": 1.55,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -15.5,
      "channels": 1,
      "loop": false,
      "bytes": 15516,
-     "source": "freesound:402791"
+     "source": "freesound:402791",
+     "onset": 0.001,
+     "peakAt": 0.11,
+     "tailEnd": 1.483
     },
     {
      "file": "weapon/rifle_burst_02.mp3",
@@ -5776,17 +7329,23 @@
      "channels": 1,
      "loop": false,
      "bytes": 16299,
-     "source": "freesound:402791"
+     "source": "freesound:402791",
+     "onset": 0,
+     "peakAt": 1.081,
+     "tailEnd": 1.473
     },
     {
      "file": "weapon/rifle_burst_03.mp3",
      "duration": 1.49,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -17.2,
      "channels": 1,
      "loop": false,
      "bytes": 14995,
-     "source": "freesound:402791"
+     "source": "freesound:402791",
+     "onset": 0.001,
+     "peakAt": 0.809,
+     "tailEnd": 1.433
     },
     {
      "file": "weapon/rifle_burst_04.mp3",
@@ -5796,7 +7355,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 21947,
-     "source": "freesound:402791"
+     "source": "freesound:402791",
+     "onset": 0.002,
+     "peakAt": 0.151,
+     "tailEnd": 2.195
     }
    ],
    "desc": "enemy rifle full-auto bursts (indoor range)"
@@ -5807,12 +7369,15 @@
     {
      "file": "weapon/rifle_shot_01.mp3",
      "duration": 0.53,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -17.5,
      "channels": 1,
      "loop": false,
      "bytes": 5392,
-     "source": "freesound:163457"
+     "source": "freesound:163457",
+     "onset": 0,
+     "peakAt": 0.007,
+     "tailEnd": 0.311
     },
     {
      "file": "weapon/rifle_shot_02.mp3",
@@ -5822,7 +7387,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 11203,
-     "source": "freesound:812211"
+     "source": "freesound:812211",
+     "onset": 0.014,
+     "peakAt": 0.148,
+     "tailEnd": 0.852
     },
     {
      "file": "weapon/rifle_shot_03.mp3",
@@ -5832,7 +7400,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 10344,
-     "source": "freesound:812210"
+     "source": "freesound:812210",
+     "onset": 0.014,
+     "peakAt": 0.016,
+     "tailEnd": 0.782
     },
     {
      "file": "weapon/rifle_shot_04.mp3",
@@ -5842,27 +7413,36 @@
      "channels": 1,
      "loop": false,
      "bytes": 7708,
-     "source": "freesound:427598"
+     "source": "freesound:427598",
+     "onset": 0.034,
+     "peakAt": 0.043,
+     "tailEnd": 0.621
     },
     {
      "file": "weapon/rifle_shot_05.mp3",
      "duration": 1.52,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -16.5,
      "channels": 1,
      "loop": false,
      "bytes": 12235,
-     "source": "freesound:402791"
+     "source": "freesound:402791",
+     "onset": 0.042,
+     "peakAt": 0.19,
+     "tailEnd": 1.092
     },
     {
      "file": "weapon/rifle_shot_06.mp3",
      "duration": 1.67,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -15.8,
      "channels": 1,
      "loop": false,
      "bytes": 12726,
-     "source": "freesound:402791"
+     "source": "freesound:402791",
+     "onset": 0.044,
+     "peakAt": 0.069,
+     "tailEnd": 1.243
     },
     {
      "file": "weapon/rifle_shot_07.mp3",
@@ -5872,17 +7452,23 @@
      "channels": 1,
      "loop": false,
      "bytes": 13353,
-     "source": "freesound:402791"
+     "source": "freesound:402791",
+     "onset": 0.042,
+     "peakAt": 0.073,
+     "tailEnd": 1.243
     },
     {
      "file": "weapon/rifle_shot_08.mp3",
      "duration": 1.51,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -13.5,
      "channels": 1,
      "loop": false,
      "bytes": 11739,
-     "source": "freesound:402791"
+     "source": "freesound:402791",
+     "onset": 0.047,
+     "peakAt": 0.202,
+     "tailEnd": 1.233
     },
     {
      "file": "weapon/rifle_shot_09.mp3",
@@ -5892,7 +7478,10 @@
      "channels": 1,
      "loop": false,
      "bytes": 12910,
-     "source": "freesound:402791"
+     "source": "freesound:402791",
+     "onset": 0.044,
+     "peakAt": 0.165,
+     "tailEnd": 1.223
     }
    ],
    "desc": "enemy rifle (AK-type), single shots"
@@ -5903,22 +7492,28 @@
     {
      "file": "weapon/shotgun_shot_01.mp3",
      "duration": 1.55,
-     "peak_db": -1.0,
-     "lufs": -17.0,
+     "peak_db": -1,
+     "lufs": -17,
      "channels": 1,
      "loop": false,
      "bytes": 14113,
-     "source": "freesound:427595"
+     "source": "freesound:427595",
+     "onset": 0.045,
+     "peakAt": 0.066,
+     "tailEnd": 1.092
     },
     {
      "file": "weapon/shotgun_shot_02.mp3",
      "duration": 0.59,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -17.9,
      "channels": 1,
      "loop": false,
      "bytes": 6174,
-     "source": "freesound:163455"
+     "source": "freesound:163455",
+     "onset": 0.014,
+     "peakAt": 0.026,
+     "tailEnd": 0.451
     }
    ],
    "desc": "shotgun"
@@ -5929,22 +7524,28 @@
     {
      "file": "weapon/smg_burst_01.mp3",
      "duration": 2.79,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -13.7,
      "channels": 1,
      "loop": false,
      "bytes": 33143,
-     "source": "freesound:201667"
+     "source": "freesound:201667",
+     "onset": 0,
+     "peakAt": 0.386,
+     "tailEnd": 1.964
     },
     {
      "file": "weapon/smg_burst_02.mp3",
      "duration": 2.41,
-     "peak_db": -1.0,
+     "peak_db": -1,
      "lufs": -14.6,
      "channels": 1,
      "loop": false,
      "bytes": 27140,
-     "source": "freesound:201671"
+     "source": "freesound:201671",
+     "onset": 0.029,
+     "peakAt": 0.392,
+     "tailEnd": 2.375
     }
    ],
    "desc": "SMG bursts (MP5)"
