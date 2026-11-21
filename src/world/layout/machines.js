@@ -41,4 +41,4 @@ export const AGVS = [
 export const CRANES = [{ id: 'rbg1', x: 89.7, z0: 1.0, z1: 31.5, mastH: 11.5, speed: 2.5, state: 'running' }];
 
 // Palletising robot (6-axis arm proxy) and its pallet stations.
-export const ROBOTS = [{ id: 'roboter1', base: [90, 0.8, 41], reach: 2.6, stations: [[86.6, 44.2], [93.4, 44.2]], state: 'idle' }];
+export const ROBOTS = [{ id: 'roboter1', base: [90, 0.8, 41], reach: 3.0, stations: [[87.5, 42.4], [92.5, 42.4]], state: 'idle' }];

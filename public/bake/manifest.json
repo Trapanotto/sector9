@@ -1,8 +1,8 @@
 {
  "format": "sector9-bake",
  "version": 2,
- "hash": "e4559c09",
- "created": "2026-11-21T10:34:17.508Z",
+ "hash": "4bcefd56",
+ "created": "2026-11-21T11:48:18.357Z",
  "quick": false,
  "params": {
   "lmRays": 96,
@@ -254,12 +254,13 @@
    "gang3_n",
    "gang3_s",
    "gang4_n",
+   "gang5_n",
    "gang5_s",
    "gang6_n",
-   "gang7_n",
    "gang8_s",
    "hof",
-   "west"
+   "west",
+   "nord"
   ],
   "wareneingang": [
    "keller_treppe",
@@ -654,7 +655,6 @@
    "halle_m",
    "halle_s",
    "gang0_n",
-   "gang0_s",
    "gang1_n",
    "gang1_s",
    "gang2_n",
@@ -829,6 +829,7 @@
    "auto_s"
   ],
   "gang7_s": [
+   "wareneingang",
    "steg",
    "halle_n",
    "halle_m",
@@ -1000,6 +1001,7 @@
    "west"
   ],
   "roboter": [
+   "steg",
    "halle_s",
    "gang7_n",
    "gang8_n",
@@ -1121,21 +1123,21 @@
  },
  "files": {
   "lm_day.bin": {
-   "bytes": 2983610,
+   "bytes": 2983593,
    "raw": 7602176
   },
   "lm_art.bin": {
-   "bytes": 2517940,
+   "bytes": 2517722,
    "raw": 7602176
   },
   "vlight.bin": {
-   "bytes": 999685,
+   "bytes": 999668,
    "raw": 1369504
   },
   "probes.bin": {
-   "bytes": 2184199,
+   "bytes": 2183979,
    "raw": 3735324
   }
  },
- "seconds": 45.2
+ "seconds": 84.6
 }

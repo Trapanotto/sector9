@@ -8,7 +8,6 @@
 // Groups (prop type names, or raw groups such as 'rack', 'akl', 'conveyor', 'rail', 'lamp') whose greybox proxy
 // faces are NOT drawn because art (A) renders its own models in place. Collision, nav, bake and bullets still use
 // the proxies. Example: export const HIDE_PROXY_GROUPS = ['pallet_load', 'rack'];
-export const HIDE_PROXY_GROUPS = [];
 
 const P = (x0, y0, z0, x1, y1, z1, surf, f) => [x0, y0, z0, x1, y1, z1, surf, f];
 const pallet = P(-0.6, 0, -0.4, 0.6, 0.144, 0.4, 'wood');
@@ -101,3 +100,10 @@ export const PROP_TYPES = {
   lamp_highbay: { boxes: [P(-0.3, -0.15, -0.3, 0.3, 0, 0.3, 'dark', { emit: 6 })], noCollide: true },
   lamp_tube: { boxes: [P(-0.75, -0.06, -0.08, 0.75, 0, 0.08, 'white', { emit: 4 })], noCollide: true },
 };
+
+// Art (src/world/art) renders every prop type except the circuit-driven lamp boxes, plus racking, high-bay store,
+// basement pipes, conveyor frames/posts, sorter chutes, the crane rail and the railings.
+export const HIDE_PROXY_GROUPS = [
+  ...Object.keys(PROP_TYPES).filter((t) => !t.startsWith('lamp_')),
+  'rack', 'akl', 'pipe', 'conveyor', 'conveyor_post', 'chute', 'crane_rail', 'rail',
+];

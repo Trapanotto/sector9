@@ -98,7 +98,7 @@ export const RAW = [
 
 export const PROPS = [
   // ---- Hof (yard) ----
-  I('trailer', 5, 71.3, 0, 0, 'trailer_tor1'),
+  I('trailer', 5, 71.3, 2, 0, 'trailer_tor1'),   // rear doors against Tor 1
   I('truck', 19, 69.5, 2, 0, 'lkw_tor3'),
   I('container20', 40, 82, 1), I('container20', 40, 82, 1, 2.59), I('container40', 62, 92, 1),
   I('container20', 88, 85, 0),
@@ -161,7 +161,7 @@ export const PROPS = [
 
   // ---- Automation zone ----
   I('charger', 73.1, 49.45, 0, 0, 'ladestation1'), I('charger', 75.0, 49.45),
-  I('robot_base', 90, 41, 0, 0, 'roboter1'), I('pallet_cartons', 86.6, 44.2), I('pallet_cartons', 93.4, 44.2),
+  I('robot_base', 90, 41, 0, 0, 'roboter1'), I('pallet_cartons', 87.5, 42.4), I('pallet_cartons', 92.5, 42.4),
   I('pallet_load', 74, 55), I('pallet_load', 75.4, 55), I('pallet_load', 76.8, 55),
   I('roll_cage', 80, 52), I('roll_cage', 80.9, 52), I('bins', 84.5, 52.5),
   // cold store
