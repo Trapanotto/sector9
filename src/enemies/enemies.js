@@ -1,328 +1,150 @@
+// STUB (workstream D replaces this with authored rigged CC0 characters, animation and real AI; keep the ctx.enemies
+// interface from CONTRACT.md). Proxies: one low-poly capsule-ish mesh per enemy (probe lit), PVS/LOD culling via
+// ctx.lod, hittable with head/torso/legs, minimal behaviour: guards/patrols turn to and shoot at a visible player,
+// patrols walk their waypoints along nav paths, sleepers lie down until alerted.
 import * as THREE from 'three';
-import { TUNING as T } from './tuning.js';
-import { createCharacter, lookFor, createHitShapes, updateHitShapes, raySphere, rayCapsule } from './character.js';
-import { Animator } from './animator.js';
-import { Ragdoll } from './ragdoll.js';
-import { createNav } from './nav.js';
-import { updateEnemyAI, enterCombat, hearNoise, onDamaged, releaseAll, returnToRoutine } from './ai.js';
+import { createDynamicMaterial } from '../render/materials.js';
 
-// Hostiles module (contract: createEnemies(ctx) -> { list, aliveCount, update, reset, raycast, alertNoise }).
-// Reads sibling modules from ctx lazily; every cross-module call is optional-chained.
-
-const rand = (a, b) => a + Math.random() * (b - a);
-
-/** Spawn yaw uses the player/camera convention (yaw 0 looks toward -Z); our heading uses forward = (sin h, 0, cos h). */
-const spawnYawToHeading = (yaw) => (yaw ?? 0) + Math.PI;
+const ROLE_COLOR = { guard: [0.25, 0.22, 0.2], patrol: [0.18, 0.22, 0.28], sleeper: [0.3, 0.26, 0.2], ambusher: [0.22, 0.18, 0.16] };
 
 export function createEnemies(ctx) {
-  const list = [];
-  let nav = null;
-  let navLevel = null;
+  const api = { id: 'enemies', order: ctx.ORDER.enemies, list: [] };
+  const geo = new THREE.CylinderGeometry(0.24, 0.2, 1.75, 8, 1);
+  geo.translate(0, 0.875, 0);
+  const headGeo = new THREE.BoxGeometry(0.2, 0.24, 0.22); headGeo.translate(0, 1.62, 0.02);
+  const merged = mergeTwo(geo, headGeo);
+  const path = new Int32Array(512);
+  const eye = { x: 0, y: 0, z: 0 }, tgt = { x: 0, y: 0, z: 0 }, dir = { x: 0, y: 0, z: 0 };
 
-  const pinfo = {
-    ok: false, alive: false, pos: new THREE.Vector3(), chest: new THREE.Vector3(), head: new THREE.Vector3(),
-    vel: new THREE.Vector3(), speed: 0, height: 1.8, crouched: false, noise: 0, look: new THREE.Vector3(0, 0, -1),
-  };
-
-  const timers = [];
-  const W = {
-    ctx, nav: null, time: 0, frame: 0, list, pinfo,
-    pathBudget: 0, coverBudget: 0, pushers: new Set(), coverReserve: new Map(), combatCount: 0,
-    los(a, b) {
-      const c = ctx.combat;
-      if (!c?.lineOfSight) return false;
-      try { return c.lineOfSight(a, b); } catch { return false; }
-    },
-    // Floors can be stacked (basement, upper storey, catwalks): the fallback height every caller passes is the
-    // reference height the level picks the floor for (highest floor at or below it + step tolerance).
-    ground(x, z, fallback = 0) {
-      const g = ctx.level?.groundHeight?.(x, z, Number.isFinite(fallback) ? fallback : 0);
-      return Number.isFinite(g) ? g : fallback;
-    },
-    schedule(delay, fn) { timers.push({ t: W.time + delay, fn }); },
-    alertAllies(src) {
-      W.schedule(rand(T.ally.shoutDelayMin, T.ally.shoutDelayMax), () => {
-        if (src.alive) ctx.audio?.play?.('shout', { position: src.eye.clone() });
-      });
-      for (const o of list) {
-        if (o === src || !o.alive || o.state === 'combat') continue;
-        const d = o.position.distanceTo(src.position);
-        if (d > T.ally.radius && !(d < 40 && W.los(o.eye, src.eye))) continue;
-        W.schedule(rand(T.ally.delayMin, T.ally.delayMax) + d * 0.02, () => {
-          if (!o.alive || o.state === 'combat') return;
-          const p = src.lastKnown.clone();
-          p.x += (Math.random() - 0.5) * 2 * T.ally.reportError; p.z += (Math.random() - 0.5) * 2 * T.ally.reportError;
-          p.y = W.ground(p.x, p.z, src.lastKnown.y);
-          enterCombat(o, W, 'ally', p);
-        });
-      }
-    },
-    // gunfire is loud: idle colleagues within earshot join the fight (no shout chain)
-    onEnemyShot(src) {
-      for (const o of list) {
-        if (o === src || !o.alive || o.state === 'combat' || o.pendingJoin) continue;
-        const d = o.position.distanceTo(src.position);
-        if (d > (T.ally.gunfireRadius ?? 22)) continue;
-        o.pendingJoin = true;
-        W.schedule(rand(0.4, 1.0) + d * 0.03, () => {
-          o.pendingJoin = false;
-          if (!o.alive || o.state === 'combat') return;
-          enterCombat(o, W, 'ally', src.lastKnown.clone());
-        });
-      }
-    },
-    groundFn: null,
-  };
-  W.groundFn = (x, z) => W.ground(x, z, NaN);
-
-  function getNav() {
-    const lvl = ctx.level;
-    if (!nav || navLevel !== lvl) { nav = createNav(lvl, T.move.radius); navLevel = lvl; W.nav = nav; }
-    return nav;
-  }
-
-  function makeEnemy(spawn, index) {
-    const weaponType = Math.random() < (spawn.type === 'guard' ? 0.5 : 0.35) ? 'rifle' : 'pistol';
-    const { look, bulk } = lookFor(index);
-    const ch = createCharacter({ weaponType, renderer: ctx.renderer, look, bulk });
-    const anim = new Animator(ch);
-    const heading = spawnYawToHeading(spawn.yaw);
-    const home = (spawn.position || new THREE.Vector3()).clone();
-    home.y = W.ground(home.x, home.z, home.y);
-    const patrol = (spawn.patrol || []).filter(Boolean).map((p) => { const q = p.clone(); q.y = W.ground(q.x, q.z, q.y); return q; });
-    const type = spawn.type || (patrol.length ? 'patrol' : 'guard');
-    const magSize = weaponType === 'rifle' ? T.fire.magRifle : T.fire.magPistol;
-    const e = {
-      index, spawn, type, weaponType, ch, anim,
-      position: home.clone(), velocity: new THREE.Vector3(),
-      alive: true, state: patrol.length && type !== 'guard' ? 'patrol' : 'idle', health: T.health,
-      home, homeYaw: heading, patrol: type === 'guard' ? [] : patrol, wpIdx: 0,
-      temper: Math.random(),
-      // orientation
-      aimYaw: heading, aimPitch: 0, lookYaw: heading, lookPitch: 0, lookOff: 0, lookOffset: 0,
-      wantYaw: null, wantPitch: 0, wantRaise: 0, wantCrouch: 0,
-      // perception
-      eye: new THREE.Vector3(), meter: 0, canSee: false, visFrac: 0, senseTimer: rand(0, T.vision.tickMax), senseAcc: 0,
-      lastSeenTime: -1e9, lastKnown: home.clone(), lastKnownVel: new THREE.Vector3(), hasLastKnown: false, distToPlayer: Infinity,
-      alert: 0, pendingJoin: false,
-      // combat
-      reaction: 0, sightTime: 0, lostTime: 0, hadSight: false, combatTime: 0,
-      burstLeft: 0, nextShot: 0, mag: magSize, magSize, reloadT: -1, reloadDur: 2.5, reloadInPlayed: false,
-      suppressed: 0, stagger: 0, shotsFired: 0,
-      tactic: null, cover: null, coverPhase: 'hide', coverTimer: 0, decisionTimer: 0, holdCrouch: false, isPusher: false,
-      // sub states
-      sus: null, search: null,
-      routine: { lookT: 0, lookOff: 0, bodyTurn: false, shiftT: rand(6, 14), shifting: false, shiftTarget: new THREE.Vector3(), holdT: 0, waitT: 0, waitYaw: heading },
-      // navigation
-      moving: false, moveTarget: new THREE.Vector3(), moveSpeed: 0, path: [], pathIdx: 0, needPath: false, arrived: true, pathFailed: false,
-      repathCooldown: 0, stuckT: 0, stuckRef: home.clone(), stuckCount: 0,
-      // body
-      hit: createHitShapes(), ragdoll: null,
-      takeDamage(amount, part, dir, point) { damage(e, amount, part, dir, point); },
-    };
-    // floor lookups for feet IK / ragdoll at this enemy's own height (stacked floors)
-    e.groundFn = (x, z) => W.ground(x, z, e.position.y + 0.3);
-    // set-ups from the spawn data: a sleeper does not look around until woken (noise, damage, the player close by
-    // or running nearby); a timed patrol stands still until its start delay has passed
-    if (spawn.asleep) {
-      e.asleep = true;
-      e.senseTimer = 1e9;
-      const wake = () => {
-        if (!e.alive || !e.asleep) return;
-        const P = W.pinfo;
-        const d = P.ok ? Math.hypot(P.pos.x - e.position.x, P.pos.z - e.position.z) : Infinity;
-        const heard = P.ok && P.noise * T.hearing.footstepRange * 0.45 > d;
-        if (e.state !== 'idle' || e.alert > 0 || e.health < T.health || d < 2.2 || heard) { e.asleep = false; e.senseTimer = 0.2; return; }
-        W.schedule(0.25, wake);
+  api.init = () => {
+    const mats = {};
+    for (const [r, c] of Object.entries(ROLE_COLOR)) mats[r] = createDynamicMaterial({ color: c });
+    ctx.layout.enemies.forEach((def, i) => {
+      const mesh = new THREE.Mesh(merged, mats[def.role] ?? mats.guard);
+      mesh.name = `enemy:${def.id}`;
+      ctx.render.scene.add(mesh);
+      const e = {
+        def, id: def.id, index: i, kind: 'enemy', team: 'gang', mesh,
+        pos: new THREE.Vector3(), yaw: 0, health: 100, dead: false, alerted: false, cool: 0, wp: 0, path: [], pathI: 0, repath: 0, lod: 0,
+        raycast(o, d, maxT, part) {
+          // vertical cylinder r 0.28, height 1.8 (lying: low box)
+          const lying = e.dead || (def.role === 'sleeper' && !e.alerted);
+          const h = lying ? 0.45 : 1.8;
+          const ox = o.x - e.pos.x, oz = o.z - e.pos.z, a = d.x * d.x + d.z * d.z;
+          if (a < 1e-8) return -1;
+          const R = lying ? 0.9 : 0.28;
+          const b = 2 * (ox * d.x + oz * d.z), c = ox * ox + oz * oz - R * R, disc = b * b - 4 * a * c;
+          if (disc < 0) return -1;
+          const t = (-b - Math.sqrt(disc)) / (2 * a);
+          if (t < 0 || t > maxT) return -1;
+          const y = o.y + d.y * t - e.pos.y;
+          if (y < 0 || y > h) return -1;
+          part.name = !lying && y > 1.5 ? 'head' : y > 0.9 ? 'torso' : 'legs';
+          return t;
+        },
+        onHit(res) {
+          if (e.dead) return;
+          const dmg = res.damage * (res.part === 'head' ? 4 : res.part === 'legs' ? 0.6 : 1);
+          e.health -= dmg; e.alerted = true;
+          ctx.events.emit('enemy:damage', { id: e.id, enemy: e, amount: dmg, part: res.part });
+          if (e.health <= 0) { e.dead = true; ctx.events.emit('enemy:death', { id: e.id, enemy: e, part: res.part }); }
+        },
       };
-      W.schedule(0.5, wake);
-    }
-    if (spawn.startDelay > 0 && e.state === 'patrol') {
-      e.state = 'idle';
-      W.schedule(spawn.startDelay, () => { if (e.alive && e.state === 'idle') e.state = 'patrol'; });
-    }
-    anim.teleport(e.position, heading);
-    ctx.scene?.add(ch.root);
-    animate(e, 1 / 60);
-    return e;
-  }
-
-  function animate(e, dt) {
-    e.ch.root.position.copy(e.position);
-    // a sleeper slumps: deep crouch against whatever is behind him, weapon down, chin on the chest
-    const zz = e.asleep && e.alive;
-    e.anim.update(dt, {
-      aimYaw: e.aimYaw, aimPitch: zz ? -0.5 : e.aimPitch, lookYaw: e.lookYaw, lookPitch: zz ? -0.95 : e.lookPitch,
-      raise: zz ? 0 : e.wantRaise, crouch: zz ? 1 : e.wantCrouch, reload: e.reloadT,
-      strafe: e.state === 'combat' || e.state === 'search', ground: e.groundFn || W.groundFn,
+      api.list.push(e);
+      ctx.combat.register(e);
     });
-    e.ch.getEye(e.eye);
-    updateHitShapes(e.ch, e.hit);
-  }
+    api.reset();
+    ctx.events.on('shot', (r) => {
+      // gunfire alerts everyone within 30 m (stub: no occlusion)
+      for (const e of api.list) if (!e.dead && e.pos.distanceTo(_v.set(r.origin.x, r.origin.y, r.origin.z)) < 30) e.alerted = true;
+    });
+    ctx.events.on('trigger:enter', (t) => { for (const e of api.list) if (e.def.trigger === t.id) e.alerted = true; });
+  };
+  const _v = new THREE.Vector3();
 
-  function damage(e, amount, part, dir, point) {
-    if (!e.alive) return;
-    const d = dir && dir.lengthSq?.() > 1e-8 ? dir.clone().normalize() : new THREE.Vector3(0, 0, -1);
-    let dmg = Number.isFinite(amount) ? amount : 50;
-    if (part === 'head') dmg = Math.max(dmg, e.health);
-    else if (part === 'limb') dmg *= T.limbMultiplier;
-    else { dmg *= T.torsoMultiplier; if (Math.random() < T.torsoVitalChance) dmg *= 2; }
-    e.health -= dmg;
-    if (e.health <= 0) { die(e, part || 'torso', d, point); return; }
-    e.anim.addFlinch(d, part === 'limb' ? 0.6 : 1.0);
-    onDamaged(e, W, d);
-  }
-
-  function die(e, part, dir, point) {
-    e.alive = false;
-    e.health = 0;
-    e.state = 'dead';
-    releaseAll(e, W);
-    e.moving = false;
-    api.aliveCount = list.filter((x) => x.alive).length;
-    const fwd = new THREE.Vector3(Math.sin(e.anim.lowerYaw), 0, Math.cos(e.anim.lowerYaw));
-    const rd = new Ragdoll(e.ch, { ground: e.groundFn || W.groundFn, colliders: ctx.level?.colliders || [] });
-    rd.onImpact = (k) => ctx.audio?.play?.('body_fall', { position: e.position.clone(), volume: 0.5 + 0.5 * k });
-    rd.onSettle = (p) => { e.position.copy(p); ctx.fx?.bloodPool?.(p.clone()); };
-    rd.start({ dir, part, point, bodyVel: e.anim.vel, forward: fwd, scene: ctx.scene });
-    e.ragdoll = rd;
-    ctx.audio?.play?.('death', { position: e.eye.clone() });
-    ctx.game?.onEnemyDeath?.(e);
-  }
-
-  function clear() {
-    for (const e of list) {
-      releaseAll(e, W);
-      e.ch.dispose();
+  api.reset = () => {
+    for (const e of api.list) {
+      e.pos.set(...e.def.pos); e.yaw = e.def.yaw; e.health = 100; e.dead = false; e.alerted = false; e.cool = 1 + Math.random(); e.wp = 0; e.path.length = 0;
+      e.mesh.visible = true;
     }
-    list.length = 0;
-    timers.length = 0;
-    W.pushers.clear();
-    W.coverReserve.clear();
-  }
+  };
+  /** alert enemies (ids array or null = all) — used by the director for staged moments */
+  api.alert = (ids, pos) => { for (const e of api.list) if (!ids || ids.includes(e.id)) e.alerted = true; };
+  api.alive = () => api.list.filter((e) => !e.dead).length;
 
-  function spawnAll() {
-    getNav();
-    const spawns = ctx.level?.enemySpawns || [];
-    spawns.forEach((s, i) => { if (s?.position) list.push(makeEnemy(s, i)); });
-    api.aliveCount = list.length;
-  }
-
-  function update(dt) {
-    if (!(dt > 0)) return;
-    getNav();
-    W.time += dt;
-    W.frame++;
-    W.pathBudget = T.budget.pathsPerFrame;
-    W.coverBudget = T.budget.coverPerFrame;
-
-    // player snapshot (tolerates a missing / half-initialised player)
-    const p = ctx.player;
-    pinfo.ok = !!(p && p.position);
-    if (pinfo.ok) {
-      pinfo.alive = p.alive !== false;
-      pinfo.pos.copy(p.position);
-      pinfo.height = Number.isFinite(p.height) ? p.height : 1.8;
-      pinfo.chest.set(p.position.x, p.position.y + pinfo.height * 0.72, p.position.z);
-      if (p.eye) pinfo.head.copy(p.eye); else pinfo.head.set(p.position.x, p.position.y + pinfo.height * 0.93, p.position.z);
-      if (p.velocity) pinfo.vel.copy(p.velocity); else pinfo.vel.set(0, 0, 0);
-      pinfo.speed = Math.hypot(pinfo.vel.x, pinfo.vel.z);
-      pinfo.crouched = pinfo.height < 1.5;
-      pinfo.noise = Number.isFinite(p.noise) ? p.noise : 0;
-      const yaw = p.yaw ?? 0, pitch = p.pitch ?? 0;
-      pinfo.look.set(-Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch));
-    } else pinfo.alive = false;
-
-    // scheduled events
-    for (let i = timers.length - 1; i >= 0; i--) {
-      if (timers[i].t <= W.time) { const t = timers[i]; timers.splice(i, 1); t.fn(); }
-    }
-
-    let c = 0;
-    for (const e of list) if (e.alive && e.state === 'combat') c++;
-    W.combatCount = c;
-
-    const n = list.length;
-    const start = n ? W.frame % n : 0;   // rotate who gets the path/cover budget first
-    for (let k = 0; k < n; k++) {
-      const e = list[(start + k) % n];
-      if (e.alive) {
-        updateEnemyAI(e, dt, W);
-        animate(e, dt);
-      } else if (e.ragdoll) {
-        e.ragdoll.update(dt);
-      }
-    }
-  }
-
-  const _o = new THREE.Vector3(), _d = new THREE.Vector3();
-  function raycast(origin, dir, maxDist = 200) {
-    if (!origin || !dir) return null;
-    _o.copy(origin);
-    _d.copy(dir);
-    if (_d.lengthSq() < 1e-12) return null;
-    _d.normalize();
-    let best = null, bestT = maxDist;
-    for (const e of list) {
-      if (!e.alive) continue;
-      const h = e.hit;
-      if (raySphere(_o, _d, h.center, h.radius, bestT) < 0) continue;
-      let t = raySphere(_o, _d, h.head.c, h.head.r, bestT);
-      if (t >= 0 && t <= bestT) { bestT = t; best = { enemy: e, part: 'head', distance: t }; }
-      t = rayCapsule(_o, _d, h.torso.a, h.torso.b, h.torso.r, bestT);
-      if (t >= 0 && t < bestT) { bestT = t; best = { enemy: e, part: 'torso', distance: t }; }
-      for (const l of h.limbs) {
-        t = rayCapsule(_o, _d, l.a, l.b, l.r, bestT);
-        if (t >= 0 && t < bestT) { bestT = t; best = { enemy: e, part: 'limb', distance: t }; }
-      }
-    }
-    if (best) best.point = _o.clone().addScaledVector(_d, best.distance);
-    return best;
-  }
-
-  function alertNoise(position, radius) {
-    if (!position || !(radius > 0)) return;
-    const P = pinfo;
-    const gun = radius >= T.hearing.gunshotRadius;
-    for (const e of list) {
-      if (!e.alive) continue;
-      const d = e.eye.distanceTo(position);
-      if (d > radius) continue;
-      const close = d <= Math.min(radius * 0.35, 10);
-      const los = close || W.los(position, e.eye);
-      if (!los && d > radius * T.hearing.wallMul) continue;
-      if (gun && P.ok) {
-        // shot at / near: if the player's aim passes close to this enemy, it is suppressed for a moment
-        _d.subVectors(e.hit.center, P.head);
-        const dd = _d.length();
-        if (dd > 0.1 && dd < 60) {
-          const off = _d.cross(P.look).length();   // perpendicular miss distance (P.look is unit)
-          if (off < 1.2 && e.hit.center.clone().sub(P.head).dot(P.look) > 0) e.suppressed = T.accuracy.suppressTime;
+  api.update = (dt) => {
+    const P = ctx.player, nav = ctx.world.nav, playing = ctx.state === 'playing';
+    for (let i = 0; i < api.list.length; i++) {
+      const e = api.list[i], d = e.def;
+      const lodLevel = ctx.lod.level(e.pos.x, e.pos.y, e.pos.z);
+      e.lod = lodLevel;
+      e.mesh.visible = lodLevel < 3;
+      if (playing && !e.dead) {
+        eye.x = e.pos.x; eye.y = e.pos.y + 1.6; eye.z = e.pos.z;
+        tgt.x = P.eye.x; tgt.y = P.eye.y - 0.2; tgt.z = P.eye.z;
+        const dx = tgt.x - eye.x, dz = tgt.z - eye.z, dist = Math.hypot(dx, dz);
+        const awake = !(d.role === 'sleeper' && !e.alerted) && !(d.role === 'ambusher' && !e.alerted);
+        let sees = false;
+        if (awake && dist < 28 && !P.dead) {
+          const fwdDot = (-Math.sin(e.yaw) * dx - Math.cos(e.yaw) * dz) / Math.max(dist, 1e-3);
+          if ((e.alerted || fwdDot > 0.35) && (ctx.time.frame + i) % 6 === 0) e._los = ctx.world.lineOfSight(eye, tgt);
+          sees = !!e._los && (e.alerted || fwdDot > 0.35);
+        } else e._los = false;
+        if (sees) {
+          e.alerted = true;
+          const want = Math.atan2(-dx, -dz);
+          let dy = want - e.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+          e.yaw += Math.sign(dy) * Math.min(Math.abs(dy), dt * 3);
+          e.cool -= dt;
+          if (e.cool <= 0 && Math.abs(dy) < 0.3) {
+            e.cool = 0.9 + Math.random() * 0.9;
+            const l = Math.hypot(dx, tgt.y - eye.y, dz), sp = 0.05 + dist * 0.004;
+            dir.x = dx / l + (Math.random() - 0.5) * sp; dir.y = (tgt.y - eye.y) / l + (Math.random() - 0.5) * sp; dir.z = dz / l + (Math.random() - 0.5) * sp;
+            const k = Math.hypot(dir.x, dir.y, dir.z); dir.x /= k; dir.y /= k; dir.z /= k;
+            ctx.combat.fire({ origin: eye, dir, range: 60, damage: 9, shooter: e, team: 'gang' });
+            ctx.events.emit('enemy:fire', { id: e.id, enemy: e });
+          }
+        } else if (d.role === 'patrol' && d.patrol && nav) {
+          // walk waypoints along a nav path (repath when the path is used up)
+          if (e.pathI >= e.path.length) {
+            e.wp = (e.wp + 1) % d.patrol.length;
+            const w = d.patrol[e.wp];
+            const a = nav.nearest(e.pos.x, e.pos.y + 0.1, e.pos.z), b = nav.nearest(w[0], e.pos.y + 0.1, w[1]);
+            const n = nav.findPath(a, b, path);
+            e.path.length = 0; for (let k = n - 1; k >= 0; k -= 2) e.path.push(path[k]); e.pathI = 0;
+            if (!n) e.path.push(b);
+          }
+          const k = e.path[e.pathI];
+          if (k >= 0) {
+            const tx = nav.nodeX(k), tz = nav.nodeZ(k), ddx = tx - e.pos.x, ddz = tz - e.pos.z, dd = Math.hypot(ddx, ddz);
+            if (dd < 0.3) e.pathI++;
+            else {
+              const sp = 1.2 * dt;
+              e.pos.x += ddx / dd * sp; e.pos.z += ddz / dd * sp; e.pos.y += (nav.nodeY[k] - e.pos.y) * Math.min(1, dt * 6);
+              e.yaw = Math.atan2(-ddx, -ddz);
+            }
+          } else e.pathI++;
         }
       }
-      hearNoise(e, W, position, radius, d, los);
+      // pose (stub "animation" = transform), throttled by LOD for the real skeletons later
+      if (ctx.lod.animStep(i, lodLevel) || e.dead) {
+        const lying = e.dead || (d.role === 'sleeper' && !e.alerted);
+        e.mesh.position.copy(e.pos);
+        e.mesh.rotation.set(lying ? -Math.PI / 2 : 0, e.yaw, 0, 'YXZ');
+        if (lying) e.mesh.position.y += 0.25;
+      }
     }
-  }
-
-  function reset() {
-    clear();
-    W.time = 0;
-    spawnAll();
-  }
-
-  const api = {
-    list,
-    aliveCount: 0,
-    update,
-    reset,
-    raycast,
-    alertNoise,
-    tuning: T,
-    // debugging helpers
-    _world: W,
-    _returnAll() { for (const e of list) if (e.alive) returnToRoutine(e, W); },
   };
-
-  spawnAll();
   return api;
+}
+
+function mergeTwo(a, b) {
+  const g = new THREE.BufferGeometry();
+  const A = a.toNonIndexed(), B = b.toNonIndexed();
+  for (const name of ['position', 'normal']) {
+    const x = A.attributes[name].array, y = B.attributes[name].array, o = new Float32Array(x.length + y.length);
+    o.set(x); o.set(y, x.length);
+    g.setAttribute(name, new THREE.BufferAttribute(o, 3));
+  }
+  return g;
 }

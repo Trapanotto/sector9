@@ -8,9 +8,10 @@
     html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
     #app { position: fixed; inset: 0; }
     #app canvas { display: block; width: 100%; height: 100%; }
-    /* #overlay: bodycam OSD (render agent). #ui: menus + HUD (game agent). */
+    /* #overlay: render/OSD extras (B). #ui: menus + HUD (F). */
     #overlay, #ui { position: fixed; inset: 0; pointer-events: none; }
     #ui > * { pointer-events: auto; }
+    #ui > .hud { pointer-events: none; }
   </style>
 </head>
 <body>

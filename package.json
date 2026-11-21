@@ -1,12 +1,15 @@
 {
   "name": "bodycam-fps",
   "private": true,
-  "version": "0.1.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port 5173 --strictPort",
     "build": "vite build",
-    "assets": "node scripts/fetch-assets.mjs"
+    "preview": "vite preview --port 4173",
+    "bake": "node scripts/bake.mjs",
+    "bake:quick": "node scripts/bake.mjs --quick",
+    "test": "node scripts/test.mjs"
   },
   "dependencies": {
     "three": "0.170.0"
