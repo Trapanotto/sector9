@@ -56,7 +56,7 @@ export default async function ({ W, bvh, LAYOUT, ok, warn }) {
   for (const s of bank.sounds.values()) for (const i of s.enabled) { const c = bank.clips[i]; if (s.name.startsWith('ir.')) continue; if ((s.tier === 0 && !c.loop) || (s.tier === 1 && c.dur < 3.2)) pinned += bank.decodedBytes(c, 48000); }
   pinned /= 1048576;
   const at48 = bank.clips.reduce((b, c) => b + (c.loop ? c.loopEnd + 0.25 : c.dur) * 48000 * c.ch * 4, 0) / 1048576;
-  console.log(`  decoded PCM: all clips ${all.toFixed(0)} MB at the per-category rates (${at48.toFixed(0)} MB at 48 kHz), resident (tiers 0/1 short) ${pinned.toFixed(1)} MB, LRU budget 52 MB`);
+  console.log(`  decoded PCM: all clips ${all.toFixed(0)} MB at the per-category rates (${at48.toFixed(0)} MB at 48 kHz), resident (tiers 0/1 short) ${pinned.toFixed(1)} MB, LRU budget 44 MB (engine.js DECODED_BUDGET)`);
   ok(pinned < 40, `resident decoded set ${pinned.toFixed(1)} MB leaves too little room under 60 MB`);
   ok(decodeRate('ir.hall') === 0 && decodeRate('voice.pain') <= 24000, 'decode rates');
 
