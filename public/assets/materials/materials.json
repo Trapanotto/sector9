@@ -1,0 +1,131 @@
+{
+ "size": 512,
+ "layers": [
+  {
+   "name": "floor",
+   "mean": [
+    0.0914,
+    0.0944,
+    0.0877
+   ],
+   "source": "polyhaven:concrete_floor_worn_001"
+  },
+  {
+   "name": "concrete",
+   "mean": [
+    0.265,
+    0.236,
+    0.1591
+   ],
+   "source": "polyhaven:concrete_wall_008"
+  },
+  {
+   "name": "asphalt",
+   "mean": [
+    0.0626,
+    0.0413,
+    0.0282
+   ],
+   "source": "polyhaven:worn_asphalt"
+  },
+  {
+   "name": "plate",
+   "mean": [
+    0.0487,
+    0.0336,
+    0.012
+   ],
+   "source": "polyhaven:metal_plate"
+  },
+  {
+   "name": "wood",
+   "mean": [
+    0.1194,
+    0.0737,
+    0.0435
+   ],
+   "source": "polyhaven:weathered_brown_planks"
+  },
+  {
+   "name": "lino",
+   "mean": [
+    0.4364,
+    0.2344,
+    0.0848
+   ],
+   "source": "polyhaven:old_linoleum_flooring_01"
+  },
+  {
+   "name": "trapez",
+   "mean": [
+    0.4261,
+    0.4559,
+    0.4765
+   ],
+   "source": "procedural"
+  },
+  {
+   "name": "sandwich",
+   "mean": [
+    0.6784,
+    0.6784,
+    0.6632
+   ],
+   "source": "procedural"
+  },
+  {
+   "name": "block",
+   "mean": [
+    0.5793,
+    0.5793,
+    0.541
+   ],
+   "source": "procedural"
+  },
+  {
+   "name": "cardboard",
+   "mean": [
+    0.2756,
+    0.1495,
+    0.0563
+   ],
+   "source": "procedural"
+  },
+  {
+   "name": "wrap",
+   "mean": [
+    0.6777,
+    0.6777,
+    0.7087
+   ],
+   "source": "procedural"
+  },
+  {
+   "name": "grating",
+   "mean": [
+    0.1628,
+    0.1628,
+    0.1556
+   ],
+   "source": "procedural"
+  },
+  {
+   "name": "paint",
+   "mean": [
+    0.5823,
+    0.5823,
+    0.5823
+   ],
+   "source": "procedural"
+  },
+  {
+   "name": "flat",
+   "mean": [
+    0.6022,
+    0.6022,
+    0.6022
+   ],
+   "source": "procedural"
+  }
+ ]
+}

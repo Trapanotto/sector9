@@ -9,7 +9,7 @@ import { createCollision } from './collision.js';
 import { createDoors } from './doors.js';
 import { createProbes } from './probes.js';
 import { SURF } from './layout/surfaces.js';
-import { U, createStaticMaterial, createTransparentMaterial, MAX_CIRCUITS } from '../render/materials.js';
+import { U, createStaticMaterial, createTransparentMaterial, MAX_CIRCUITS, loadMaterials } from '../render/materials.js';
 
 export function createWorld(ctx) {
   const L = ctx.layout;
@@ -49,6 +49,7 @@ export function createWorld(ctx) {
       world.bakeWarning = `Kein Bake gefunden (${e.message}) – npm run bake`;
     }
     if (world.bakeWarning) console.warn('[world]', world.bakeWarning);
+    await loadMaterials(ctx, loader, world.bakeOk ? manifest : null);   // B: surface layers + env cubes
     const done2 = loader.step('Geometrie', 0.5);
     setupLighting(lmDay, lmArt, probeBytes);
     buildMeshes(world.bakeOk ? vlight : null);

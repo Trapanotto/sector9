@@ -1,7 +1,8 @@
-// Sky dome drawn last at the far plane (fills only uncovered pixels). Radiance model mirrors
-// src/world/skymodel.js (used by the bake) — keep in sync. Owner: B.
+// Sky dome drawn last at the far plane (fills only uncovered pixels). Radiance = SKY_GLSL from
+// src/world/skymodel.js, the exact model the bake uses for sky light — keep the two in sync there. Owner: B.
 import * as THREE from 'three';
 import { U } from './materials.js';
+import { SKY_GLSL } from '../world/skymodel.js';
 
 export function createSky(sky, sun) {
   const geo = new THREE.IcosahedronGeometry(1, 2);
@@ -26,17 +27,13 @@ export function createSky(sky, sun) {
       uniform vec3 uZenith, uHorizon, uGround, uSunDir, uSunColor;
       uniform float uGlow, uScale, uExposure, uSunI;
       varying vec3 vDir;
+      ${SKY_GLSL}
       void main() {
         vec3 d = normalize(vDir);
-        vec3 c;
-        if (d.y < 0.0) c = mix(uHorizon * 0.8, uGround, smoothstep(0.0, 0.08, -d.y));
-        else {
-          float t = sqrt(min(1.0, d.y));
-          float cs = max(0.0, dot(d, uSunDir));
-          c = uHorizon + (uZenith - uHorizon) * t + uGlow * pow(cs, 8.0) * uSunColor;
-          c += uSunColor * uSunI * 60.0 * smoothstep(0.9995, 0.9998, cs);   // sun disc
-        }
-        gl_FragColor = vec4(c * uScale * uExposure, 1.0);
+        vec3 c = skyRadiance(d);
+        // sun disc (radiance far above anything else: always clips)
+        c += uSunColor * (uSunI * 40.0) * smoothstep(0.99985, 0.99993, dot(d, uSunDir));
+        gl_FragColor = vec4(c * uExposure, 1.0);
       }`,
   });
   const mesh = new THREE.Mesh(geo, mat);

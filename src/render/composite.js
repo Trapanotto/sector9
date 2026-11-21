@@ -1,6 +1,11 @@
-// THE single full-screen post pass: fisheye resample + chromatic aberration + (tier) mip bloom + tone mapping
-// with blown highlights + grade + compression artefacts + resolution-independent sensor noise + vignette +
-// burned-in OSD + output encoding. Owner: B (look). Exposure is already applied in the scene shaders.
+// THE single full-screen post pass: fisheye resample + lateral chromatic aberration + (tier) mip bloom + sensor
+// response (hard highlight clip with a short soft knee, per-channel so clipped light goes white) + neutral grade
+// + codec artefacts (macroblock DC drift, banding and chroma quantisation in dark flat areas, motion smear) +
+// exposure-gain-dependent sensor noise + vignette + burned-in OSD + output encoding. Owner: B (look).
+// Exposure is already applied in the scene shaders.
+//
+// Cost (low tiers): 2 scene-texture taps per output pixel (R / GB of the chromatic aberration), ~60 ALU ops,
+// no dependent branches except the OSD rectangle. mid/high add 2 mip taps for bloom (uniform-gated).
 import * as THREE from 'three';
 
 export function createCompositeMaterial() {
@@ -14,10 +19,10 @@ export function createCompositeMaterial() {
       uSrcRes: { value: new THREE.Vector2(1280, 720) },   // internal pixels
       uAspect: { value: 16 / 9 },
       uTanHalfV: { value: 0.9 },                          // source camera tan(vfov/2)
-      uFish: { value: 0.7 },                              // 0 = rectilinear, 1 = equidistant fisheye
-      uCA: { value: 0.004 },
+      uFish: { value: 0.72 },                             // 0 = rectilinear, 1 = equidistant fisheye
+      uCA: { value: 0.0035 },
       uBloom: { value: 0 }, uBloomLod: { value: 3 },
-      uNoise: { value: 0.06 }, uGain: { value: 1 },       // gain: 1 = normal light, higher = darker scene (more grain)
+      uNoise: { value: 0.05 }, uGain: { value: 0 },       // gain: stops of sensor gain above a lit interior
       uCompress: { value: 1 }, uMotion: { value: new THREE.Vector2() },
       uTime: { value: 0 }, uFrame: { value: 0 },
       uVignette: { value: 1 },
@@ -38,7 +43,7 @@ export function createCompositeMaterial() {
 
       float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 
-      // output ndc (-1..1) → source uv (0..1 of the used viewport); also returns the radial factor
+      // output ndc (-1..1) → source uv (0..1 of the used viewport); rr = radial distance in source units
       vec2 fishUv(vec2 ndc, out float rr) {
         vec2 p = ndc * vec2(uAspect, 1.0);
         float r = length(p);
@@ -46,18 +51,17 @@ export function createCompositeMaterial() {
         float theta = r * thetaEdge / uAspect;
         float rs = tan(min(theta, 1.45)) / uTanHalfV;
         float rm = mix(r, rs, uFish);
-        vec2 q = r > 1e-5 ? p * (rm / r) : p;
+        vec2 q = p * (rm / max(r, 1e-5));
         rr = rm;
         return (q / vec2(uAspect, 1.0)) * 0.5 + 0.5;
       }
       vec3 src(vec2 uv) { return texture(tScene, clamp(uv, vec2(0.0005), vec2(0.9995)) * uScale).rgb; }
 
-      vec3 tonemap(vec3 x) {
-        // hard-shouldered exponential curve: bright windows and sky clip to white like a small sensor
-        vec3 t = 1.0 - exp(-x * 1.35);
-        float l = dot(t, vec3(0.2126, 0.7152, 0.0722));
-        t = mix(t, vec3(l), smoothstep(0.75, 1.0, l) * 0.6);   // clipped highlights lose colour
-        return t;
+      // small-sensor response: linear up to a short knee, then a hard clip ~3.5 stops above mid grey
+      vec3 sensor(vec3 x) {
+        x *= 1.15;
+        vec3 x2 = x * x;
+        return x * inversesqrt(sqrt(1.0 + x2 * x2));   // x / (1 + x^4)^(1/4): monotonic, knee, clips at 1
       }
 
       void main() {
@@ -67,57 +71,52 @@ export function createCompositeMaterial() {
         float rr;
         vec2 uv = fishUv(ndc, rr);
 
-        // compression: 8x8 (720p-equivalent) macroblocks, smeared during fast camera motion
+        // compression: 8×8 (720p-equivalent) macroblocks; some smear along the camera motion
         vec2 blk = floor(frag / (8.0 * s720));
         float bh = hash12(blk + floor(uTime * 7.0));
-        vec2 mo = uMotion * step(0.55, bh) * uCompress;
-        uv -= mo * 0.004;
+        uv -= uMotion * (step(0.55, bh) * uCompress * 0.004);
 
-        // chromatic aberration grows towards the edge
-        float ca = uCA * rr * rr;
-        vec2 dir = uv - 0.5;
-        vec3 col;
-        col.r = src(uv + dir * ca).r;
-        col.g = src(uv).g;
-        col.b = src(uv - dir * ca).b;
+        // lateral chromatic aberration (red outwards, green/blue inwards), grows towards the edge: 2 taps
+        vec2 dir = (uv - 0.5) * (uCA * rr * rr);
+        vec3 a = src(uv + dir), b = src(uv - dir * 0.6);
+        vec3 col = vec3(a.r, b.g, b.b * 0.85 + a.b * 0.15);
 
         if (uBloom > 0.0) {
           vec2 suv = clamp(uv, vec2(0.002), vec2(0.998)) * uScale;
-          vec3 b = textureLod(tScene, suv, uBloomLod).rgb * 0.6 + textureLod(tScene, suv, uBloomLod + 2.0).rgb * 0.4;
-          col += max(b - 1.2, 0.0) * uBloom;   // halation around blown highlights only
+          vec3 bl = textureLod(tScene, suv, uBloomLod).rgb * 0.6 + textureLod(tScene, suv, uBloomLod + 2.0).rgb * 0.4;
+          col += max(bl - 0.9, 0.0) * uBloom;   // halation around blown highlights only
         }
 
-        // chroma subsampled per block (blocky colour like a low-bitrate stream)
-        vec2 bc = (blk + 0.5) * 8.0 * s720 / uRes * 2.0 - 1.0;
-        float rb; vec3 cb = src(fishUv(bc, rb) - mo * 0.004);
-        vec3 t = tonemap(col), tb = tonemap(cb);
+        vec3 t = clamp(sensor(col), 0.0, 1.0);
+        t = pow(t, vec3(1.0 / 2.2));
         float Y = dot(t, vec3(0.299, 0.587, 0.114));
         vec2 C = vec2(dot(t, vec3(-0.169, -0.331, 0.5)), dot(t, vec3(0.5, -0.419, -0.081)));
-        vec2 Cb = vec2(dot(tb, vec3(-0.169, -0.331, 0.5)), dot(tb, vec3(0.5, -0.419, -0.081)));
-        C = mix(C, Cb, 0.55 * uCompress);
-        // luma quantisation varies per block (banding in flat dark areas)
-        float q = mix(40.0, 110.0, bh);
-        Y = mix(Y, floor(Y * q + 0.5) / q, 0.6 * uCompress * (1.0 - smoothstep(0.2, 0.6, Y)));
 
-        // sensor noise: grain on a 720p-equivalent pixel grid, stronger when the camera gains up in the dark
+        // codec: per-macroblock DC drift + coarse luma steps + chroma quantisation, only in dark flat areas
+        float dark = 1.0 - smoothstep(0.12, 0.45, Y);
+        float q = mix(36.0, 90.0, bh);
+        Y = mix(Y, floor(Y * q + 0.5) / q, 0.7 * uCompress * dark);
+        Y += (bh - 0.5) * 0.018 * uCompress * dark;
+        C = mix(C, floor(C * 40.0 + 0.5) / 40.0, 0.6 * uCompress * dark);
+
+        // sensor noise on a 720p-equivalent grid: grows with exposure gain, strongest in the shadows
         vec2 gp = floor(frag / s720);
         float n1 = hash12(gp + fract(uTime * 13.17) * 311.0) - 0.5;
         float n2 = hash12(gp.yx + fract(uTime * 7.31) * 173.0) - 0.5;
-        float amt = uNoise * (0.7 + 0.5 * min(uGain, 3.0)) * (0.35 + 0.65 * (1.0 - Y));
+        float amt = uNoise * (0.45 + 0.5 * min(uGain, 4.0)) * (0.3 + 0.9 * (1.0 - Y) * (1.0 - Y));
         Y += n1 * amt;
-        C += vec2(n2, n1 * 0.7) * amt * 0.35;
+        C += vec2(n2, n1 * 0.6) * (amt * 0.3);
 
-        // grade: slightly desaturated, cool shadows / neutral highlights
-        C *= 0.82;
-        C += vec2(0.012, -0.006) * (1.0 - Y);
+        // grade: neutral, slightly muted colour, firm blacks (no lift, no tint)
+        C *= 0.9;
+        Y = max(Y - 0.012, 0.0) * 1.013;
         vec3 rgb = vec3(Y + 1.402 * C.y, Y - 0.344 * C.x - 0.714 * C.y, Y + 1.772 * C.x);
         rgb = clamp(rgb, 0.0, 1.0);
-        rgb = rgb * rgb * (3.0 - 2.0 * rgb) * 0.25 + rgb * 0.75;   // gentle S-curve
 
         // lens vignette + hard black outside the source image
         vec2 su = uv - 0.5;
         float edge = max(abs(su.x), abs(su.y));
-        float vig = 1.0 - uVignette * 0.55 * smoothstep(0.55, 1.45, length(ndc * vec2(1.0, 0.9)));
+        float vig = 1.0 - uVignette * 0.5 * smoothstep(0.5, 1.45, length(ndc * vec2(1.0, 0.9)));
         vig *= 1.0 - smoothstep(0.47, 0.5, edge);
         rgb *= vig;
         rgb = mix(rgb, vec3(1.0), uFlashWhite);
@@ -130,9 +129,7 @@ export function createCompositeMaterial() {
           rgb = mix(rgb * (1.0 - o.a * 0.5), vec3(0.92), o.r);
         }
 
-        // output: gamma + dither
-        rgb = pow(rgb, vec3(1.0 / 2.2));
-        rgb += (hash12(frag + uFrame) - 0.5) / 255.0;
+        rgb += (hash12(frag + uFrame) - 0.5) / 255.0;   // dither
         gl_FragColor = vec4(rgb, 1.0);
       }`,
   });

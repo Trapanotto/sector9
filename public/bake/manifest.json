@@ -1,13 +1,21 @@
 {
  "format": "sector9-bake",
- "version": 2,
- "hash": "e4559c09",
- "created": "2026-11-21T10:34:17.508Z",
+ "version": 3,
+ "hash": "a6c3898f",
+ "created": "2026-11-21T11:35:38.067Z",
  "quick": false,
  "params": {
-  "lmRays": 96,
-  "probeRays": 64,
-  "bounces": 2,
+  "sunSamples": 9,
+  "sunRadius": 0.012,
+  "artSamples": 4,
+  "gatherRays": [
+   128,
+   256
+  ],
+  "probeRays": 192,
+  "envRays": 24,
+  "filterRadius": 0.6,
+  "aoRange": 1.2,
   "rgbmRange": 16,
   "probe": {
    "origin": [
@@ -28,7 +36,7 @@
  },
  "lightmap": {
   "width": 2048,
-  "height": 928,
+  "height": 976,
   "encoding": "rgbm8",
   "range": 16,
   "day": "lm_day.bin",
@@ -58,24 +66,328 @@
   "range": 16,
   "layout": "L0day rgbm[n*4], dir.xyz*0.5+0.5 + sunVis [n*4], L0art rgbm[n*4]; x fastest, then y, then z"
  },
+ "env": {
+  "file": "env.bin",
+  "size": 16,
+  "zones": [
+   "keller_treppe",
+   "keller_treppe_h",
+   "technik",
+   "tunnel",
+   "geld",
+   "buero",
+   "leitstand",
+   "flur_og",
+   "schlafen",
+   "umkleide",
+   "labor",
+   "sozial",
+   "lager_w",
+   "treppe_w",
+   "packerei",
+   "wareneingang",
+   "steg",
+   "halle_n",
+   "halle_m",
+   "halle_s",
+   "gang0_n",
+   "gang0_s",
+   "gang1_n",
+   "gang1_s",
+   "gang2_n",
+   "gang2_s",
+   "gang3_n",
+   "gang3_s",
+   "gang4_n",
+   "gang4_s",
+   "gang5_n",
+   "gang5_s",
+   "gang6_n",
+   "gang6_s",
+   "gang7_n",
+   "gang7_s",
+   "gang8_n",
+   "gang8_s",
+   "buehne",
+   "auto_n",
+   "auto_s",
+   "akl",
+   "kuehl",
+   "roboter",
+   "versand",
+   "hof",
+   "west",
+   "nord",
+   "ost"
+  ],
+  "width": 96,
+  "height": 784,
+  "encoding": "rgbm8",
+  "range": 16,
+  "layout": "day rgbm[w*h*4] then art; texel (face*size + s, zone*size + t); face 0..5 = +x,-x,+y,-y,+z,-z; dir[axis]=±1, dir[TAN[axis]] = (s,t)*2-1",
+  "capture": [
+   [
+    13.32,
+    -0.8,
+    44.8
+   ],
+   [
+    29.6,
+    -0.8,
+    50.4
+   ],
+   [
+    6.13,
+    -2.1,
+    46
+   ],
+   [
+    21.35,
+    -2.1,
+    47.6
+   ],
+   [
+    4.45,
+    6.1,
+    4.45
+   ],
+   [
+    13.5,
+    6.1,
+    4.45
+   ],
+   [
+    22.98,
+    6.1,
+    4.45
+   ],
+   [
+    13.93,
+    6.1,
+    10.5
+   ],
+   [
+    6.95,
+    6.1,
+    17.95
+   ],
+   [
+    18,
+    6.1,
+    17.95
+   ],
+   [
+    4.95,
+    1.6,
+    5.95
+   ],
+   [
+    16,
+    1.6,
+    5.95
+   ],
+   [
+    24.98,
+    1.6,
+    5.95
+   ],
+   [
+    24.98,
+    5.54,
+    18.05
+   ],
+   [
+    13.93,
+    1.6,
+    29.95
+   ],
+   [
+    13.93,
+    1.6,
+    50.05
+   ],
+   [
+    50.03,
+    6.1,
+    1.2
+   ],
+   [
+    50.03,
+    1.6,
+    3
+   ],
+   [
+    50.03,
+    1.6,
+    29.5
+   ],
+   [
+    50.03,
+    1.6,
+    58.5
+   ],
+   [
+    29.95,
+    1.6,
+    16.8
+   ],
+   [
+    29.95,
+    1.6,
+    42.2
+   ],
+   [
+    34.17,
+    1.6,
+    16.8
+   ],
+   [
+    34.17,
+    1.6,
+    42.2
+   ],
+   [
+    39.3,
+    1.6,
+    16.8
+   ],
+   [
+    39.3,
+    1.6,
+    42.2
+   ],
+   [
+    44.7,
+    1.6,
+    16.8
+   ],
+   [
+    44.7,
+    1.6,
+    42.2
+   ],
+   [
+    50.1,
+    1.6,
+    16.8
+   ],
+   [
+    50.1,
+    1.6,
+    42.2
+   ],
+   [
+    55.5,
+    1.6,
+    16.8
+   ],
+   [
+    55.5,
+    1.6,
+    42.2
+   ],
+   [
+    60.9,
+    1.6,
+    16.8
+   ],
+   [
+    60.9,
+    1.6,
+    42.2
+   ],
+   [
+    66.03,
+    1.6,
+    16.8
+   ],
+   [
+    66.03,
+    1.6,
+    42.2
+   ],
+   [
+    70.18,
+    1.6,
+    16.8
+   ],
+   [
+    70.18,
+    1.6,
+    42.2
+   ],
+   [
+    78,
+    6.1,
+    3
+   ],
+   [
+    78,
+    1.6,
+    11
+   ],
+   [
+    78,
+    1.6,
+    35
+   ],
+   [
+    90.05,
+    1.6,
+    16.95
+   ],
+   [
+    91.05,
+    1.6,
+    57.05
+   ],
+   [
+    90.05,
+    1.6,
+    41.05
+   ],
+   [
+    79.05,
+    1.6,
+    56
+   ],
+   [
+    48,
+    1.6,
+    87.15
+   ],
+   [
+    -8.15,
+    1.6,
+    24.15
+   ],
+   [
+    48,
+    1.6,
+    -8.15
+   ],
+   [
+    111.38,
+    0.74,
+    -2.03
+   ]
+  ]
+ },
  "pvs": {
   "keller_treppe": [
    "keller_treppe",
    "keller_treppe_h",
    "technik",
    "tunnel",
-   "labor",
-   "treppe_w",
+   "schlafen",
    "packerei",
-   "wareneingang",
-   "hof"
+   "wareneingang"
   ],
   "keller_treppe_h": [
    "keller_treppe",
    "keller_treppe_h",
    "technik",
    "tunnel",
-   "leitstand",
    "wareneingang",
    "steg",
    "halle_n",
@@ -96,9 +408,7 @@
    "keller_treppe_h",
    "technik",
    "tunnel",
-   "packerei",
    "wareneingang",
-   "halle_s",
    "gang0_s"
   ],
   "geld": [
@@ -113,6 +423,7 @@
    "buero",
    "leitstand",
    "flur_og",
+   "schlafen",
    "umkleide",
    "sozial",
    "treppe_w",
@@ -132,13 +443,18 @@
    "gang0_n",
    "gang0_s",
    "gang1_n",
+   "gang1_s",
    "gang2_n",
+   "gang2_s",
    "gang3_n",
    "gang4_n",
+   "gang4_s",
    "gang5_n",
+   "gang5_s",
    "gang6_n",
+   "gang6_s",
+   "gang7_n",
    "gang8_n",
-   "gang8_s",
    "buehne",
    "west",
    "nord"
@@ -150,15 +466,16 @@
    "flur_og",
    "schlafen",
    "umkleide",
+   "sozial",
    "treppe_w",
    "packerei",
    "wareneingang",
-   "gang0_s",
+   "west",
    "nord"
   ],
   "schlafen": [
-   "keller_treppe",
    "geld",
+   "buero",
    "flur_og",
    "schlafen",
    "treppe_w",
@@ -175,21 +492,21 @@
    "umkleide",
    "treppe_w",
    "packerei",
-   "wareneingang"
+   "wareneingang",
+   "steg"
   ],
   "labor": [
-   "flur_og",
+   "keller_treppe",
    "labor",
+   "sozial",
    "treppe_w",
    "packerei",
    "wareneingang",
-   "gang0_s",
    "hof",
    "west",
    "nord"
   ],
   "sozial": [
-   "buero",
    "labor",
    "sozial",
    "lager_w",
@@ -215,13 +532,16 @@
    "gang4_n",
    "gang5_n",
    "gang6_n",
+   "gang7_n",
    "gang8_n",
    "buehne",
-   "auto_n"
+   "west"
   ],
   "treppe_w": [
+   "leitstand",
    "flur_og",
    "schlafen",
+   "umkleide",
    "labor",
    "sozial",
    "lager_w",
@@ -229,12 +549,11 @@
    "packerei",
    "wareneingang",
    "gang0_s",
-   "gang1_s",
+   "hof",
    "west"
   ],
   "packerei": [
    "keller_treppe",
-   "tunnel",
    "flur_og",
    "schlafen",
    "umkleide",
@@ -254,6 +573,8 @@
    "gang3_n",
    "gang3_s",
    "gang4_n",
+   "gang4_s",
+   "gang5_n",
    "gang5_s",
    "gang6_n",
    "gang7_n",
@@ -264,6 +585,7 @@
   "wareneingang": [
    "keller_treppe",
    "keller_treppe_h",
+   "tunnel",
    "flur_og",
    "schlafen",
    "umkleide",
@@ -274,10 +596,10 @@
    "packerei",
    "wareneingang",
    "halle_s",
+   "gang0_n",
    "gang0_s",
    "gang1_n",
    "gang1_s",
-   "gang2_n",
    "gang2_s",
    "gang3_s",
    "gang4_s",
@@ -285,18 +607,17 @@
    "gang6_s",
    "gang7_s",
    "gang8_s",
+   "auto_s",
    "kuehl",
    "versand",
    "hof",
-   "west",
-   "nord",
-   "ost"
+   "west"
   ],
   "steg": [
    "keller_treppe_h",
+   "buero",
    "leitstand",
    "flur_og",
-   "umkleide",
    "lager_w",
    "steg",
    "halle_n",
@@ -322,6 +643,7 @@
    "gang8_s",
    "buehne",
    "auto_n",
+   "akl",
    "hof"
   ],
   "halle_n": [
@@ -352,11 +674,15 @@
    "gang7_s",
    "gang8_n",
    "gang8_s",
-   "buehne"
+   "buehne",
+   "akl",
+   "west"
   ],
   "halle_m": [
    "keller_treppe_h",
+   "leitstand",
    "schlafen",
+   "labor",
    "treppe_w",
    "packerei",
    "wareneingang",
@@ -382,12 +708,13 @@
    "gang7_s",
    "gang8_n",
    "gang8_s",
-   "auto_s"
+   "auto_n",
+   "west"
   ],
   "halle_s": [
    "keller_treppe_h",
    "tunnel",
-   "leitstand",
+   "schlafen",
    "packerei",
    "wareneingang",
    "steg",
@@ -419,7 +746,6 @@
    "versand",
    "hof",
    "west",
-   "nord",
    "ost"
   ],
   "gang0_n": [
@@ -447,6 +773,8 @@
    "gang5_s",
    "gang6_n",
    "gang6_s",
+   "gang7_n",
+   "gang7_s",
    "gang8_n",
    "gang8_s"
   ],
@@ -454,7 +782,6 @@
    "keller_treppe_h",
    "tunnel",
    "leitstand",
-   "sozial",
    "lager_w",
    "treppe_w",
    "packerei",
@@ -477,11 +804,7 @@
    "gang5_s",
    "gang6_n",
    "gang6_s",
-   "gang7_n",
-   "gang7_s",
-   "gang8_n",
    "gang8_s",
-   "kuehl",
    "hof"
   ],
   "gang1_n": [
@@ -506,14 +829,10 @@
    "gang5_s",
    "gang6_n",
    "gang6_s",
-   "gang7_n",
-   "gang8_n",
-   "gang8_s"
+   "gang7_n"
   ],
   "gang1_s": [
    "keller_treppe_h",
-   "lager_w",
-   "treppe_w",
    "packerei",
    "wareneingang",
    "steg",
@@ -535,12 +854,10 @@
    "gang6_n",
    "gang6_s",
    "gang7_s",
-   "gang8_n",
-   "gang8_s",
-   "versand",
    "hof"
   ],
   "gang2_n": [
+   "leitstand",
    "lager_w",
    "packerei",
    "steg",
@@ -564,10 +881,39 @@
    "gang7_n",
    "gang7_s",
    "gang8_n",
-   "gang8_s",
-   "nord"
+   "gang8_s"
   ],
   "gang2_s": [
+   "keller_treppe_h",
+   "packerei",
+   "wareneingang",
+   "steg",
+   "halle_n",
+   "halle_m",
+   "halle_s",
+   "gang0_n",
+   "gang0_s",
+   "gang1_n",
+   "gang1_s",
+   "gang2_n",
+   "gang2_s",
+   "gang3_n",
+   "gang3_s",
+   "gang4_n",
+   "gang4_s",
+   "gang5_n",
+   "gang5_s",
+   "gang6_n",
+   "gang6_s",
+   "gang7_s",
+   "gang8_s",
+   "kuehl",
+   "versand",
+   "hof"
+  ],
+  "gang3_n": [
+   "leitstand",
+   "lager_w",
    "packerei",
    "wareneingang",
    "steg",
@@ -591,13 +937,11 @@
    "gang7_n",
    "gang7_s",
    "gang8_n",
-   "gang8_s",
-   "kuehl",
-   "versand"
+   "gang8_s"
   ],
-  "gang3_n": [
-   "lager_w",
+  "gang3_s": [
    "packerei",
+   "wareneingang",
    "steg",
    "halle_n",
    "halle_m",
@@ -619,36 +963,10 @@
    "gang7_n",
    "gang7_s",
    "gang8_n",
-   "gang8_s",
-   "buehne"
-  ],
-  "gang3_s": [
-   "packerei",
-   "steg",
-   "halle_n",
-   "halle_m",
-   "halle_s",
-   "gang0_n",
-   "gang0_s",
-   "gang1_n",
-   "gang1_s",
-   "gang2_n",
-   "gang2_s",
-   "gang3_n",
-   "gang3_s",
-   "gang4_n",
-   "gang4_s",
-   "gang5_n",
-   "gang5_s",
-   "gang6_n",
-   "gang6_s",
-   "gang7_n",
-   "gang7_s",
    "gang8_s",
    "versand"
   ],
   "gang4_n": [
-   "lager_w",
    "steg",
    "halle_n",
    "halle_m",
@@ -673,7 +991,6 @@
    "gang8_s"
   ],
   "gang4_s": [
-   "packerei",
    "steg",
    "halle_n",
    "halle_m",
@@ -695,34 +1012,11 @@
    "gang7_n",
    "gang7_s",
    "gang8_s",
+   "kuehl",
    "versand"
   ],
   "gang5_n": [
-   "lager_w",
-   "steg",
-   "halle_n",
-   "halle_m",
-   "halle_s",
-   "gang0_n",
-   "gang0_s",
-   "gang1_n",
-   "gang2_n",
-   "gang2_s",
-   "gang3_n",
-   "gang3_s",
-   "gang4_n",
-   "gang4_s",
-   "gang5_n",
-   "gang5_s",
-   "gang6_n",
-   "gang6_s",
-   "gang7_n",
-   "gang7_s",
-   "gang8_n",
-   "gang8_s"
-  ],
-  "gang5_s": [
-   "wareneingang",
+   "leitstand",
    "steg",
    "halle_n",
    "halle_m",
@@ -745,12 +1039,34 @@
    "gang7_s",
    "gang8_n",
    "gang8_s",
-   "auto_n",
-   "versand",
-   "hof"
+   "buehne"
+  ],
+  "gang5_s": [
+   "steg",
+   "halle_n",
+   "halle_m",
+   "halle_s",
+   "gang0_n",
+   "gang0_s",
+   "gang1_s",
+   "gang2_n",
+   "gang2_s",
+   "gang3_n",
+   "gang3_s",
+   "gang4_n",
+   "gang4_s",
+   "gang5_n",
+   "gang5_s",
+   "gang6_n",
+   "gang6_s",
+   "gang7_n",
+   "gang7_s",
+   "gang8_n",
+   "gang8_s",
+   "kuehl",
+   "versand"
   ],
   "gang6_n": [
-   "lager_w",
    "steg",
    "halle_n",
    "halle_m",
@@ -760,7 +1076,6 @@
    "gang1_n",
    "gang1_s",
    "gang2_n",
-   "gang2_s",
    "gang3_n",
    "gang3_s",
    "gang4_n",
@@ -776,8 +1091,6 @@
    "auto_s"
   ],
   "gang6_s": [
-   "packerei",
-   "wareneingang",
    "steg",
    "halle_n",
    "halle_m",
@@ -799,8 +1112,9 @@
    "gang7_s",
    "gang8_n",
    "gang8_s",
-   "auto_n",
-   "versand"
+   "kuehl",
+   "versand",
+   "hof"
   ],
   "gang7_n": [
    "steg",
@@ -810,7 +1124,6 @@
    "gang0_n",
    "gang0_s",
    "gang1_n",
-   "gang1_s",
    "gang2_n",
    "gang2_s",
    "gang3_n",
@@ -825,8 +1138,10 @@
    "gang7_s",
    "gang8_n",
    "gang8_s",
-   "auto_n",
-   "auto_s"
+   "auto_s",
+   "akl",
+   "versand",
+   "nord"
   ],
   "gang7_s": [
    "steg",
@@ -834,9 +1149,9 @@
    "halle_m",
    "halle_s",
    "gang0_n",
-   "gang0_s",
    "gang1_n",
    "gang2_n",
+   "gang2_s",
    "gang3_n",
    "gang3_s",
    "gang4_n",
@@ -849,16 +1164,16 @@
    "gang7_s",
    "gang8_n",
    "gang8_s",
-   "versand"
+   "versand",
+   "hof"
   ],
   "gang8_n": [
-   "leitstand",
+   "packerei",
    "steg",
    "halle_n",
    "halle_m",
    "halle_s",
    "gang0_n",
-   "gang0_s",
    "gang1_n",
    "gang1_s",
    "gang2_n",
@@ -878,7 +1193,7 @@
    "buehne",
    "auto_n",
    "auto_s",
-   "roboter",
+   "akl",
    "versand"
   ],
   "gang8_s": [
@@ -886,10 +1201,12 @@
    "halle_n",
    "halle_m",
    "halle_s",
+   "gang0_n",
    "gang0_s",
    "gang1_n",
    "gang1_s",
    "gang2_n",
+   "gang2_s",
    "gang3_n",
    "gang3_s",
    "gang4_n",
@@ -902,25 +1219,20 @@
    "gang7_s",
    "gang8_n",
    "gang8_s",
-   "versand",
-   "hof"
+   "versand"
   ],
   "buehne": [
+   "buero",
    "leitstand",
-   "lager_w",
    "steg",
    "halle_n",
    "halle_s",
    "gang0_n",
-   "gang0_s",
    "gang1_n",
    "gang2_n",
    "gang3_n",
    "gang4_n",
    "gang5_n",
-   "gang6_n",
-   "gang7_n",
-   "gang8_n",
    "buehne",
    "auto_n",
    "auto_s",
@@ -932,17 +1244,22 @@
   ],
   "auto_n": [
    "leitstand",
+   "lager_w",
    "steg",
    "halle_n",
    "halle_s",
    "gang0_n",
+   "gang1_n",
    "gang2_n",
    "gang3_n",
    "gang4_n",
+   "gang4_s",
    "gang5_n",
+   "gang5_s",
    "gang6_n",
    "gang6_s",
    "gang7_n",
+   "gang7_s",
    "gang8_n",
    "gang8_s",
    "buehne",
@@ -957,10 +1274,8 @@
   ],
   "auto_s": [
    "steg",
-   "halle_n",
    "halle_s",
    "gang6_n",
-   "gang7_n",
    "gang8_n",
    "buehne",
    "auto_n",
@@ -974,20 +1289,19 @@
    "ost"
   ],
   "akl": [
-   "gang7_n",
-   "gang8_n",
    "buehne",
    "auto_n",
-   "auto_s",
    "akl",
    "roboter",
-   "versand"
+   "versand",
+   "hof"
   ],
   "kuehl": [
    "wareneingang",
    "halle_s",
    "gang0_s",
    "gang2_s",
+   "gang3_s",
    "gang4_s",
    "gang5_s",
    "gang6_s",
@@ -996,12 +1310,11 @@
    "auto_n",
    "auto_s",
    "kuehl",
-   "versand",
-   "west"
+   "versand"
   ],
   "roboter": [
+   "steg",
    "halle_s",
-   "gang7_n",
    "gang8_n",
    "buehne",
    "auto_n",
@@ -1011,12 +1324,12 @@
    "roboter",
    "versand",
    "hof",
+   "nord",
    "ost"
   ],
   "versand": [
    "wareneingang",
    "steg",
-   "halle_n",
    "halle_s",
    "gang0_s",
    "gang1_s",
@@ -1025,6 +1338,7 @@
    "gang4_s",
    "gang5_s",
    "gang6_s",
+   "gang7_n",
    "gang7_s",
    "gang8_n",
    "gang8_s",
@@ -1036,6 +1350,7 @@
    "roboter",
    "versand",
    "hof",
+   "west",
    "nord",
    "ost"
   ],
@@ -1051,6 +1366,7 @@
    "gang2_s",
    "gang3_n",
    "gang3_s",
+   "gang4_s",
    "gang5_s",
    "gang6_s",
    "gang7_s",
@@ -1063,22 +1379,25 @@
    "versand",
    "hof",
    "west",
+   "nord",
    "ost"
   ],
   "west": [
+   "buero",
    "leitstand",
    "schlafen",
-   "umkleide",
    "labor",
    "sozial",
+   "lager_w",
    "treppe_w",
    "packerei",
    "wareneingang",
    "steg",
    "halle_n",
+   "halle_s",
    "gang0_s",
    "gang1_s",
-   "gang3_s",
+   "gang4_s",
    "buehne",
    "hof",
    "west",
@@ -1090,8 +1409,11 @@
    "leitstand",
    "labor",
    "sozial",
+   "packerei",
    "steg",
    "halle_n",
+   "gang0_s",
+   "gang5_n",
    "buehne",
    "auto_n",
    "auto_s",
@@ -1101,41 +1423,385 @@
    "ost"
   ],
   "ost": [
-   "geld",
-   "buero",
    "leitstand",
-   "sozial",
    "steg",
-   "halle_n",
-   "halle_s",
-   "gang3_n",
    "buehne",
    "auto_n",
    "auto_s",
    "roboter",
    "versand",
    "hof",
+   "west",
    "nord",
    "ost"
   ]
  },
  "files": {
   "lm_day.bin": {
-   "bytes": 2983610,
-   "raw": 7602176
+   "bytes": 2423097,
+   "raw": 7995392
   },
   "lm_art.bin": {
-   "bytes": 2517940,
-   "raw": 7602176
+   "bytes": 2142586,
+   "raw": 7995392
   },
   "vlight.bin": {
-   "bytes": 999685,
+   "bytes": 1036738,
    "raw": 1369504
   },
   "probes.bin": {
-   "bytes": 2184199,
+   "bytes": 2182300,
    "raw": 3735324
+  },
+  "env.bin": {
+   "bytes": 374342,
+   "raw": 602112
   }
  },
- "seconds": 45.2
+ "stats": {
+  "keller_treppe": {
+   "texels": 3631,
+   "meanDay": 0.2523,
+   "meanArt": 0.1494,
+   "maxDay": 5.038,
+   "geoMean": 0.2065
+  },
+  "keller_treppe_h": {
+   "texels": 4293,
+   "meanDay": 0.0181,
+   "meanArt": 0.1218,
+   "maxDay": 0.188,
+   "geoMean": 0.0952
+  },
+  "technik": {
+   "texels": 30420,
+   "meanDay": 0.0055,
+   "meanArt": 0.0599,
+   "maxDay": 0.21,
+   "geoMean": 0.0369
+  },
+  "tunnel": {
+   "texels": 11096,
+   "meanDay": 0.0008,
+   "meanArt": 0.1851,
+   "maxDay": 0.017,
+   "geoMean": 0.1382
+  },
+  "geld": {
+   "texels": 10996,
+   "meanDay": 0.0001,
+   "meanArt": 0.0416,
+   "maxDay": 0.013,
+   "geoMean": 0.0326
+  },
+  "buero": {
+   "texels": 12235,
+   "meanDay": 0.0345,
+   "meanArt": 0.0345,
+   "maxDay": 1.085,
+   "geoMean": 0.0578
+  },
+  "leitstand": {
+   "texels": 12697,
+   "meanDay": 0.0462,
+   "meanArt": 0.0383,
+   "maxDay": 1.252,
+   "geoMean": 0.068
+  },
+  "flur_og": {
+   "texels": 19236,
+   "meanDay": 0.0033,
+   "meanArt": 0.061,
+   "maxDay": 0.119,
+   "geoMean": 0.0458
+  },
+  "schlafen": {
+   "texels": 21708,
+   "meanDay": 0.0746,
+   "meanArt": 0.0149,
+   "maxDay": 6.056,
+   "geoMean": 0.0278
+  },
+  "umkleide": {
+   "texels": 13974,
+   "meanDay": 0.0012,
+   "meanArt": 0.0276,
+   "maxDay": 0.009,
+   "geoMean": 0.0187
+  },
+  "labor": {
+   "texels": 26499,
+   "meanDay": 0.0642,
+   "meanArt": 0.0302,
+   "maxDay": 6.011,
+   "geoMean": 0.0508
+  },
+  "sozial": {
+   "texels": 29928,
+   "meanDay": 0.0149,
+   "meanArt": 0.0278,
+   "maxDay": 0.404,
+   "geoMean": 0.0332
+  },
+  "lager_w": {
+   "texels": 17396,
+   "meanDay": 0.0024,
+   "meanArt": 0.0254,
+   "maxDay": 1.057,
+   "geoMean": 0.0182
+  },
+  "treppe_w": {
+   "texels": 27017,
+   "meanDay": 0.164,
+   "meanArt": 0.0296,
+   "maxDay": 4.773,
+   "geoMean": 0.0628
+  },
+  "packerei": {
+   "texels": 94839,
+   "meanDay": 0.2111,
+   "meanArt": 0.0532,
+   "maxDay": 6.001,
+   "geoMean": 0.1368
+  },
+  "wareneingang": {
+   "texels": 115199,
+   "meanDay": 0.519,
+   "meanArt": 0.0856,
+   "maxDay": 6.362,
+   "geoMean": 0.3076
+  },
+  "steg": {
+   "texels": 18463,
+   "meanDay": 0.0624,
+   "meanArt": 0.2435,
+   "maxDay": 1.213,
+   "geoMean": 0.2299
+  },
+  "halle_n": {
+   "texels": 29188,
+   "meanDay": 0.1655,
+   "meanArt": 0.1622,
+   "maxDay": 4.377,
+   "geoMean": 0.2345
+  },
+  "halle_m": {
+   "texels": 15856,
+   "meanDay": 0.1044,
+   "meanArt": 0.2448,
+   "maxDay": 5.946,
+   "geoMean": 0.2942
+  },
+  "halle_s": {
+   "texels": 58210,
+   "meanDay": 0.3594,
+   "meanArt": 0.1673,
+   "maxDay": 7.043,
+   "geoMean": 0.3072
+  },
+  "gang0_n": {
+   "texels": 17574,
+   "meanDay": 0.0203,
+   "meanArt": 0.1016,
+   "maxDay": 0.093,
+   "geoMean": 0.0864
+  },
+  "gang0_s": {
+   "texels": 24292,
+   "meanDay": 0.0479,
+   "meanArt": 0.1099,
+   "maxDay": 0.526,
+   "geoMean": 0.1181
+  },
+  "gang1_n": {
+   "texels": 7087,
+   "meanDay": 0.0582,
+   "meanArt": 0.173,
+   "maxDay": 5.826,
+   "geoMean": 0.1962
+  },
+  "gang1_s": {
+   "texels": 7191,
+   "meanDay": 0.06,
+   "meanArt": 0.1653,
+   "maxDay": 5.866,
+   "geoMean": 0.1938
+  },
+  "gang2_n": {
+   "texels": 7591,
+   "meanDay": 0.068,
+   "meanArt": 0.1776,
+   "maxDay": 6.081,
+   "geoMean": 0.1995
+  },
+  "gang2_s": {
+   "texels": 7272,
+   "meanDay": 0.1265,
+   "meanArt": 0.1749,
+   "maxDay": 6.099,
+   "geoMean": 0.2214
+  },
+  "gang3_n": {
+   "texels": 7581,
+   "meanDay": 0.0563,
+   "meanArt": 0.1839,
+   "maxDay": 5.828,
+   "geoMean": 0.2062
+  },
+  "gang3_s": {
+   "texels": 7702,
+   "meanDay": 0.0973,
+   "meanArt": 0.1779,
+   "maxDay": 5.863,
+   "geoMean": 0.2074
+  },
+  "gang4_n": {
+   "texels": 7349,
+   "meanDay": 0.0845,
+   "meanArt": 0.1837,
+   "maxDay": 5.897,
+   "geoMean": 0.222
+  },
+  "gang4_s": {
+   "texels": 7538,
+   "meanDay": 0.1588,
+   "meanArt": 0.1802,
+   "maxDay": 5.92,
+   "geoMean": 0.2347
+  },
+  "gang5_n": {
+   "texels": 7727,
+   "meanDay": 0.0524,
+   "meanArt": 0.1796,
+   "maxDay": 5.829,
+   "geoMean": 0.1992
+  },
+  "gang5_s": {
+   "texels": 7754,
+   "meanDay": 0.0976,
+   "meanArt": 0.1718,
+   "maxDay": 5.869,
+   "geoMean": 0.2015
+  },
+  "gang6_n": {
+   "texels": 7741,
+   "meanDay": 0.0713,
+   "meanArt": 0.1749,
+   "maxDay": 5.874,
+   "geoMean": 0.2034
+  },
+  "gang6_s": {
+   "texels": 7440,
+   "meanDay": 0.1102,
+   "meanArt": 0.1699,
+   "maxDay": 5.927,
+   "geoMean": 0.2071
+  },
+  "gang7_n": {
+   "texels": 7276,
+   "meanDay": 0.0414,
+   "meanArt": 0.1694,
+   "maxDay": 5.95,
+   "geoMean": 0.1849
+  },
+  "gang7_s": {
+   "texels": 7358,
+   "meanDay": 0.1148,
+   "meanArt": 0.1654,
+   "maxDay": 5.958,
+   "geoMean": 0.197
+  },
+  "gang8_n": {
+   "texels": 10536,
+   "meanDay": 0.0424,
+   "meanArt": 0.085,
+   "maxDay": 4.222,
+   "geoMean": 0.085
+  },
+  "gang8_s": {
+   "texels": 14640,
+   "meanDay": 0.0558,
+   "meanArt": 0.1059,
+   "maxDay": 4.106,
+   "geoMean": 0.1049
+  },
+  "buehne": {
+   "texels": 8104,
+   "meanDay": 0.3781,
+   "meanArt": 0.1924,
+   "maxDay": 4.313,
+   "geoMean": 0.3268
+  },
+  "auto_n": {
+   "texels": 36150,
+   "meanDay": 0.0541,
+   "meanArt": 0.1302,
+   "maxDay": 5.903,
+   "geoMean": 0.0888
+  },
+  "auto_s": {
+   "texels": 38720,
+   "meanDay": 0.081,
+   "meanArt": 0.2106,
+   "maxDay": 5.919,
+   "geoMean": 0.2516
+  },
+  "akl": {
+   "texels": 59771,
+   "meanDay": 0.001,
+   "meanArt": 0.004,
+   "maxDay": 0.211,
+   "geoMean": 0.0007
+  },
+  "kuehl": {
+   "texels": 27399,
+   "meanDay": 0.0161,
+   "meanArt": 0.0367,
+   "maxDay": 4.267,
+   "geoMean": 0.0298
+  },
+  "roboter": {
+   "texels": 19553,
+   "meanDay": 0.0701,
+   "meanArt": 0.0462,
+   "maxDay": 2.912,
+   "geoMean": 0.0929
+  },
+  "versand": {
+   "texels": 38107,
+   "meanDay": 0.6401,
+   "meanArt": 0.1048,
+   "maxDay": 5.901,
+   "geoMean": 0.2822
+  },
+  "hof": {
+   "texels": 42227,
+   "meanDay": 5.9858,
+   "meanArt": 0.0049,
+   "maxDay": 7.647,
+   "geoMean": 5.7913
+  },
+  "west": {
+   "texels": 15113,
+   "meanDay": 5.0866,
+   "meanArt": 0.0001,
+   "maxDay": 6.405,
+   "geoMean": 5.0188
+  },
+  "nord": {
+   "texels": 26410,
+   "meanDay": 1.3927,
+   "meanArt": 0.0002,
+   "maxDay": 5.94,
+   "geoMean": 1.2217
+  },
+  "ost": {
+   "texels": 21258,
+   "meanDay": 1.4697,
+   "meanArt": 0,
+   "maxDay": 5.898,
+   "geoMean": 1.1459
+  }
+ },
+ "seconds": 58.5
 }

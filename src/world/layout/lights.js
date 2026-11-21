@@ -9,13 +9,16 @@
 const deg = Math.PI / 180;
 const az = 35 * deg, el = 36 * deg;   // sun azimuth measured from south towards west, elevation
 
+// Energy balance (hazy afternoon): direct sun on the ground ≈ 5.0, sky fill ≈ 1.5 (radiance factor) — a ~3:1
+// sun:sky ratio, so sun patches through dock doors and skylights sit 3–4 stops above the artificially lit
+// interior and clip on the auto-exposed bodycam sensor, while shade stays only mildly cool.
 export const SUN = {
   dir: [-Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)],   // towards the sun
-  color: [1.0, 0.93, 0.82], intensity: 3.2,
+  color: [1.0, 0.92, 0.80], intensity: 8.5,
 };
-// Sky radiance model (also mirrored in the sky shader, src/render/sky.js): horizon → zenith gradient + sun glow.
+// Sky radiance model (src/world/skymodel.js, mirrored in the sky shader): horizon → zenith gradient + sun glow.
 export const SKY = {
-  zenith: [0.32, 0.50, 0.95], horizon: [1.05, 1.08, 1.12], ground: [0.22, 0.21, 0.19], glow: 0.9, scale: 0.85,
+  zenith: [0.72, 0.90, 1.30], horizon: [1.85, 1.86, 1.88], ground: [0.30, 0.28, 0.25], glow: 1.4, scale: 1.0,
 };
 
 export const CIRCUITS = {
