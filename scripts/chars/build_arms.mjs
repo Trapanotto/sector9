@@ -143,8 +143,8 @@ function poseGun({ x = 0, y = -0.1, z = 0.33, pitch = 0, yaw = 0, roll = 0, conv
 }
 // hold poses (camera frame). ADS: sights 3.5 cm under the lens axis, 33 cm out, zeroed to the image centre at 15 m.
 const HOLD = {
-  aim: { x: 0, y: -0.045, z: 0.33, conv: 15 },
-  hip: { x: -0.025, y: -0.09, z: 0.3, conv: 12 },
+  aim: { x: -0.025, y: -0.055, z: 0.3, conv: 15 },
+  hip: { x: -0.03, y: -0.068, z: 0.29, conv: 12 },
   low: { x: -0.03, y: -0.2, z: 0.28, pitch: -32, yaw: 8 },
   sprint: { x: -0.06, y: -0.29, z: 0.2, pitch: -55, yaw: 18, roll: 12 },
 };
@@ -157,8 +157,8 @@ function handFromGun(Tm) {
   m.decompose(p, q, V());
   return { p, q };
 }
-const strongPole = () => R.wpos('upperarm_r').add(V(-0.3, -0.65, 0.05));
-const supportPole = () => R.wpos('upperarm_l').add(V(0.3, -0.65, 0.05));
+const strongPole = () => R.wpos('upperarm_r').add(V(-0.15, -0.8, 0.0));
+const supportPole = () => R.wpos('upperarm_l').add(V(0.15, -0.8, 0.0));
 function placeFromGun(s, Tm) {
   const { p, q } = handFromGun(Tm);
   R.placeHand(s, p, q, s === 'r' ? strongPole() : supportPole());

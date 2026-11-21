@@ -47,9 +47,9 @@
    "indexKnuckleMiss": 0.0047
   },
   "strongSlides_m": [
-   0.0027
+   0.0026
   ],
-  "strongPalmClearance": 0.0027,
+  "strongPalmClearance": 0.0026,
   "strong": {
    "middle": [
     28.5,
@@ -70,30 +70,30 @@
    "indexOnTrigger": {
     "spread": -10,
     "flex": [
-     15,
-     36,
-     10.8
+     13,
+     38,
+     15.2
     ],
-    "gapToBlade_m": 0.0024,
-    "gapAny_m": 0.0024
+    "gapToBlade_m": 0.0026,
+    "gapAny_m": 0.0026
    },
    "indexPressExtraCurl": [
-    0,
-    0,
-    0
+    0.12,
+    0.3,
+    0.18
    ],
-   "indexPressGapToBlade_m": 0.0024,
+   "indexPressGapToBlade_m": 0.0022,
    "indexOff": {
-    "miss": 0.0388,
+    "miss": 0.0385,
     "opened": 0
    }
   },
   "supportSlides_m": [
    0.006,
-   0.004,
+   0,
    0
   ],
-  "supportPalmClearance": 0.0025,
+  "supportPalmClearance": 0.0027,
   "support": {
    "index": [
     79.5,
@@ -106,66 +106,66 @@
     64.8
    ],
    "ring": [
-    63,
-    75.6,
-    56.7
+    70.5,
+    84.6,
+    63.5
    ],
    "pinky": [
-    85.5,
-    102.6,
-    76.9
+    87,
+    104.4,
+    78.3
    ],
    "thumb": {
-    "cost": 0.0095,
-    "tipMiss": 0.0095,
+    "cost": 0.0097,
+    "tipMiss": 0.0097,
     "mcpMiss": null,
     "swing": [
-     14,
-     2,
+     20,
+     8,
      0
     ],
     "flex": [
-     -5,
-     -3
+     -10,
+     -6
     ]
    },
    "gaps_mm": {
     "index": [
-     29.5,
-     4.9,
-     4.8
+     29.8,
+     8.9,
+     5.1
     ],
     "middle": [
-     31.4,
-     7.5,
-     4.7
+     32.3,
+     9,
+     5.7
     ],
     "ring": [
-     38.6,
-     18.6,
-     1.4
+     36.8,
+     16.5,
+     5.5
     ],
     "pinky": [
-     31.1,
-     13.2,
-     4.6
+     31.5,
+     13.6,
+     3.9
     ],
     "thumb": [
-     20,
-     14.9,
-     3.5
+     16.9,
+     13.3,
+     2.7
     ]
    }
   },
   "magHold": {
    "curls": {
     "index": [
-     19.5,
+     36,
      99,
      79.6
     ],
     "middle": [
-     84,
+     90,
      99,
      79.6
     ],
@@ -180,12 +180,12 @@
      79.6
     ],
     "thumb": [
-     -21,
-     -10.5,
-     0
+     -27,
+     -4.5,
+     6.8
     ]
    },
-   "palmGap_m": 0.0034
+   "palmGap_m": 0.0012
   }
  },
  "clips": {
@@ -267,5 +267,5 @@
   "pistol": 644,
   "total": 8996
  },
- "bytes": 305144
+ "bytes": 305644
 }

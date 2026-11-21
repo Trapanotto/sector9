@@ -44,6 +44,9 @@ export function createWeapon(ctx) {
     w.state = 'ready';
     sync();
   };
+  /** checkpoint helpers for the director: ammo state as plain data, restore after reset() */
+  w.snapshot = () => ({ chamber: A.chamber, mag: A.mag, spares: A.spares.slice(), slideLocked: A.slideLocked });
+  w.restore = (sn) => { if (!sn) return; A.chamber = sn.chamber; A.mag = sn.mag; A.spares.length = 0; for (const n of sn.spares) A.spares.push(n); A.slideLocked = sn.slideLocked; sync(); };
   function sync() { w.ammo = inGun(A); w.reserve = reserve(A); w.reloading = s.rName ? Math.max(0.001, s.rDur - s.rTime) : 0; }
 
   function startReload() {

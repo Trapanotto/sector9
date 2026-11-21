@@ -11,7 +11,7 @@
 import * as THREE from 'three';
 import { U, createDynamicMaterial } from '../render/materials.js';
 
-export const VM_ZOOM = 1.55; // view-model lens magnification relative to the world lens (tan ratio)
+export const VM_ZOOM = 1.35; // view-model lens magnification relative to the world lens (tan ratio)
 const HOLDS = ['fp_idle', 'fp_aim', 'fp_lowready', 'fp_sprint'];
 const RELOADS = ['fp_reload', 'fp_reload_tac'];
 
@@ -77,7 +77,7 @@ export function createViewmodel(ctx) {
       actions[c.name] = a;
     }
     for (const n of HOLDS) { actions[n].play(); actions[n].setEffectiveWeight(n === 'fp_idle' ? 1 : 0); }
-    for (const n of RELOADS) { actions[n].play(); actions[n].paused = true; actions[n].setEffectiveWeight(0); }
+    for (const n of RELOADS) { if (!actions[n]) continue; actions[n].play(); actions[n].paused = true; actions[n].setEffectiveWeight(0); }
     const ex = vm.extras;
     if (ex.pistolInHand) pistolInHandInv.fromArray(ex.pistolInHand).invert();
     if (ex.supportInPistol) supportInPistol.fromArray(ex.supportInPistol);
@@ -85,7 +85,7 @@ export function createViewmodel(ctx) {
     if (ex.slideTravel) slideTravel = ex.slideTravel;
     trigRest.copy(B.pistol_trigger.quaternion);
     slideRest.copy(B.pistol_slide.position);
-    vm.reloadDur = { fp_reload: actions.fp_reload.getClip().duration, fp_reload_tac: actions.fp_reload_tac.getClip().duration };
+    vm.reloadDur = { fp_reload: actions.fp_reload?.getClip().duration ?? 2.5, fp_reload_tac: actions.fp_reload_tac?.getClip().duration ?? 2.2 };
   };
 
   vm.init = () => {
@@ -101,7 +101,7 @@ export function createViewmodel(ctx) {
       cam.near = 0.01; cam.far = 10;
       cam.updateProjectionMatrix();
       flashSave.copy(U.uFlashColor.value); muzSave.copy(U.uMuzzleColor.value); muzPosSave.copy(U.uMuzzlePos.value);
-      U.uFlashColor.value.multiplyScalar(0.22);
+      U.uFlashColor.value.multiplyScalar(0.5);
       U.uMuzzleColor.value.multiplyScalar(0.06);
       U.uMuzzlePos.value.copy(vm.muzzle);
     };
@@ -162,6 +162,9 @@ export function createViewmodel(ctx) {
   const tp = new THREE.Vector3(), tq = new THREE.Quaternion(), fp = new THREE.Vector3(), fq = new THREE.Quaternion();
   const ps = { r: 0, g: 0, b: 0, ar: 0, ag: 0, ab: 0, dx: 0, dy: 0, dz: 0, sun: 0 };
   const Z = new THREE.Vector3(0, 0, 1), X = new THREE.Vector3(-1, 0, 0);
+  const MOD_NAMES = ['upperarm_r', 'lowerarm_r', 'hand_r', 'upperarm_l', 'lowerarm_l', 'hand_l', 'index_01_r', 'index_02_r', 'index_03_r', 'pistol_trigger'];
+  const MOD = [], fkQ = [], fkSlide = new THREE.Vector3();
+  let fkSaved = false;
 
   vm.update = (dt, cam) => {
     if (!vm.ready) return;
@@ -181,10 +184,17 @@ export function createViewmodel(ctx) {
     actions.fp_sprint.setEffectiveWeight(vm.w.sprint * hw);
     for (const n of RELOADS) {
       const a = actions[n];
+      if (!a) continue;
       if (n === r.name && rw > 0) { a.setEffectiveWeight(rw); a.time = Math.min(r.time, a.getClip().duration - 1e-3); }
       else a.setEffectiveWeight(0);
     }
+    // three's PropertyMixer only writes a bone when the clip value CHANGED: put back last frame's clip values on the
+    // bones we overwrite procedurally (IK, finger, trigger, slide) so unchanged tracks don't keep our edits
+    if (fkSaved) { for (let i = 0; i < MOD.length; i++) MOD[i].quaternion.copy(fkQ[i]); B.pistol_slide.position.copy(fkSlide); }
     vm.mixer.update(dt);
+    if (!MOD.length) for (const n of MOD_NAMES) { MOD.push(B[n]); fkQ.push(new THREE.Quaternion()); }
+    for (let i = 0; i < MOD.length; i++) fkQ[i].copy(MOD[i].quaternion);
+    fkSlide.copy(B.pistol_slide.position); fkSaved = true;
     // --- index finger / trigger / slide (procedural, local to the hand)
     const ot = vm.onTrig, pr = vm.press;
     for (let i = 0; i < 3; i++) {

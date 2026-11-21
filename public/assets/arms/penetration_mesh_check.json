@@ -1,7 +1,7 @@
 {
  "method": "exported GLB, CPU skinning of every glove vertex, exact pistol SDF at the exported joints, 60 fps",
  "file": "fp_arms_pistol.glb",
- "sha1": "40156ee2b72002fb22f4ae4a8f29d539a1a0b254",
+ "sha1": "8b5f5cd03d1c6833dcc53b867df8593435b5a55b",
  "gloveVerts": 2954,
  "clips": {
   "fp_idle": {
