@@ -1,4 +1,4 @@
-// Player start and the enemy roster. Owner: D (enemies) for ENEMIES, F (director) for PLAYER_SPAWN.
+// The enemy roster. Owner: D (enemies). (The player start lives in moments.js, owner F.)
 // yaw: radians, 0 = facing north (-z), +π/2 = facing west (-x), π = south (+z), -π/2 = east (+x)
 // (same convention as three.js camera rotation.y).
 //
@@ -7,8 +7,6 @@
 //       'sleeper'  — lying/sitting, wakes on noise, gunfire nearby or a staged moment
 //       'ambusher' — hidden, waits for `trigger` (staged moment id) or close contact, then attacks
 // weapon: 'pistol' | 'smg' | 'shotgun' | 'rifle'
-
-export const PLAYER_SPAWN = { pos: [45, 0, 107.5], yaw: 0, zone: 'hof' };
 
 const E = (id, role, x, y, z, yaw, weapon, o = {}) => ({ id, role, pos: [x, y, z], yaw, weapon, ...o });
 const N = 0, S = Math.PI, W = Math.PI / 2, O = -Math.PI / 2;

@@ -5,37 +5,41 @@ import { F_SOLID } from './gen.js';
 
 export function createCollision(bvh) {
   const dyn = [];   // { min: Float32Array(3), max: Float32Array(3), enabled, owner }
-  let px = 0, py = 0, pz = 0, pr = 0, lo = 0, hi = 0, pushX = 0, pushZ = 0, maxTop = -Infinity, qx = 0, qz = 0, qr = 0, refTop = 0;
+  // scratch state in a Float64Array: closure-captured mutable doubles would box a HeapNumber on every write
+  const S = new Float64Array(12);
   const { bmin, bmax } = bvh;
   let flag = false;
   const onFlag = () => { flag = true; };
 
-  // push the circle (px,pz,pr) out of a box rect if the box overlaps the body's vertical span [lo, hi]
-  function pushOut(x0, y0, z0, x1, y1, z1) {
-    if (y1 <= lo || y0 >= hi) return;
-    const cx = px < x0 ? x0 : px > x1 ? x1 : px, cz = pz < z0 ? z0 : pz > z1 ? z1 : pz;
-    let dx = px - cx, dz = pz - cz;
+  // S: 0 px, 1 pz, 2 radius, 3 lo, 4 hi, 5 pushX, 6 pushZ, 7 maxTop, 8 qx, 9 qz, 10 qr, 11 refTop
+  // push the circle (px,pz,radius) out of a box rect if the box overlaps the body's vertical span [lo, hi]
+  // (typed arrays + integer offset as arguments: passing six doubles to a non-inlined call boxes them)
+  function pushOut(mn, mx, o) {
+    const x0 = mn[o], y0 = mn[o + 1], z0 = mn[o + 2], x1 = mx[o], y1 = mx[o + 1], z1 = mx[o + 2];
+    if (y1 <= S[3] || y0 >= S[4]) return;
+    const cx = S[0] < x0 ? x0 : S[0] > x1 ? x1 : S[0], cz = S[1] < z0 ? z0 : S[1] > z1 ? z1 : S[1];
+    let dx = S[0] - cx, dz = S[1] - cz;
     const d2 = dx * dx + dz * dz;
-    if (d2 >= pr * pr) return;
+    if (d2 >= S[2] * S[2]) return;
     if (d2 > 1e-10) {
-      const d = Math.sqrt(d2), k = (pr - d) / d;
-      pushX += dx * k; pushZ += dz * k; px += dx * k; pz += dz * k;
+      const d = Math.sqrt(d2), k = (S[2] - d) / d;
+      S[5] += dx * k; S[6] += dz * k; S[0] += dx * k; S[1] += dz * k;
     } else {
       // centre inside the rect: leave along the smallest penetration
-      const l = px - x0 + pr, r = x1 - px + pr, b = pz - z0 + pr, f = z1 - pz + pr;
+      const l = S[0] - x0 + S[2], r = x1 - S[0] + S[2], b = S[1] - z0 + S[2], f = z1 - S[1] + S[2];
       const m = Math.min(l, r, b, f);
       if (m === l) dx = -l; else if (m === r) dx = r; else dx = 0;
       if (m === b) dz = -b; else if (m === f) dz = f; else dz = 0;
-      px += dx; pz += dz; pushX += dx; pushZ += dz;
+      S[0] += dx; S[1] += dz; S[5] += dx; S[6] += dz;
     }
   }
-  const onStatic = (b) => { const o = b * 3; pushOut(bmin[o], bmin[o + 1], bmin[o + 2], bmax[o], bmax[o + 1], bmax[o + 2]); };
+  const onStatic = (b) => { pushOut(bmin, bmax, b * 3); };
   const onGround = (b) => {
     const o = b * 3, top = bmax[o + 1];
-    if (top > refTop || top <= maxTop) return;
+    if (top > S[11] || top <= S[7]) return;
     // circle (qx,qz,qr) vs rect
-    const cx = qx < bmin[o] ? bmin[o] : qx > bmax[o] ? bmax[o] : qx, cz = qz < bmin[o + 2] ? bmin[o + 2] : qz > bmax[o + 2] ? bmax[o + 2] : qz;
-    if ((qx - cx) * (qx - cx) + (qz - cz) * (qz - cz) <= qr * qr) maxTop = top;
+    const cx = S[8] < bmin[o] ? bmin[o] : S[8] > bmax[o] ? bmax[o] : S[8], cz = S[9] < bmin[o + 2] ? bmin[o + 2] : S[9] > bmax[o + 2] ? bmax[o + 2] : S[9];
+    if ((S[8] - cx) * (S[8] - cx) + (S[9] - cz) * (S[9] - cz) <= S[10] * S[10]) S[7] = top;
   };
 
   const api = {
@@ -48,16 +52,16 @@ export function createCollision(bvh) {
     removeDynamic(c) { const i = dyn.indexOf(c); if (i >= 0) dyn.splice(i, 1); },
     /** highest walkable top under (x,z) within radius r that is ≤ refY + 0.01 (-Infinity if none) */
     groundHeight(x, z, refY, r = 0) {
-      qx = x; qz = z; qr = r; refTop = refY + 0.01; maxTop = -Infinity;
-      bvh.query(x - r, -1e3, z - r, x + r, refTop, z + r, F_SOLID, onGround);
+      S[8] = x; S[9] = z; S[10] = r; S[11] = refY + 0.01; S[7] = -Infinity;
+      bvh.query(x - r, -1e3, z - r, x + r, S[11], z + r, F_SOLID, onGround);
       for (let i = 0; i < dyn.length; i++) {
         const c = dyn[i]; if (!c.enabled) continue;
         const top = c.max[1];
-        if (top > refTop || top <= maxTop) continue;
+        if (top > S[11] || top <= S[7]) continue;
         const cx = Math.max(c.min[0], Math.min(c.max[0], x)), cz = Math.max(c.min[2], Math.min(c.max[2], z));
-        if ((x - cx) ** 2 + (z - cz) ** 2 <= r * r) maxTop = top;
+        if ((x - cx) ** 2 + (z - cz) ** 2 <= r * r) S[7] = top;
       }
-      return maxTop;
+      return S[7];
     },
     /**
      * Move a cylinder body. pos: {x,y,z} feet (mutated), d: {x,y,z} displacement, opts { radius, height, step }.
@@ -67,34 +71,34 @@ export function createCollision(bvh) {
       const r = opts.radius, h = opts.height, step = opts.step ?? 0.45;
       const len = Math.hypot(d.x, d.z);
       const n = Math.max(1, Math.ceil(len / (r * 0.45)));
-      px = pos.x; pz = pos.z; pr = r;
+      S[0] = pos.x; S[1] = pos.z; S[2] = r;
       state.hitWall = false;
       for (let s = 0; s < n; s++) {
-        px += d.x / n; pz += d.z / n;
+        S[0] += d.x / n; S[1] += d.z / n;
         for (let it = 0; it < 3; it++) {
-          pushX = 0; pushZ = 0;
-          lo = pos.y + step; hi = pos.y + h;
-          bvh.query(px - r, lo, pz - r, px + r, hi, pz + r, F_SOLID, onStatic);
+          S[5] = 0; S[6] = 0;
+          S[3] = pos.y + step; S[4] = pos.y + h;
+          bvh.query(S[0] - r, S[3], S[1] - r, S[0] + r, S[4], S[1] + r, F_SOLID, onStatic);
           for (let i = 0; i < dyn.length; i++) {
             const c = dyn[i];
-            if (c.enabled) pushOut(c.min[0], c.min[1], c.min[2], c.max[0], c.max[1], c.max[2]);
+            if (c.enabled) pushOut(c.min, c.max, 0);
           }
-          if (pushX === 0 && pushZ === 0) break;
+          if (S[5] === 0 && S[6] === 0) break;
           state.hitWall = true;
         }
       }
-      pos.x = px; pos.z = pz;
+      pos.x = S[0]; pos.z = S[1];
       // vertical: step up / snap down / fall
-      const g = api.groundHeight(px, pz, pos.y + step, r * 0.75);
+      const g = api.groundHeight(S[0], S[1], pos.y + step, r * 0.75);
       let y = pos.y + d.y;
       if (d.y <= 0 && g > -Infinity && y <= g + (state.grounded ? 0.3 : 0.0)) {
         y = g; state.grounded = true; state.vy = 0;
       } else state.grounded = false;
       // ceiling
       if (d.y > 0) {
-        lo = y + h - 0.05; hi = y + h + 0.02; pushX = 0; pushZ = 0;
+        S[3] = y + h - 0.05; S[4] = y + h + 0.02; S[5] = 0; S[6] = 0;
         flag = false;
-        bvh.query(px - r * 0.5, lo, pz - r * 0.5, px + r * 0.5, hi, pz + r * 0.5, F_SOLID, onFlag);
+        bvh.query(S[0] - r * 0.5, S[3], S[1] - r * 0.5, S[0] + r * 0.5, S[4], S[1] + r * 0.5, F_SOLID, onFlag);
         if (flag) { y = pos.y; state.vy = 0; }
       }
       state.groundY = g;

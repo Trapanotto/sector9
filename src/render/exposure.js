@@ -19,9 +19,10 @@ export function createExposure(ctx) {
     dirs[i * 3] = x / l; dirs[i * 3 + 1] = y / l; dirs[i * 3 + 2] = -1 / l;
     wts[i] = 1.4 - r;
   }
-  const hit = { t: 0, side: 0 }, ps = {}, sk = [0, 0, 0];
+  const P3 = new Float64Array(3);
+  const hit = { t: 0.5, side: 0 }, ps = { r: 0, g: 0, b: 0, ar: 0, ag: 0, ab: 0, dx: 0, dy: 0, dz: 0, sun: 0 }, sk = [0, 0, 0];
   const NORM = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
-  const e = { value: 1, target: 1, avgLum: 0.3, gain: 1, key: 0.42, min: 0.12, max: 14, frozen: false };
+  const e = { value: 1, target: 1, avgLum: 0.3, gain: 1, key: 0.42, min: 0.12, max: 10, frozen: false };
   const L = ctx.layout;
   let fogTarget = 0.004;
 
@@ -35,15 +36,16 @@ export function createExposure(ctx) {
     for (let i = 0; i < N; i++) {
       const lx = dirs[i * 3], ly = dirs[i * 3 + 1], lz = dirs[i * 3 + 2];
       const dx = m[0] * lx + m[4] * ly + m[8] * lz, dy = m[1] * lx + m[5] * ly + m[9] * lz, dz = m[2] * lx + m[6] * ly + m[10] * lz;
-      const b = bvh.raycast(ox, oy, oz, dx, dy, dz, 150, F_OCC, hit);
+      const R = bvh.ray; R[0] = ox; R[1] = oy; R[2] = oz; R[3] = dx; R[4] = dy; R[5] = dz; R[6] = 150;
+      const b = bvh.raycastR(F_OCC, hit);
       let lum;
       if (b < 0) {
         skyRadiance(L.sky, L.sun, dx, dy, dz, sk);
         lum = 0.2126 * sk[0] + 0.7152 * sk[1] + 0.0722 * sk[2];
       } else {
         const n = NORM[hit.side], t = hit.t;
-        const hx = ox + dx * t + n[0] * 0.35, hy = oy + dy * t + n[1] * 0.35, hz = oz + dz * t + n[2] * 0.35;
-        w.probes.sample(hx, hy, hz, ps);
+        P3[0] = ox + dx * t + n[0] * 0.35; P3[1] = oy + dy * t + n[1] * 0.35; P3[2] = oz + dz * t + n[2] * 0.35;
+        w.probes.sampleV(P3, 0, ps);
         const bx = boxes[b], al = 0.2126 * bx.color[0] + 0.7152 * bx.color[1] + 0.0722 * bx.color[2];
         const zc = w.gen.zones[bx.zone]?.circuit, cl = circ[w.lights.ids.indexOf(zc)] ?? 1;
         let E = 0.2126 * (ps.r + ps.ar * cl) + 0.7152 * (ps.g + ps.ag * cl) + 0.0722 * (ps.b + ps.ab * cl);
@@ -65,7 +67,8 @@ export function createExposure(ctx) {
     e.gain = Math.max(0, Math.log2(e.value / 1.2));   // noise gain: grows when the sensor gains up
     ctx.render.composite.uniforms.uGain.value = e.gain;
     // fog: colour from the probe at the camera, density from the zone's acoustic class
-    w.probes.sample(ox, oy, oz, ps);
+    P3[0] = ox; P3[1] = oy; P3[2] = oz;
+    w.probes.sampleV(P3, 0, ps);
     const cz = w.gen.zones[w.cameraZone];
     const cl = circ[w.lights.ids.indexOf(cz?.circuit)] ?? 1;
     U.uFogColor.value.set((ps.r + ps.ar * cl) * 0.9, (ps.g + ps.ag * cl) * 0.9, (ps.b + ps.ab * cl) * 0.92);

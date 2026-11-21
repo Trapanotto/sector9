@@ -84,7 +84,7 @@ export function createCompositeMaterial() {
         if (uBloom > 0.0) {
           vec2 suv = clamp(uv, vec2(0.002), vec2(0.998)) * uScale;
           vec3 b = textureLod(tScene, suv, uBloomLod).rgb * 0.6 + textureLod(tScene, suv, uBloomLod + 2.0).rgb * 0.4;
-          col += max(b - 0.9, 0.0) * uBloom;
+          col += max(b - 1.2, 0.0) * uBloom;   // halation around blown highlights only
         }
 
         // chroma subsampled per block (blocky colour like a low-bitrate stream)

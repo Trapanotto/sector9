@@ -127,9 +127,11 @@ export function createDirector(ctx) {
   d.update = () => {
     if (ctx.state === 'playing') {
       if (ctx.input.hit('pause') && window.__fakeLock) ctx.setState('paused');
-      hud.textContent = `${ctx.weapon.ammo} | ${ctx.weapon.reserve}   ${Math.max(0, Math.round(ctx.player.health))} HP`;
+      const a = ctx.weapon.ammo, r = ctx.weapon.reserve, h = Math.max(0, Math.round(ctx.player.health));
+      if (a !== last.a || r !== last.r || h !== last.h) { last.a = a; last.r = r; last.h = h; hud.textContent = `${a} | ${r}   ${h} HP`; }
     }
   };
+  const last = { a: -1, r: -1, h: -1 };
   d.reset = () => {};
   return d;
 }

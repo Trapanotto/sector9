@@ -4,4 +4,6 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   base: './',
   build: { chunkSizeWarningLimit: 1500 },
+  // tmp/ holds throwaway browser profiles of scripts/browser-check.mjs (locked files would crash the watcher)
+  server: { watch: { ignored: ['**/tmp/**', '**/dist/**'] } },
 });

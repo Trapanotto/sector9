@@ -6,6 +6,9 @@
 //          shots  — screenshots of every LAYOUT.benchViews view
 //          tour   — walks the whole level spawn → extraction with the real controller (__ctx.dev.autopilot)
 //          walk   — holds W / ArrowLeft through real key events (input path)
+//          alloc  — sampling heap profile (bytes allocated per frame, top sites)
+//          script — --jsfile f.js (async body, `c` = __ctx) then a screenshot
+//          text   — page text after load, e.g. with --flags "--disable-webgl" (error screens)
 // Browser: $BROWSER, else Edge / Chrome default install paths on Windows.
 // NOTE: numbers measured with --swiftshader are CPU software rendering, not a GPU benchmark.
 import { spawn } from 'node:child_process';
@@ -27,7 +30,8 @@ const args = ['--headless=new', exe.includes('msedge') ? '--inprivate' : '--inco
   '--no-first-run', `--user-data-dir=${prof}`, `--remote-debugging-port=${port}`, '--window-size=1280,720',
   '--ignore-gpu-blocklist', '--disable-background-timer-throttling', '--disable-renderer-backgrounding',
   ...(sw ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : ['--enable-gpu', '--use-angle=d3d11']),
-  ...(argv.includes('--uncapped') || mode === 'bench' ? ['--disable-gpu-vsync', '--disable-frame-rate-limit'] : []), 'about:blank'];
+  ...(argv.includes('--uncapped') || mode === 'bench' ? ['--disable-gpu-vsync', '--disable-frame-rate-limit'] : []),
+  ...(opt('--flags', '') ? opt('--flags', '').split(' ') : []), 'about:blank'];
 const browser = spawn(exe, args, { stdio: 'ignore' });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let targets;
@@ -46,6 +50,12 @@ await send('Runtime.enable'); await send('Page.enable');
 await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
 const t0 = Date.now();
 await send('Page.navigate', { url });
+if (mode === 'text') {
+  // e.g. --flags "--disable-webgl": print the page text after load (error screens)
+  await sleep(4000);
+  console.log(await ev('document.body.innerText'));
+  ws.close(); browser.kill(); await sleep(300); process.exit(0);
+}
 for (let i = 0; i < 600; i++) { if ((await ev('window.__ctx?.state')) === 'menu') break; await sleep(100); }
 const result = { mode, wallToMenuMs: Date.now() - t0, timings: await ev('window.__ctx.timings'), gpu: await ev('window.__ctx.quality.gpu'), tierAuto: await ev('window.__ctx.quality.tier.id') };
 await ev("window.__fakeLock = true; document.querySelector('[data-a=start]').click(); 1");
@@ -64,6 +74,30 @@ if (mode === 'bench') {
   result.tour = await ev("window.__ctx.debug.god = true; window.__ctx.dev.autopilot(window.__ctx.dev.tour, { timeout: 400, speedKey: 'ShiftLeft' })");
   result.state = await ev('window.__ctx.state');
   await shot('tour_end');
+} else if (mode === 'script') {
+  // --js "<async body>" or --jsfile file.js evaluated in the page while playing, then a screenshot script.jpg
+  const js = opt('--jsfile') ? (await import('node:fs')).readFileSync(opt('--jsfile'), 'utf8') : opt('--js', '');
+  result.value = await ev(`(async () => { const c = window.__ctx; ${js} })()`);
+  await shot(opt('--name', 'script'));
+} else if (mode === 'alloc') {
+  // sampling heap profiler while standing in the heaviest view: top allocation sites (hot-path allocation hunt)
+  await ev('(()=>{const c=window.__ctx; c.debug.god=true; const v=c.layout.benchViews[0]; c.player.teleport(v.pos,v.yaw,0,false); return 1})()');
+  await sleep(3000);
+  await send('HeapProfiler.enable');
+  await send('HeapProfiler.startSampling', { samplingInterval: 512, includeObjectsCollectedByMajorGC: true, includeObjectsCollectedByMinorGC: true });
+  const f0 = await ev('window.__ctx.time.frame');
+  await sleep(6000);
+  const prof = (await send('HeapProfiler.stopSampling')).result.profile;
+  const frames = (await ev('window.__ctx.time.frame')) - f0;
+  const sites = new Map();
+  const walk = (n) => {
+    const cf = n.callFrame, key = `${cf.functionName || '(anon)'} ${cf.url.replace(/^.*\/(src|node_modules)\//, '$1/')}:${cf.lineNumber + 1}`;
+    sites.set(key, (sites.get(key) ?? 0) + n.selfSize);
+    for (const ch of n.children) walk(ch);
+  };
+  walk(prof.head);
+  const total = [...sites.values()].reduce((a, b) => a + b, 0);
+  result.alloc = { frames, bytesPerFrame: Math.round(total / frames), top: [...sites].sort((a, b) => b[1] - a[1]).slice(0, 15).map(([k, v]) => `${Math.round(v / frames)} B/frame  ${k}`) };
 } else if (mode === 'walk') {
   const p0 = await ev('({...window.__ctx.player.pos})');
   await send('Input.dispatchKeyEvent', { type: 'keyDown', code: 'KeyW', key: 'w' }); await sleep(3000);

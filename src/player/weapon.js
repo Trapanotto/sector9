@@ -14,7 +14,7 @@ export function createWeapon(ctx) {
   const dir = { x: 0, y: 0, z: -1 }, org = { x: 0, y: 0, z: 0 };
   const evt = { ammo: 0 };
   let gun = null;
-  const ps = {};
+  const ps = { r: 0, g: 0, b: 0, ar: 0, ag: 0, ab: 0, dx: 0, dy: 0, dz: 0, sun: 0 };
 
   w.init = () => {
     // first-person proxy: slide + grip, in camera space

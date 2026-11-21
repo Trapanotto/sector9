@@ -5,6 +5,11 @@
 // quarter turns (r = 0..3, counter-clockwise seen from above) so the proxies stay axis-aligned.
 // Box: [x0, y0, z0, x1, y1, z1, surf, flags?]; flags: { cls:'mesh'|'collider'|'prop', emit, solid:false, ... }
 
+// Groups (prop type names, or raw groups such as 'rack', 'akl', 'conveyor', 'rail', 'lamp') whose greybox proxy
+// faces are NOT drawn because art (A) renders its own models in place. Collision, nav, bake and bullets still use
+// the proxies. Example: export const HIDE_PROXY_GROUPS = ['pallet_load', 'rack'];
+export const HIDE_PROXY_GROUPS = [];
+
 const P = (x0, y0, z0, x1, y1, z1, surf, f) => [x0, y0, z0, x1, y1, z1, surf, f];
 const pallet = P(-0.6, 0, -0.4, 0.6, 0.144, 0.4, 'wood');
 

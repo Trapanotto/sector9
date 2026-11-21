@@ -22,7 +22,10 @@ export function createProbes(manifest, bytes) {
   const texOrigin = new THREE.Vector3(P.origin[0] - sp / 2, P.origin[1] - sp / 2, P.origin[2] - sp / 2);
 
   /** trilinear sample at world point → out { r,g,b (day L0), ar,ag,ab (art L0), dx,dy,dz, sun } */
-  function sample(x, y, z, out) {
+  function sample(x, y, z, out) { return sampleA(x, y, z, out); }
+  /** allocation-free variant for hot paths: position from a Float64Array at offset o */
+  function sampleV(v, o, out) { return sampleA(v[o], v[o + 1], v[o + 2], out); }
+  function sampleA(x, y, z, out) {
     let fx = (x - P.origin[0]) / sp, fy = (y - P.origin[1]) / sp, fz = (z - P.origin[2]) / sp;
     fx = Math.max(0, Math.min(nx - 1.001, fx)); fy = Math.max(0, Math.min(ny - 1.001, fy)); fz = Math.max(0, Math.min(nz - 1.001, fz));
     const ix = fx | 0, iy = fy | 0, iz = fz | 0, tx = fx - ix, ty = fy - iy, tz = fz - iz;
@@ -40,7 +43,7 @@ export function createProbes(manifest, bytes) {
     return out;
   }
   return {
-    tex, origin: texOrigin, invSize, sample, bytes: n * 12,
+    tex, origin: texOrigin, invSize, sample, sampleV, bytes: n * 12,
     dispose() { tex.l0.dispose(); tex.dirSun.dispose(); tex.art.dispose(); },
   };
 }

@@ -7,6 +7,9 @@
 // level, fadeSeconds), ctx.machines.conveyor(id).start(), ctx.machines.agv(id).dispatch(), ctx.machines.robot(id)
 // .start(), ctx.enemies.alert(ids, pos), ctx.audio.playAt(soundId, pos), ctx.events.emit('radio', {...}).
 
+// Player start (feet position, yaw as in actors.js)
+export const PLAYER_SPAWN = { pos: [45, 0, 107.5], yaw: 0, zone: 'hof' };
+
 const T = (id, box, title, beats, o = {}) => ({ id, box, title, beats, once: true, ...o });
 
 export const MOMENTS = [

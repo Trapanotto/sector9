@@ -5,8 +5,8 @@
 export const TIERS = {
   vlow: { id: 'vlow', name: 'Sehr niedrig', outH: 720, scaleMin: 0.5, scaleMax: 0.75, msaa: 0, bloom: 0, hdr: true, anim: 0.5, noise: 0.05 },
   low:  { id: 'low', name: 'Niedrig', outH: 720, scaleMin: 0.6, scaleMax: 1.0, msaa: 0, bloom: 0, hdr: true, anim: 0.75, noise: 0.045 },
-  mid:  { id: 'mid', name: 'Mittel', outH: 1080, scaleMin: 0.6, scaleMax: 0.9, msaa: 0, bloom: 0.35, hdr: true, anim: 1, noise: 0.04 },
-  high: { id: 'high', name: 'Hoch', outH: 1440, scaleMin: 0.7, scaleMax: 1.0, msaa: 4, bloom: 0.5, hdr: true, anim: 1, noise: 0.038 },
+  mid:  { id: 'mid', name: 'Mittel', outH: 1080, scaleMin: 0.6, scaleMax: 0.9, msaa: 0, bloom: 0.12, hdr: true, anim: 1, noise: 0.04 },
+  high: { id: 'high', name: 'Hoch', outH: 1440, scaleMin: 0.7, scaleMax: 1.0, msaa: 4, bloom: 0.16, hdr: true, anim: 1, noise: 0.038 },
 };
 export const MODES = [['auto', 'Automatisch'], ['vlow', 'Sehr niedrig'], ['low', 'Niedrig'], ['mid', 'Mittel'], ['high', 'Hoch']];
 const ORDER = ['vlow', 'low', 'mid', 'high'];

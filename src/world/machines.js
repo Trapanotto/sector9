@@ -72,7 +72,7 @@ export function createMachines(ctx) {
     const R = a.route;
     if (a.state === 'running') a.s = (a.s + a.speed * dt) % R.total;
     let seg = R.segs[0];
-    for (const s of R.segs) if (a.s >= s.s && a.s <= s.s + s.l) seg = s;
+    for (let i = 0; i < R.segs.length; i++) { const s = R.segs[i]; if (a.s >= s.s && a.s <= s.s + s.l) seg = s; }
     const f = (a.s - seg.s) / seg.l;
     const x = seg.a[0] + (seg.b[0] - seg.a[0]) * f, z = seg.a[1] + (seg.b[1] - seg.a[1]) * f;
     const yaw = Math.atan2(-(seg.b[0] - seg.a[0]), -(seg.b[1] - seg.a[1]));

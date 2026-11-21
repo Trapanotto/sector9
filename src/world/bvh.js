@@ -22,6 +22,7 @@ export class BoxBVH {
     for (let i = 0; i < n * 3; i++) cen[i] = (this.bmin[i] + this.bmax[i]) * 0.5;
     this._build(0, n, cen);
     this.stack = new Int32Array(128);
+    this.ray = new Float64Array(7);
   }
 
   _build(start, end, cen) {
@@ -58,6 +59,16 @@ export class BoxBVH {
    *  out.t, out.side (0 +x, 1 -x, 2 +y, 3 -y, 4 +z, 5 -z = face that was hit). Boxes containing the origin are
    *  ignored. mask: only boxes with (flags & mask) != 0. skip: box index to ignore (-1 none). */
   raycast(ox, oy, oz, dx, dy, dz, tmax, mask, out, skip = -1) {
+    const r = this.ray;
+    r[0] = ox; r[1] = oy; r[2] = oz; r[3] = dx; r[4] = dy; r[5] = dz; r[6] = tmax;
+    return this.raycastR(mask, out, skip);
+  }
+
+  /** Same as raycast(), reading the ray from this.ray (Float64Array: ox,oy,oz,dx,dy,dz,tmax). Hot-path callers
+   *  fill this.ray and call raycastR so no doubles are passed (and boxed) as call arguments. */
+  raycastR(mask, out, skip = -1) {
+    const r = this.ray;
+    const ox = r[0], oy = r[1], oz = r[2], dx = r[3], dy = r[4], dz = r[5], tmax = r[6];
     const ix = 1 / (dx || 1e-12), iy = 1 / (dy || 1e-12), iz = 1 / (dz || 1e-12);
     const { nmin, nmax, nleft, nright, ncount, items, bmin, bmax, flags, stack } = this;
     let sp = 0, best = -1, bestT = tmax, bestSide = 0;

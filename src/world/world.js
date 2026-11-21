@@ -22,6 +22,7 @@ export function createWorld(ctx) {
   const zoneMeshes = [];   // per zone: { opaque, trans }
   const glassRec = [];     // per pane: { pane, geo, offset, alive, col }
   const circIndex = new Map(L.circuitIds.map((id, i) => [id, i]));
+  const surfIndex = new Map(Object.keys(SURF).map((k, i) => [k, i]));   // aMisc.z = surface index (B: textures)
   const circ = L.circuitIds.map((id) => ({ id, level: L.circuits[id], target: L.circuits[id], speed: 0, flicker: 0 }));
 
   world.load = async (loader) => {
@@ -102,14 +103,18 @@ export function createWorld(ctx) {
     W.faces.forEach((f, i) => { if (f.render === 'vl' || f.render === 'mesh') { vbase[i] = nv; nv += 4; } });
     const vlOk = vlight && vlight.length === nv * 8;
     const perZone = Array.from({ length: nz }, () => ({ op: [], tr: [] }));
-    W.faces.forEach((f, i) => { (f.render === 'mesh' ? perZone[f.zone].tr : perZone[f.zone].op).push(i); });
+    const hidden = new Set(L.hideProxyGroups ?? []);
+    W.faces.forEach((f, i) => {
+      if (hidden.has(W.boxes[f.box].group)) return;   // art renders these (A)
+      (f.render === 'mesh' ? perZone[f.zone].tr : perZone[f.zone].op).push(i);
+    });
     W.glass.forEach((g, gi) => perZone[g.zone].tr.push(-1 - gi));
     const opMat = createStaticMaterial(), trMat = createTransparentMaterial();
     world.materials = { opaque: opMat, transparent: trMat };
     const c = [0, 0, 0];
     let bytes = 0;
     for (let z = 0; z < nz; z++) {
-      const rec = { opaque: null, trans: null, tris: 0 };
+      const rec = { opaque: null, trans: null, tris: 0, extra: [] };
       // ---- opaque
       const fl = perZone[z].op;
       if (fl.length) {
@@ -136,7 +141,7 @@ export function createWorld(ctx) {
                 vd.set(vlight.subarray(s, s + 4), v * 4); va.set(vlight.subarray(nv * 4 + s, nv * 4 + s + 4), v * 4);
               } else { vd[v * 4] = vd[v * 4 + 1] = vd[v * 4 + 2] = 255; vd[v * 4 + 3] = 4; }
             }
-            misc[v * 4] = ci; misc[v * 4 + 1] = Math.min(255, Math.round((b.emit ?? 0) * 16));
+            misc[v * 4] = ci; misc[v * 4 + 1] = Math.min(255, Math.round((b.emit ?? 0) * 16)); misc[v * 4 + 2] = surfIndex.get(b.surf) ?? 0;
           }
           // winding: e_u × e_v = -x, -y, +z for axes 0,1,2
           const base = f.axis === 2 ? 1 : -1, flip = base * (f.pos ? 1 : -1) < 0;
@@ -232,8 +237,8 @@ export function createWorld(ctx) {
     if (cz < 0) cz = zl.nearest(p.x, p.y, p.z);
     world.cameraZone = cz;
     if (ctx.debug.allZones) vis.fill(1);
-    else for (const [dx, dz] of OFFS) {
-      const z = zl.at(p.x + dx, p.y, p.z + dz);
+    else for (let o = 0; o < OFFS.length; o++) {
+      const z = zl.at(p.x + OFFS[o][0], p.y, p.z + OFFS[o][1]);
       const row = pvs[z >= 0 ? z : cz];
       for (let i = 0; i < row.length; i++) vis[i] |= row[i];
     }
@@ -242,6 +247,7 @@ export function createWorld(ctx) {
       const r = zoneMeshes[z], v = vis[z] === 1;
       if (r.opaque) r.opaque.visible = v;
       if (r.trans) r.trans.visible = v;
+      for (let k = 0; k < r.extra.length; k++) r.extra[k].visible = v;
       n += v ? 1 : 0;
     }
     world.visibleZoneCount = n;
@@ -372,6 +378,13 @@ export function createWorld(ctx) {
   };
   const _d = { x: 0, y: 0, z: 0 };
 
+  /** attach a static object (e.g. merged art meshes of a zone) to a zone: shown/hidden with the zone's PVS state */
+  world.addZoneObject = (obj, zoneIndex) => {
+    const z = typeof zoneIndex === 'string' ? W.zoneIndex.get(zoneIndex) : zoneIndex;
+    zoneMeshes[z].extra.push(obj);
+    if (!obj.parent) ctx.render.scene.add(obj);
+    return obj;
+  };
   world.zoneAt = (x, y, z) => W.zoneLookup.at(x, y, z);
   world.zoneId = (i) => W.zones[i]?.id ?? null;
   world.isZoneVisible = (i) => i >= 0 && world.zoneVisible[i] === 1;
@@ -410,7 +423,11 @@ function rayAabb(o, d, mn, mx, tmax) {
 }
 function setAabbNormal(o, d, t, mn, mx, n) {
   const px = o.x + d.x * t, py = o.y + d.y * t, pz = o.z + d.z * t;
-  const e = [Math.abs(px - mn[0]), Math.abs(px - mx[0]), Math.abs(py - mn[1]), Math.abs(py - mx[1]), Math.abs(pz - mn[2]), Math.abs(pz - mx[2])];
-  let k = 0; for (let i = 1; i < 6; i++) if (e[i] < e[k]) k = i;
+  let k = 0, best = Math.abs(px - mn[0]), v;
+  if ((v = Math.abs(px - mx[0])) < best) { best = v; k = 1; }
+  if ((v = Math.abs(py - mn[1])) < best) { best = v; k = 2; }
+  if ((v = Math.abs(py - mx[1])) < best) { best = v; k = 3; }
+  if ((v = Math.abs(pz - mn[2])) < best) { best = v; k = 4; }
+  if ((v = Math.abs(pz - mx[2])) < best) { best = v; k = 5; }
   n.x = k === 0 ? -1 : k === 1 ? 1 : 0; n.y = k === 2 ? -1 : k === 3 ? 1 : 0; n.z = k === 4 ? -1 : k === 5 ? 1 : 0;
 }

@@ -2,11 +2,11 @@
 // importable from Node (bake, tests) and the browser.
 import { SITE, ZONES, ARCH, HALL } from './site.js';
 import { PROPS, RAW } from './props.js';
-import { PROP_TYPES } from './proptypes.js';
+import { PROP_TYPES, HIDE_PROXY_GROUPS } from './proptypes.js';
 import { CONVEYORS, SORTER, AGV_ROUTES, AGVS, CRANES, ROBOTS } from './machines.js';
 import { SUN, SKY, CIRCUITS, CIRCUIT_IDS, FIXTURES } from './lights.js';
-import { PLAYER_SPAWN, ENEMIES } from './actors.js';
-import { MOMENTS, EXTRACTION } from './moments.js';
+import { ENEMIES } from './actors.js';
+import { PLAYER_SPAWN, MOMENTS, EXTRACTION } from './moments.js';
 
 // Benchmark camera views: the heaviest views of the level (perf HUD "bench" mode cycles them; npm test estimates
 // their draw calls / triangles from the PVS). yaw convention as in actors.js; y = eye height.
@@ -24,7 +24,7 @@ export const LAYOUT = {
   version: 1,
   site: SITE, hall: HALL,
   zones: ZONES, arch: ARCH,
-  propTypes: PROP_TYPES, props: PROPS, raw: RAW,
+  propTypes: PROP_TYPES, props: PROPS, raw: RAW, hideProxyGroups: HIDE_PROXY_GROUPS,
   conveyors: CONVEYORS, sorter: SORTER, agvRoutes: AGV_ROUTES, agvs: AGVS, cranes: CRANES, robots: ROBOTS,
   sun: SUN, sky: SKY, circuits: CIRCUITS, circuitIds: CIRCUIT_IDS, fixtures: FIXTURES,
   playerSpawn: PLAYER_SPAWN, enemies: ENEMIES,
