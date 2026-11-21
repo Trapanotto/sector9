@@ -1,137 +1,225 @@
-// STUB (workstream F replaces this with the real director, mission flow and the final German UI; keep the
-// factory name). Minimal: loading bar, start screen (Einsatz beginnen / Einstellungen / Steuerung), pause,
-// death / restart, extraction → "Einsatz beendet", and a first cut of the staged moments using the world API.
-import { MODES } from '../render/quality.js';
-import { BINDING_NAMES } from '../core/settings.js';
+// Director (workstream F): game-state flow, staged moments, pacing, mission flow and the German UI.
+//   runtime.js  data-driven moment timelines (moments.js)      pacing.js  tension tracker, ambient events, masking
+//   mission.js  objectives, evidence, ROE stats, checkpoint    ../ui/ui.js  DOM screens + OSD extras
+// Debug (console):  __ctx.director.debug()  lists moment states · __ctx.director.fire('m05_halle_dunkel', 'laeufer')
+//   __ctx.director.status() · __ctx.director.setSeed(42) (next mission start) · ?seed=42 in the URL
+import * as DATA from '../world/layout/moments.js';
+import { createRuntime } from './runtime.js';
+import { createPacing } from './pacing.js';
+import { createMission } from './mission.js';
+import { hash32 } from './rng.js';
+import { createUI } from '../ui/ui.js';
 
-const CSS = `
-#ui .s9-screen{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);color:#e8e8e8;font:15px/1.5 system-ui,sans-serif}
-#ui .s9-card{min-width:320px;max-width:560px;padding:28px 34px;background:rgba(8,10,12,.88);border:1px solid #333}
-#ui h1{margin:0;font:700 44px/1 "Arial Narrow",Arial,sans-serif;letter-spacing:.12em}
-#ui h2{margin:0 0 12px;font-size:20px}
-#ui .sub{margin:6px 0 22px;color:#9aa;font-size:13px;letter-spacing:.08em}
-#ui button{display:block;width:100%;margin:8px 0;padding:10px 14px;font:inherit;text-align:left;background:#15181b;color:#fff;border:1px solid #3a3f44;cursor:pointer}
-#ui button:hover{background:#22272c}
-#ui label{display:flex;justify-content:space-between;gap:16px;margin:8px 0;align-items:center}
-#ui table{border-collapse:collapse;width:100%;font-size:13px} #ui td{padding:3px 6px;border-bottom:1px solid #222}
-#ui .bar{height:4px;background:#222;margin-top:14px} #ui .bar>div{height:100%;width:0;background:#c9d2d6}
-#ui .hud{position:fixed;left:18px;bottom:14px;font:600 14px Consolas,monospace;color:#ddd;text-shadow:0 0 3px #000;pointer-events:none;display:none}
-`;
+// defaults for the settings this UI adds (core's settings.js keeps quality/sensitivity/volume/bindings)
+const SETTING_DEFAULTS = { freeAim: 'standard', crouchMode: 'toggle', aimMode: 'hold', sprintMode: 'hold', volumeSfx: 1, volumeVoice: 1, pixelateFaces: true };
+const DEATH_LINES = ['Einsatz gescheitert.', 'Getroffen. Einsatz gescheitert.', 'Kein Funkkontakt mehr zu S9-17.'];
 
 export function createDirector(ctx) {
-  const ui = document.getElementById('ui');
-  const style = document.createElement('style'); style.textContent = CSS; document.head.appendChild(style);
-  const screens = {};
-  const screen = (id, html) => { const d = document.createElement('div'); d.className = 's9-screen'; d.id = `s9-${id}`; d.innerHTML = `<div class="s9-card">${html}</div>`; ui.appendChild(d); screens[id] = d; return d; };
-  const show = (id) => { for (const [k, d] of Object.entries(screens)) d.style.display = k === id ? 'flex' : 'none'; };
+  const s = ctx.settings.data;
+  for (const [k, v] of Object.entries(SETTING_DEFAULTS)) if (s[k] === undefined) s[k] = v;
 
-  screen('loading', `<h1>SECTOR 9</h1><div class="sub">BODYCAM · EINSATZ LOGISTIKZENTRUM</div><div id="s9-load-label">Lade …</div><div class="bar"><div id="s9-load-bar"></div></div>`);
-  screen('menu', `<h1>SECTOR 9</h1><div class="sub">BODYCAM · EINSATZ LOGISTIKZENTRUM HAFENSTRASSE</div>
-    <button data-a="start">Einsatz beginnen</button><button data-a="settings">Einstellungen</button><button data-a="controls">Steuerung</button>`);
-  screen('settings', `<h2>Einstellungen</h2>
-    <label>Grafikqualität <select id="s9-q">${MODES.map(([v, n]) => `<option value="${v}">${n}</option>`).join('')}</select></label>
-    <label>Mausempfindlichkeit <input id="s9-sens" type="range" min="0.2" max="3" step="0.05"></label>
-    <label>Maus Y invertieren <input id="s9-inv" type="checkbox"></label>
-    <label>Sichtfeld (°) <input id="s9-fov" type="range" min="95" max="125" step="1"></label>
-    <label>Lautstärke <input id="s9-vol" type="range" min="0" max="1" step="0.05"></label>
-    <div class="sub" id="s9-gpu"></div><button data-a="back">Zurück</button>`);
-  screen('controls', `<h2>Steuerung</h2><table id="s9-keys"></table><button data-a="back">Zurück</button>`);
-  screen('pause', `<h2>Pausiert</h2><button data-a="resume">Weiter</button><button data-a="settings">Einstellungen</button><button data-a="controls">Steuerung</button><button data-a="menu">Einsatz abbrechen</button>`);
-  screen('dead', `<h2>Einsatz gescheitert</h2><p>Du wurdest getroffen.</p><button data-a="retry">Neu starten</button><button data-a="menu">Hauptmenü</button>`);
-  screen('done', `<h2>Einsatz beendet</h2><p id="s9-done-text"></p><button data-a="menu">Hauptmenü</button>`);
-  const hud = document.createElement('div'); hud.className = 'hud'; ui.appendChild(hud);
+  const d = { id: 'director', order: ctx.ORDER.director };
+  let baseSeed = (() => {
+    const q = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('seed') : null;
+    return q !== null && q !== '' ? (+q >>> 0) : ((Date.now() ^ (Math.random() * 0x7fffffff)) >>> 0);
+  })();
+  let runIndex = 0, pendingSnap = null, toMenu = false, lockBusy = false;
+  const settingEvt = { key: '', value: null };
 
-  let back = 'menu';
-  const fmt = (code) => code.replace(/^Key/, '').replace(/^Digit/, '').replace('Arrow', 'Pfeil ').replace('Left', ' links').replace('Right', ' rechts').replace('Backquote', '^');
-  function fillSettings() {
-    const s = ctx.settings.data;
-    ui.querySelector('#s9-q').value = ctx.quality.mode;
-    ui.querySelector('#s9-sens').value = s.sensitivity; ui.querySelector('#s9-inv').checked = !!s.invertY;
-    ui.querySelector('#s9-fov').value = s.fov; ui.querySelector('#s9-vol').value = s.volume;
-    ui.querySelector('#s9-gpu').textContent = `GPU: ${ctx.quality.gpu.renderer || 'unbekannt'} → ${ctx.quality.tier.name}`;
-    ui.querySelector('#s9-keys').innerHTML = Object.entries(BINDING_NAMES).map(([k, n]) => `<tr><td>${n}</td><td>${ctx.settings.keys(k).map(fmt).join(' / ')}</td></tr>`).join('')
-      + '<tr><td>Schießen</td><td>Linke Maustaste</td></tr>';
+  let mission = null;   // created right after the runtime (which needs these hooks first)
+  const runtime = createRuntime(ctx, DATA, {
+    evidenceCount: () => mission?.foundCount() ?? 0,
+    breached: (id) => mission?.breached(id) ?? false,
+    log: (id, what) => { if (d.verbose) console.info(`[director] ${ctx.time.mission.toFixed(1)}s ${id}: ${what}`); },
+    alarm: (on) => ctx.events.emit('f:alarm', { on }),
+  });
+  mission = createMission(ctx, DATA, runtime);
+  const pacing = createPacing(ctx, DATA, runtime);
+  if (runtime.compileErrors.length) console.warn('[director] moment data problems:', runtime.compileErrors);
+
+  // ------------------------------------------------------------------------------------------------ flow
+  // per-run seed: a new run re-rolls every variant; a checkpoint retry re-rolls the moments still ahead
+  const runSeed = () => hash32(`run${runIndex}:${pendingSnap ? pendingSnap.stats.retries + 1 : 0}`, baseSeed);
+  function restart({ snapshot = null, menu = false } = {}) {
+    pendingSnap = snapshot; toMenu = menu;
+    if (!snapshot && !menu) runIndex++;
+    ctx.restart();               // every module's reset() (mine first) → 'mission:restart' → onRestart()
   }
-  ui.addEventListener('change', (e) => {
-    const s = ctx.settings.data, t = e.target;
-    if (t.id === 's9-q') ctx.quality.setMode(t.value);
-    if (t.id === 's9-inv') s.invertY = t.checked;
-    ctx.settings.save();
-  });
-  ui.addEventListener('input', (e) => {
-    const s = ctx.settings.data, t = e.target;
-    if (t.id === 's9-sens') s.sensitivity = +t.value;
-    if (t.id === 's9-fov') s.fov = +t.value;
-    if (t.id === 's9-vol') ctx.audio.setVolume(+t.value);
-    ctx.settings.save();
-  });
-  const startPlay = async () => {
-    ctx.audio.unlock();
-    try { await ctx.input.requestLock(); } catch { /* lock refused: stay in menu */ return; }
+  async function play(fn) {
+    if (lockBusy) return;
+    ctx.audio?.unlock?.();
+    lockBusy = true;
+    try { await ctx.input.requestLock(); } catch { lockBusy = false; ui.pauseInfo(mission.objective, 'Zeiger konnte nicht gesperrt werden – bitte erneut klicken.'); return; }
+    lockBusy = false;
+    fn?.();
     ctx.setState('playing');
+  }
+  const actions = {
+    start: () => play(() => restart()),
+    again: () => play(() => restart()),
+    resume: () => play(),
+    retry: () => { const cp = mission.checkpoint; play(() => restart({ snapshot: cp })); },
+    restart: () => play(() => restart()),
+    menu: () => { ctx.input.exitLock(); if (ctx.state !== 'menu') { ctx.setState('menu'); } else ui.show('menu'); },
   };
-  ui.addEventListener('click', (e) => {
-    const a = e.target?.dataset?.a; if (!a) return;
-    if (a === 'start') { ctx.restart(); startPlay(); }
-    if (a === 'resume') startPlay();
-    if (a === 'retry') { ctx.restart(); startPlay(); }
-    if (a === 'settings') { back = ctx.state === 'paused' ? 'pause' : 'menu'; fillSettings(); show('settings'); }
-    if (a === 'controls') { back = ctx.state === 'paused' ? 'pause' : 'menu'; fillSettings(); show('controls'); }
-    if (a === 'back') show(back);
-    if (a === 'menu') { ctx.input.exitLock(); ctx.setState('menu'); }
+  let back = 'menu';
+  const ui = createUI(ctx, {
+    click(a) {
+      if (a === 'settings' || a === 'controls') { back = ctx.state === 'paused' ? 'pause' : 'menu'; ui.show(a); return; }
+      if (a === 'back') { ui.show(back); return; }
+      if (a === 'abort') { actions.menu(); return; }
+      actions[a]?.();
+    },
+    setting(k, v) {
+      const S = ctx.settings.data;
+      if (k === 'quality') ctx.quality?.setMode(v);
+      else if (k === 'volume') { if (ctx.audio?.setVolume) ctx.audio.setVolume(v); else S.volume = v; }
+      else S[k] = v;
+      if (k === 'volumeSfx') ctx.audio?.setBusVolume?.('sfx', v);
+      if (k === 'volumeVoice') ctx.audio?.setBusVolume?.('voice', v);
+      ctx.settings.save();
+      settingEvt.key = k; settingEvt.value = v; ctx.events.emit('f:settings', settingEvt);
+    },
+  });
+
+  // keyboard: Enter starts/resumes/retries, Esc pauses/closes, R = from scratch after death
+  addEventListener('keydown', (e) => {
+    if (e.repeat || ctx.state === 'playing' || ctx.state === 'loading' || ctx.state === 'boot') return;
+    const scr = ui.current;
+    if (e.code === 'Escape') {
+      if (scr === 'settings' || scr === 'controls') { ui.show(back); e.preventDefault(); return; }
+      if (ctx.state === 'paused' && window.__fakeLock) { actions.resume(); return; }
+      if (ctx.state === 'dead' || ctx.state === 'done') { actions.menu(); return; }
+      return;
+    }
+    if (e.code === 'Enter' || e.code === 'NumpadEnter') {
+      if (scr === 'settings' || scr === 'controls') return;   // focused control handles Enter
+      e.preventDefault();
+      if (ctx.state === 'menu') actions.start();
+      else if (ctx.state === 'paused') actions.resume();
+      else if (ctx.state === 'dead') actions.retry();
+      else if (ctx.state === 'done') actions.again();
+      return;
+    }
+    if (e.code === 'KeyR' && ctx.state === 'dead') actions.restart();
   });
   document.addEventListener('pointerlockchange', () => {
     if (!document.pointerLockElement && !window.__fakeLock && ctx.state === 'playing') ctx.setState('paused');
   });
 
-  const d = { id: 'director', order: ctx.ORDER.director, moments: new Map() };
-  ctx.events.on('load:progress', ({ p, label }) => {
-    const bar = ui.querySelector('#s9-load-bar'); if (bar) bar.style.width = `${(p * 100).toFixed(0)}%`;
-    const l = ui.querySelector('#s9-load-label'); if (l) l.textContent = `Lade … ${(p * 100).toFixed(0)} %`;
-  });
-  ctx.events.on('state', ({ to }) => {
-    hud.style.display = to === 'playing' ? 'block' : 'none';
-    if (to === 'loading') show('loading');
-    else if (to === 'menu') show('menu');
-    else if (to === 'paused') show('pause');
-    else if (to === 'dead') { ctx.input.exitLock(); show('dead'); }
-    else if (to === 'done') {
+  ctx.events.on('load:progress', ({ p }) => ui.setLoad(p));
+  ctx.events.on('state', ({ from, to }) => {
+    if (to === 'loading') ui.show('loading');
+    else if (to === 'menu') {
+      if (from === 'loading') ui.loadWord('Bereit');
+      if (from !== 'loading') restart({ menu: true });   // clean live scene behind the start screen
+      menuView();
+      ui.show('menu');
+    } else if (to === 'paused') { ui.pauseInfo(mission.objective); ui.show('pause'); }
+    else if (to === 'dead') {
       ctx.input.exitLock();
-      const killed = ctx.enemies.list.filter((e) => e.dead).length;
-      ui.querySelector('#s9-done-text').textContent = `Zeit ${Math.floor(ctx.time.mission / 60)}:${String(Math.floor(ctx.time.mission % 60)).padStart(2, '0')} · Tatverdächtige ausgeschaltet: ${killed}/${ctx.enemies.list.length}`;
-      show('done');
-    } else show(null);
+      const cp = mission.checkpoint;
+      ui.dead(DEATH_LINES[runIndex % DEATH_LINES.length], cp ? DATA.CHECKPOINT.name : '');
+      ui.show('dead');
+    } else if (to === 'done') {
+      ctx.input.exitLock();
+      ui.done(mission.debrief(true));
+      ui.show('done');
+    } else if (to === 'playing') { ui.show(null); ui.hudOn(true); pauseGuard = ctx.time.frame + 2; }   // the key that resumed must not re-pause
   });
-  show('loading');
+  ctx.events.on('trigger:enter', (t) => { if (t.id === DATA.EXTRACTION.id && ctx.state === 'playing') ctx.setState('done'); });
+  ctx.events.on('f:objective', (o) => ui.objective(o.text));
+  ctx.events.on('radio', (r) => { ui.radio(r.speaker, r.text); radioT = Math.max(3.5, r.text.length * 0.065); });
+  const ammo = (t, s) => { ui.ammo(t); ammoT = s; };
+  ctx.events.on('weapon:reload', (w) => ammo(`MAG ${w.ammo} · ${w.reserve}`, 2.6));
+  ctx.events.on('weapon:reloaded', (w) => ammo(`MAG ${w.ammo} · ${w.reserve}`, 1.6));
+  ctx.events.on('weapon:empty', () => ammo('MAG LEER', 1.4));
+  let radioT = 0, ammoT = 0, lastFlash = '';
 
-  // ---- staged moments: first cut so the hooks are exercised; F owns timing, audio and acting
-  const beats = {
-    m02_tor_faellt: () => ctx.world.doors.set('d_dock2', 'closed', { speed: 0.9 }),
-    m03_packerei: () => ctx.enemies.alert(['e06', 'e07', 'e08']),
-    m04_keller_licht: () => ctx.world.lights.setCircuit('keller', 0, 0.6, 1),
-    m05_halle_dunkel: () => ctx.world.lights.setCircuit('halle', 0.0, 1.5, 1),
-    m06_foerderband: () => ctx.machines.conveyor('c_loop')?.start(),
-    m07_agv: () => ctx.machines.agv('agv2')?.dispatch(),
-    m08_schrei: () => { ctx.world.doors.set('d_geld', 'locked'); ctx.audio.playAt('scream_male', { x: 4.5, y: 5.5, z: 5 }); },
-    m09_roboter: () => ctx.machines.robot('roboter1')?.start(),
-    m10_kuehl: () => ctx.world.doors.set('d_kuehl', 'open'),
+  // menu: the player stands at the spawn, frozen, with a slow camera drift (the live scene behind the blur)
+  function menuView() {
+    const sp = ctx.layout.playerSpawn;
+    ctx.player?.teleport?.(sp.pos, sp.yaw + 0.12, 0.04, true);
+  }
+
+  // door speeds: doors.set(id, state, {speed}) keeps the speed; restore the layout defaults on restart
+  const doorSpeed = new Map();
+  d.init = () => { for (const r of ctx.world.doors?.list ?? []) doorSpeed.set(r.id, r.speed); };
+
+  d.reset = () => {
+    const keep = !!pendingSnap;
+    mission.reset(keep);
+    runtime.reset(runSeed());
+    pacing.reset(runtime.seed);
+    radioT = 0; ammoT = 0; lastFlash = '';
+    ui.objective(''); ui.ammo(''); ui.radio('', '');
   };
-  ctx.events.on('trigger:enter', (t) => {
-    if (t.id === 'extract') { ctx.setState('done'); return; }
-    if (!t.first) return;
-    console.info(`[director] Moment ${t.id}: ${t.def.title}`);
-    beats[t.id]?.();
-    ctx.events.emit('moment', { id: t.id, def: t.def });
-  });
-
-  d.update = () => {
-    if (ctx.state === 'playing') {
-      if (ctx.input.hit('pause') && window.__fakeLock) ctx.setState('paused');
-      const a = ctx.weapon.ammo, r = ctx.weapon.reserve, h = Math.max(0, Math.round(ctx.player.health));
-      if (a !== last.a || r !== last.r || h !== last.h) { last.a = a; last.r = r; last.h = h; hud.textContent = `${a} | ${r}   ${h} HP`; }
+  ctx.events.on('mission:restart', () => {
+    for (const r of ctx.world.doors?.list ?? []) if (doorSpeed.has(r.id)) r.speed = doorSpeed.get(r.id);
+    if (toMenu) { toMenu = false; return; }
+    const snap = pendingSnap; pendingSnap = null;
+    if (snap) {
+      runtime.restoreDone(snap.done, snap.variants);
+      mission.restore(snap);
+      for (const id of snap.dead) kill(id);
     }
+    runtime.setup();
+    if (snap) { ctx.player.teleport(snap.pos, snap.yaw, 0, false); ctx.time.mission = snap.time; }
+  });
+  function kill(id) {
+    const E = ctx.enemies;
+    if (typeof E?.despawn === 'function') { E.despawn(id); return; }
+    const e = E?.list?.find((x) => x.id === id);   // stub fallback: lie where they fell
+    if (e) { e.dead = true; e.health = 0; e.alerted = false; }
+  }
+
+  // ------------------------------------------------------------------------------------------------ frame
+  let menuT = 0, pauseGuard = 0;
+  d.update = (dt) => {
+    const st = ctx.state;
+    if (st === 'menu') {
+      menuT += dt;
+      const P = ctx.player, sp = ctx.layout.playerSpawn;
+      if (P) { P.yaw = sp.yaw + 0.12 + Math.sin(menuT * 0.07) * 0.06; P.pitch = 0.04 + Math.sin(menuT * 0.05) * 0.012; }
+      return;
+    }
+    if (st !== 'playing') return;
+    if (ctx.input.hit('pause') && ctx.time.frame > pauseGuard) {
+      if (document.pointerLockElement) ctx.input.exitLock(); else ctx.setState('paused');
+      return;
+    }
+    runtime.update(dt);
+    mission.update(dt);
+    pacing.update(dt);
+    // OSD extras
+    const fl = mission.st.flash;
+    if (fl !== lastFlash) { lastFlash = fl; ui.objective(fl || mission.objective); }
+    if (ctx.input.hit('reload') && ammoT <= 0 && ctx.weapon) ammo(`MAG ${ctx.weapon.ammo} · ${ctx.weapon.reserve}`, 1.8);
+    if (ammoT > 0 && (ammoT -= dt) <= 0) ui.ammo('');
+    if (radioT > 0 && (radioT -= dt) <= 0) ui.radio('', '');
   };
-  const last = { a: -1, r: -1, h: -1 };
-  d.reset = () => {};
+
+  // ------------------------------------------------------------------------------------------------ debug API
+  Object.defineProperties(d, {
+    tension: { get: () => pacing.tension, enumerable: true },   // 0..1 (also → ctx.audio.setTension, 'f:tension')
+    masking: { get: () => pacing.masking, enumerable: true },   // 0..1 loud machines near the player (D: hearing)
+    seed: { get: () => runtime.seed, enumerable: true },
+  });
+  Object.assign(d, {
+    runtime, mission, pacing, data: DATA, verbose: false,
+    setSeed(n) { baseSeed = n >>> 0; runIndex = 0; return baseSeed; },
+    debug() { const rows = runtime.states(); console.table?.(rows); return rows; },
+    fire: (id, variant) => runtime.fire(id, variant),
+    status() {
+      return {
+        state: ctx.state, seed: runtime.seed, run: runIndex, objective: mission.objective,
+        evidence: `${mission.foundCount()}/${mission.evidence.length}`, stats: { ...mission.stats },
+        tension: +pacing.tension.toFixed(2), masking: +pacing.masking.toFixed(2), ambient: pacing.st.lastAmbient,
+        checkpoint: !!mission.checkpoint, log: runtime.log.slice(-12),
+      };
+    },
+    play: actions,
+  });
+  ui.show('loading');
   return d;
 }
