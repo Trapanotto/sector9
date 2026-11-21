@@ -201,6 +201,10 @@ def build_character(cfg, cache, ual, bones, full_hands, atlas_size=1024, keep_pa
             # keep only geometry above a height relative to the head joint (e.g. hood -> beanie)
             hy = skel.head(bv, 'head')[1] + item['clip_y'] * 10
             part.cull = part.pos[:, 1] < hy
+        if item.get('fit_gap'):
+            # first-person arms: pull a loose garment (sweater sleeves) towards the body surface
+            import fppaint
+            part.pos = fppaint.fit_gap(part.pos, surface[0], *item['fit_gap'])
         if item.get('offset'):
             part.pos = part.pos + vertex_normals(part) * item['offset'] * 10
         if item.get('inflate'):
@@ -251,6 +255,14 @@ def build_character(cfg, cache, ual, bones, full_hands, atlas_size=1024, keep_pa
         t = charspec.mh_tip_sources(b)
         if t:
             tips[b] = jp(t)
+
+    # first-person arms: mesh-driven detail painting at the final atlas resolution (opt-in per item)
+    for item, part in parts:
+        if item.get('paint'):
+            import fppaint
+            x, y, w, h = part.rect
+            part.tex = fppaint.paint(item['paint'], part, (w, h), vertex_normals(part), P, tips,
+                                     item.get('paint_spec', {}), src=part.tex)
 
     children = {b: [c for c, p in bones if p == b] for b in names}
     main_child = {'pelvis': 'spine_01', 'spine_03': 'neck_01'}

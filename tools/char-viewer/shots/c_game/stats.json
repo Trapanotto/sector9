@@ -1,0 +1,199 @@
+{
+ "stats": {
+  "yard_hip_1280x720": {
+   "calls": 84,
+   "sceneCalls": 83,
+   "tris": 54031,
+   "ammo": 16,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "yard_ads_1280x720": {
+   "calls": 84,
+   "sceneCalls": 83,
+   "tris": 54069,
+   "ammo": 16,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "yard_fire_1280x720": {
+   "calls": 86,
+   "sceneCalls": 85,
+   "tris": 54167,
+   "ammo": 15,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "yard_reload_1280x720": {
+   "calls": 85,
+   "sceneCalls": 84,
+   "tris": 54153,
+   "ammo": 4,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "hall_hip_1280x720": {
+   "calls": 52,
+   "sceneCalls": 51,
+   "tris": 58073,
+   "ammo": 16,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "hall_ads_1280x720": {
+   "calls": 52,
+   "sceneCalls": 51,
+   "tris": 58073,
+   "ammo": 16,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "hall_fire_1280x720": {
+   "calls": 54,
+   "sceneCalls": 53,
+   "tris": 58145,
+   "ammo": 15,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "hall_reload_1280x720": {
+   "calls": 52,
+   "sceneCalls": 51,
+   "tris": 58075,
+   "ammo": 4,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "basement_hip_1280x720": {
+   "calls": 15,
+   "sceneCalls": 14,
+   "tris": 14919,
+   "ammo": 16,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "basement_ads_1280x720": {
+   "calls": 15,
+   "sceneCalls": 14,
+   "tris": 14919,
+   "ammo": 16,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "basement_fire_1280x720": {
+   "calls": 17,
+   "sceneCalls": 16,
+   "tris": 14991,
+   "ammo": 15,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "basement_reload_1280x720": {
+   "calls": 15,
+   "sceneCalls": 14,
+   "tris": 14921,
+   "ammo": 4,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "yard_hip_760x630": {
+   "calls": 87,
+   "sceneCalls": 86,
+   "tris": 54097,
+   "ammo": 16,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "yard_ads_760x630": {
+   "calls": 86,
+   "sceneCalls": 85,
+   "tris": 54095,
+   "ammo": 16,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "yard_fire_760x630": {
+   "calls": 88,
+   "sceneCalls": 87,
+   "tris": 54197,
+   "ammo": 15,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "yard_reload_760x630": {
+   "calls": 86,
+   "sceneCalls": 85,
+   "tris": 54113,
+   "ammo": 4,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "hall_hip_760x630": {
+   "calls": 52,
+   "sceneCalls": 51,
+   "tris": 58073,
+   "ammo": 16,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "hall_ads_760x630": {
+   "calls": 52,
+   "sceneCalls": 51,
+   "tris": 58073,
+   "ammo": 16,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "hall_fire_760x630": {
+   "calls": 54,
+   "sceneCalls": 53,
+   "tris": 58145,
+   "ammo": 15,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "hall_reload_760x630": {
+   "calls": 52,
+   "sceneCalls": 51,
+   "tris": 58075,
+   "ammo": 4,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "basement_hip_760x630": {
+   "calls": 15,
+   "sceneCalls": 14,
+   "tris": 14919,
+   "ammo": 16,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "basement_ads_760x630": {
+   "calls": 15,
+   "sceneCalls": 14,
+   "tris": 14919,
+   "ammo": 16,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "basement_fire_760x630": {
+   "calls": 17,
+   "sceneCalls": 16,
+   "tris": 14991,
+   "ammo": 15,
+   "reserve": 60,
+   "state": "playing"
+  },
+  "basement_reload_760x630": {
+   "calls": 15,
+   "sceneCalls": 14,
+   "tris": 14921,
+   "ammo": 4,
+   "reserve": 60,
+   "state": "playing"
+  }
+ },
+ "errors": [
+  "Failed to load resource: the server responded with a status of 404 (Not Found)"
+ ]
+}

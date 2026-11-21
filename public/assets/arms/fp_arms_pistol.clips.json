@@ -1,51 +1,86 @@
 [
  {
   "name": "fp_idle",
-  "duration": 4,
+  "duration": 1,
   "loop": true,
   "made": true,
-  "source": "made: contact-solved two-handed grip, breathing sway"
+  "source": "made: hip/ready hold, gun 30 cm in front of the chest camera and 11 cm low, finger indexed, thumbs forward"
  },
  {
   "name": "fp_aim",
-  "duration": 4,
+  "duration": 1,
   "loop": true,
   "made": true,
-  "source": "made: sights on the eye line (rear sight 2.5 cm under the eye, 0.35 m out), finger on trigger"
- },
- {
-  "name": "fp_fire",
-  "duration": 0.32,
-  "loop": false,
-  "made": true,
-  "source": "made: trigger press, slide cycle (32 mm), muzzle flip 6.5 deg + 28 mm push-back, recovery"
- },
- {
-  "name": "fp_dry_fire",
-  "duration": 0.45,
-  "loop": false,
-  "made": true,
-  "source": "made: slow trigger press with no slide movement (click), small dip, trigger reset"
+  "source": "made: ADS from the chest camera: sights 3.5 cm under the lens axis 33 cm out, zeroed at 15 m, finger on the trigger"
  },
  {
   "name": "fp_lowready",
-  "duration": 3,
+  "duration": 1,
   "loop": true,
   "made": true,
-  "source": "made: muzzle depressed 55 deg, finger indexed"
+  "source": "made: muzzle depressed 38 deg, finger indexed"
  },
  {
   "name": "fp_sprint",
   "duration": 0.66,
   "loop": true,
   "made": true,
-  "source": "made: tucked low-ready with a two-step bob (one loop = left+right step)"
+  "source": "made: tucked low with a two-step bob (one loop = left+right step)"
+ },
+ {
+  "name": "fp_fire",
+  "duration": 0.3,
+  "loop": false,
+  "made": true,
+  "source": "made: trigger press with the finger on the blade, slide cycle (32 mm), muzzle flip 5 deg, recovery"
+ },
+ {
+  "name": "fp_dry_fire",
+  "duration": 0.45,
+  "loop": false,
+  "made": true,
+  "source": "made: full trigger press, no slide movement (click), small dip, reset"
+ },
+ {
+  "name": "fp_pose_index_off",
+  "duration": 0.1,
+  "loop": true,
+  "made": true,
+  "source": "pose: index straight along the frame"
+ },
+ {
+  "name": "fp_pose_index_trigger",
+  "duration": 0.1,
+  "loop": true,
+  "made": true,
+  "source": "pose: index pad on the trigger"
+ },
+ {
+  "name": "fp_pose_index_mid",
+  "duration": 0.1,
+  "loop": true,
+  "made": true,
+  "source": "pose: index lifted between frame and trigger"
+ },
+ {
+  "name": "fp_pose_index_press",
+  "duration": 0.1,
+  "loop": true,
+  "made": true,
+  "source": "pose: trigger fully pressed"
  },
  {
   "name": "fp_reload",
-  "duration": 2.4,
+  "duration": 2.5,
   "loop": false,
   "made": true,
-  "source": "made: empty-gun reload: mag drop, new mag from the belt pouch, insert, support hand back on, slide-stop release"
+  "source": "made: empty reload: slide locked, mag drop, new mag from the belt, insert, slide-stop release"
+ },
+ {
+  "name": "fp_reload_tac",
+  "duration": 2.2,
+  "loop": false,
+  "made": true,
+  "source": "made: tactical reload (round chambered): mag drop, new mag from the belt, insert"
  }
 ]

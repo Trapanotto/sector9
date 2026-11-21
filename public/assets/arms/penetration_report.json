@@ -1,104 +1,196 @@
 {
  "margin_m": 0.0025,
- "grip": {
-  "strongSlides_m": [
-   0.003,
-   0.02,
-   0.001
+ "camera": {
+  "eye": [
+   -8.011983434554738e-36,
+   1.6995220080877198,
+   0.07260594714233815
   ],
-  "strongPalmClearance": 0.0025560659853142743,
-  "strongCurls": {
-   "trigger": {
-    "middle": [
-     60,
-     100,
-     80
+  "cam": [
+   0,
+   1.3995220080877198,
+   0.019438202771542762
+  ]
+ },
+ "grip": {
+  "strongThumbSearch": {
+   "cost": 0.0428,
+   "tipMiss": 0.0305,
+   "mcpMiss": 0.0176,
+   "swing": [
+    -70,
+    -66,
+    10
+   ],
+   "flex": [
+    50,
+    30
+   ]
+  },
+  "strongOpt": {
+   "x": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    -70,
+    -66,
+    10,
+    50,
+    30
+   ],
+   "cost": 127.4179,
+   "thumbTipMiss": 0.0305,
+   "thumbMcpMiss": 0.0176,
+   "indexKnuckleMiss": 0.0047
+  },
+  "strongSlides_m": [
+   0.0026
+  ],
+  "strongPalmClearance": 0.0026,
+  "strong": {
+   "middle": [
+    28.5,
+    34.2,
+    83.7
+   ],
+   "ring": [
+    27,
+    32.4,
+    83.7
+   ],
+   "pinky": [
+    18,
+    21.6,
+    16.2
+   ],
+   "thumbOpened": 0,
+   "indexOnTrigger": {
+    "spread": -10,
+    "flex": [
+     13,
+     38,
+     15.2
     ],
-    "ring": [
-     70,
-     100,
-     80
-    ],
-    "pinky": [
-     64,
-     100,
-     80
-    ],
-    "indexSwing": -10,
-    "index": [
-     16,
-     0,
-     34
-    ],
-    "thumb": [
-     -34,
-     34,
-     6
-    ]
+    "gapToBlade_m": 0.0026,
+    "gapAny_m": 0.0026
    },
-   "indexed": {
-    "middle": [
-     60,
-     100,
-     80
-    ],
-    "ring": [
-     70,
-     100,
-     80
-    ],
-    "pinky": [
-     64,
-     100,
-     80
-    ],
-    "index": [
-     8,
-     4,
-     0
-    ],
-    "thumb": [
-     -34,
-     34,
-     6
-    ]
+   "indexPressExtraCurl": [
+    0.12,
+    0.3,
+    0.18
+   ],
+   "indexPressGapToBlade_m": 0.0022,
+   "indexOff": {
+    "miss": 0.0385,
+    "opened": 0
    }
   },
   "supportSlides_m": [
-   0.002
+   0.006,
+   0,
+   0
   ],
-  "supportPalmClearance": 0.002521123859628195,
-  "supportCurls": {
+  "supportPalmClearance": 0.0027,
+  "support": {
    "index": [
-    64,
-    100,
-    80
+    79.5,
+    95.4,
+    71.6
    ],
    "middle": [
-    70,
-    100,
-    80
+    72,
+    86.4,
+    64.8
    ],
    "ring": [
-    68,
-    2,
-    80
+    70.5,
+    84.6,
+    63.5
    ],
    "pinky": [
-    68,
-    2,
-    2
+    87,
+    104.4,
+    78.3
    ],
-   "thumb": [
-    6,
-    0,
-    12
-   ]
+   "thumb": {
+    "cost": 0.0097,
+    "tipMiss": 0.0097,
+    "mcpMiss": null,
+    "swing": [
+     20,
+     8,
+     0
+    ],
+    "flex": [
+     -10,
+     -6
+    ]
+   },
+   "gaps_mm": {
+    "index": [
+     29.8,
+     8.9,
+     5.1
+    ],
+    "middle": [
+     32.3,
+     9,
+     5.7
+    ],
+    "ring": [
+     36.8,
+     16.5,
+     5.5
+    ],
+    "pinky": [
+     31.5,
+     13.6,
+     3.9
+    ],
+    "thumb": [
+     16.9,
+     13.3,
+     2.7
+    ]
+   }
+  },
+  "magHold": {
+   "curls": {
+    "index": [
+     36,
+     99,
+     79.6
+    ],
+    "middle": [
+     90,
+     99,
+     79.6
+    ],
+    "ring": [
+     90,
+     99,
+     79.6
+    ],
+    "pinky": [
+     90,
+     99,
+     79.6
+    ],
+    "thumb": [
+     -27,
+     -4.5,
+     6.8
+    ]
+   },
+   "palmGap_m": 0.0012
   }
  },
  "clips": {
   "fp_idle": {
-   "frames": 121,
+   "frames": 61,
    "gloveVerts": 2954,
    "penetratingVertexFrames": 0,
    "maxDepth_mm": 0,
@@ -107,25 +199,7 @@
    "maxDepthByBone_mm": {}
   },
   "fp_aim": {
-   "frames": 121,
-   "gloveVerts": 2954,
-   "penetratingVertexFrames": 0,
-   "maxDepth_mm": 0,
-   "worstAt_s": 0,
-   "maxWristReachError_mm": 0,
-   "maxDepthByBone_mm": {}
-  },
-  "fp_fire": {
-   "frames": 11,
-   "gloveVerts": 2954,
-   "penetratingVertexFrames": 0,
-   "maxDepth_mm": 0,
-   "worstAt_s": 0,
-   "maxWristReachError_mm": 0,
-   "maxDepthByBone_mm": {}
-  },
-  "fp_dry_fire": {
-   "frames": 15,
+   "frames": 61,
    "gloveVerts": 2954,
    "penetratingVertexFrames": 0,
    "maxDepth_mm": 0,
@@ -134,7 +208,7 @@
    "maxDepthByBone_mm": {}
   },
   "fp_lowready": {
-   "frames": 91,
+   "frames": 61,
    "gloveVerts": 2954,
    "penetratingVertexFrames": 0,
    "maxDepth_mm": 0,
@@ -143,7 +217,25 @@
    "maxDepthByBone_mm": {}
   },
   "fp_sprint": {
-   "frames": 21,
+   "frames": 41,
+   "gloveVerts": 2954,
+   "penetratingVertexFrames": 0,
+   "maxDepth_mm": 0,
+   "worstAt_s": 0,
+   "maxWristReachError_mm": 0,
+   "maxDepthByBone_mm": {}
+  },
+  "fp_fire": {
+   "frames": 19,
+   "gloveVerts": 2954,
+   "penetratingVertexFrames": 0,
+   "maxDepth_mm": 0,
+   "worstAt_s": 0,
+   "maxWristReachError_mm": 0,
+   "maxDepthByBone_mm": {}
+  },
+  "fp_dry_fire": {
+   "frames": 28,
    "gloveVerts": 2954,
    "penetratingVertexFrames": 0,
    "maxDepth_mm": 0,
@@ -152,35 +244,28 @@
    "maxDepthByBone_mm": {}
   },
   "fp_reload": {
-   "frames": 73,
+   "frames": 151,
    "gloveVerts": 2954,
-   "penetratingVertexFrames": 2086,
-   "maxDepth_mm": 15.32,
-   "worstAt_s": 1.267,
-   "maxWristReachError_mm": 64,
-   "maxDepthByBone_mm": {
-    "thumb_03_l": 8.15,
-    "ring_02_r": 9.2,
-    "pinky_02_r": 6.07,
-    "pinky_03_r": 9.79,
-    "middle_02_r": 2.85,
-    "middle_01_r": 0.88,
-    "ring_03_l": 1.55,
-    "index_01_l": 15.32,
-    "middle_01_l": 0.08,
-    "hand_l": 15.17,
-    "index_02_l": 2.55,
-    "thumb_02_l": 14.69,
-    "thumb_01_l": 15.18,
-    "index_03_l": 3.47,
-    "middle_03_l": 4.69
-   }
+   "penetratingVertexFrames": 0,
+   "maxDepth_mm": 0,
+   "worstAt_s": 0,
+   "maxWristReachError_mm": 0,
+   "maxDepthByBone_mm": {}
+  },
+  "fp_reload_tac": {
+   "frames": 133,
+   "gloveVerts": 2954,
+   "penetratingVertexFrames": 0,
+   "maxDepth_mm": 0,
+   "worstAt_s": 0,
+   "maxWristReachError_mm": 0,
+   "maxDepthByBone_mm": {}
   }
  },
  "tris": {
   "arms": 8352,
-  "pistol": 416,
-  "total": 8768
+  "pistol": 644,
+  "total": 8996
  },
- "bytes": 214720
+ "bytes": 305644
 }
