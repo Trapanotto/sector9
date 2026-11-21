@@ -1,0 +1,3 @@
+# raw downloads and intermediate files (re-created by build-audio.py)
+.cache/
+__pycache__/
