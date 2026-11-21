@@ -35,6 +35,7 @@ export function createWeapon(ctx) {
   const org = { x: 0, y: 0, z: 0 }, dir = { x: 0, y: 0, z: 0 };
   const rsV = new THREE.Vector3(), dV = new THREE.Vector3(), outV = new THREE.Vector3(), tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3();
   const qA = new THREE.Quaternion(), eA = new THREE.Euler(0, 0, 0, 'YXZ');
+  const HIT_OPTS = { ignoreGlass: false };
   const hitR = { hit: false, t: 0, point: { x: 0, y: 0, z: 0 }, normal: { x: 0, y: 0, z: 0 }, surface: '', kind: '', id: '', box: -1, zone: -1, owner: null };
 
   w.load = (loader) => vm.load(loader);
@@ -137,7 +138,7 @@ export function createWeapon(ctx) {
       eA.set(P.pitch + P.aimOff.pitch, P.yaw + P.aimOff.yaw, 0); qA.setFromEuler(eA);
       tmp.set(0, 0, -1).applyQuaternion(qA);
       org.x = cam.position.x; org.y = cam.position.y; org.z = cam.position.z; dir.x = tmp.x; dir.y = tmp.y; dir.z = tmp.z;
-      if (ctx.world.worldHit(org, dir, 0.85, hitR, { ignoreGlass: false })) retractT = Math.min(1, Math.max(0, (0.85 - hitR.t) / 0.5));
+      if (ctx.world.worldHit(org, dir, 0.85, hitR, HIT_OPTS)) retractT = Math.min(1, Math.max(0, (0.85 - hitR.t) / 0.5));
     }
     s.retract += (retractT - s.retract) * Math.min(1, dt * (retractT > s.retract ? 12 : 5));
     s.lowW += ((Math.max(s.lowT, s.retract > 0.7 ? 1 : 0)) - s.lowW) * Math.min(1, dt * 6);

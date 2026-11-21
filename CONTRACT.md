@@ -166,6 +166,34 @@ glass on the way shatters and the bullet continues. LOD helpers (`ctx.lod`): `le
 
 New events: prefix with your area (`a:…`, `d:…`) and list them in your section of this file via the lead.
 
+Area events as built (integration pass 2026-11-21; all payloads reused):
+
+| Event | Payload | Emitted by | Consumed by |
+|---|---|---|---|
+| `a:sorter` | `{id: chuteId, phase: 'divert'\|'burst', index}` | A (every carton diverted; staged `sorter.divert`) | E clack / carton burst at the chute |
+| `a:robot` | `{id, phase: 'pick'\|'place'}` | A palletising robot | E gripper hiss / carton set down |
+| `a:crane` | `{id, phase: 'pick'\|'drop'}` | A stacker crane | E fork clunk |
+| `machine:state` (AGV) | also `state 'blocked'` (stopped for a person/vehicle ahead, beacon on) → `'running'`; `'estop'` for every machine after `machines.emergencyStop()` | A | E drive/beeper follow `rec.v`; one contactor clunk on e-stop |
+| `c:footstep` | `{surface, x, y, z, speed, crouched, sprint, foot}` | C (one per footfall, surface from the ground ray) | E steps + gear/cloth foley |
+| `c:casing` | `{x, y, z, surface, speed}` | C (each casing bounce, ≤ 3) | E casing tinks |
+| `c:reload` | `{stage: 'start'\|'mag_out'\|'mag_pouch'\|'mag_in'\|'slide_release', kind: 'empty'\|'tactical', ammo}` | C, in sync with the reload clip | E reload sounds (then `weapon:reload/reloaded` are silent in E) |
+| `c:slidelock` | `{ammo}` | C (last round fired, slide locks back) | E click |
+| `d:voice` | `{id, enemy, kind: 'alert'\|'command'\|'reload'\|'pain'\|'death'\|'dying'\|'taunt'\|'plead'\|'surprise', pos, zone}` | D (D decides WHEN an enemy speaks) | E voices (one consistent voice per enemy, one death cry per body) |
+| `d:step` | `{id, enemy, pos, run}` | D (one per stride, within 35 m of the player) | E enemy footsteps |
+| `d:nearmiss` | `{id, enemy, point, dist}` | D (one per enemy shot, closest approach < 1.4 m) | E whizz |
+| `d:state` | `{id, enemy, from, to}` | D | — |
+| `d:surrender` / `d:executed` | `{id, enemy}` | D | F debrief |
+| `f:tension` | `{level}` 0..1 | F pacing | E tension bed |
+| `f:alarm` / `f:breach` | `{on}` / `{id}` | F | E swell |
+| `f:objective` / `f:evidence` / `f:checkpoint` / `f:settings` | `{id, text}` / `{id, name, found}` / `{name}` / `{key, value}` | F | F UI |
+
+Area APIs added on ctx (as built): `machines.emergencyStop(on)`, `machines.sorter.divert(chuteId, {burst})`,
+`machines.anchor(name)`; `weapon.snapshot()/restore(s)` (checkpoint ammo), `weapon.frame` (view-model framing
+offsets); `enemies.ambush/stage/despawn/wake/spawn/hold/moveTo/say/trigger/group`, `enemies.stats`;
+`fx.powder(p)`, `fx.fog(…)`; `audio.has(id)`, `audio.setTension(v)`, `audio.setBusVolume(bus, v)`, `audio.stats()`;
+`render.composite.uniforms.uFaces[6] / uFaceN` (privacy mosaic ellipses in source uv, filled by D each frame from
+heads in line of sight; `settings.pixelateFaces` toggles it); `director.fire(id, variant)`, `director.status()`.
+
 ## 8. Rendering contract (core + B)
 
 - ONE HDR scene target (RGBA16F when renderable, RGBA8 fallback) + ONE composite pass → canvas. The first-person
@@ -184,9 +212,17 @@ New events: prefix with your area (`a:…`, `d:…`) and list them in your secti
 - Static world draw: per zone one opaque mesh (lightmapped + vertex-lit) + one transparent mesh (glass, mesh fences),
   shown by PVS(camera zone ∪ zones 0.7 m around) and frustum. Vertex attributes: `position, normal (int8), aColor
   (rgb albedo, a), aLmUv (uint16), aVlDay/aVlArt (rgbm8), aMisc (circuit, emissive·16, surface index, 0)`.
-- Quality tiers (`quality.js`): `vlow` 720p out, 50–75 % internal, no AA, no bloom; `low` 720p, 60–100 %; `mid` 1080p,
-  60–90 %, mip-bloom; `high` 1440p, 70–100 %, MSAA 4×, mip-bloom. Auto mode picks by GPU string (Intel/AMD APU →
-  low, software → vlow, RTX/RX → high) and steps down when frames stay slow at minimum scale.
+- Quality tiers (`quality.js`, as tuned by B):
+
+  | tier | output height | scene scale (dynamic) | MSAA | bloom | grain | material detail layer | anim rate |
+  |---|---|---|---|---|---|---|---|
+  | `vlow` Sehr niedrig | 540p (browser upscales) | 70–100 % | – | – | 0.05 | off | 0.5 |
+  | `low` Niedrig | 720p | 60–90 % | – | – | 0.045 | off | 0.75 |
+  | `mid` Mittel | 1080p | 55–80 % | – | 0.12 | 0.04 | on | 1 |
+  | `high` Hoch | 1440p | 60–90 % | 4× | 0.16 | 0.038 | on | 1 |
+
+  Auto mode by GPU string: software → vlow, Intel UHD/HD Gen9 → vlow, other Intel iGPU / AMD APU / mobile → low,
+  Apple → mid, RTX/RX/Arc/GTX 10-16 → high, other dedicated → mid; steps down (to 35 % scale) when frames stay slow.
 
 ## 9. Budgets (lowest tier, worst view; `src/core/budgets.js`, live in the perf HUD — F9 or ^)
 
@@ -221,3 +257,13 @@ preallocated callbacks). Load to menu ≤ 5 s on a warm cache (today ≈ 1.1 s).
 `m06_foerderband` (conveyor + sorter start, masking noise), `m07_agv` (AMR crosses with warning beep), `m08_schrei`
 (scream behind the locked cash-room door), `m09_roboter` (robot swings, ambush e19), `m10_kuehl` (cold store door,
 fog, ambush e22); `extract` = extraction. The director stub already wires the world hooks for each.
+
+As built by F (14 moments × 3 variants, data-driven timelines in `moments.js`, run order by `order`/`pre`):
+`m01_ankunft` [musik, stille, husten] · `m02_tor_faellt` [tor, licht, spaet] · `m03_packerei` [stille, musik, koeder] ·
+`m04_keller_licht` [ausfall, schnarchen, flackern] · `m05_halle_dunkel` [abschnitte, laeufer, ploetzlich] ·
+`m07_agv` [nur_agv, neugierig, stillstand] · `m11_telefon` [klingeln, geweckt, fernseher] · `m08_schrei` [streit,
+flehen, fluestern] · `m12_geldraum` [aufgabe, koeder, feuer] · `m13_steg` [magazin, schritte, nachladen] ·
+`m06_foerderband` [anlauf, hupe, fehlstart] · `m09_roboter` [schwenk, zelle, still] · `m10_kuehl` [nebel, klopfen,
+dunkel] · `m14_verladung` [tor4, verwundet, tor5]. Debug: `__ctx.director.fire(id, variant)`, `__ctx.director.debug()`.
+Checkpoint snapshots store position, dead enemies, finished moments + variants, evidence, objectives, breaches,
+stats and the ammo state (`weapon.snapshot()`), restored on "erneut".

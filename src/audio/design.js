@@ -488,12 +488,16 @@ export function installDesign(K) {
     if (rnd() < 0.5) later(0.7 + rnd() * 0.4, 'glass.debris', x, Math.max(y - 1.4, 0.1), z, 0.4);
     E.resolve();
   });
-  const circLevel = new Map();
+  const circLevel = new Map(), circT = new Map();
   ev.on('lights:circuit', (e) => {
     const prev = circLevel.get(e.id) ?? 1;
     circLevel.set(e.id, e.level);
     const c = K.circuitCentre(e.id);
     if (!c) return;
+    // strobes / alarm flicker (director 'strobe': several changes per second) are light only — no breaker per flash
+    const now = K.now(), lastT = circT.get(e.id) ?? -10;
+    circT.set(e.id, now);
+    if (now - lastT < 0.8) return;
     const off = e.level < prev - 0.2, on = e.level > prev + 0.2;
     if (off) {
       // breaker clunk somewhere in that area, the flicker of the tubes, then the hum is gone
@@ -597,7 +601,7 @@ export function installDesign(K) {
   D.reset = () => {
     lastPart.fill(''); lastAmt.fill(0); deathSaid.fill(0); reloadSeen.fill(0); cStepN = 0;
     alerted.fill(0); pleaded.fill(0); dyingSched.fill(0); fromEvent.fill(0); rounds.fill(0); lastShot.fill(-10);
-    burstH.fill(0); burstUntil.fill(0); firstAlert = true; prevState.clear(); roller.clear(); circLevel.clear();
+    burstH.fill(0); burstUntil.fill(0); firstAlert = true; prevState.clear(); roller.clear(); circLevel.clear(); circT.clear();
     lx = NaN; acc = 0; eX.fill(NaN); eAcc.fill(0);
   };
   D.onAlert = onAlert;

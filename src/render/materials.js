@@ -47,6 +47,7 @@ export const U = {
   // B material system
   uMatA: { value: null }, uMatN: { value: null },        // texture arrays: albedo (sRGB) / normal.xy + roughness
   uMatDetail: { value: 0 },                              // 1 = sample the normal/roughness layer (mid/high tiers)
+  uCheap: { value: 0 },                                  // 1 = vlow static path: 3 texture reads (no macro/env; floor mask on floors only)
   uSurf: { value: new Float32Array(MAX_SURF * 4) },      // per surface index: layer, 1/tile size, spec, roughness
   uLayerInv: { value: new Float32Array(MAX_LAYERS * 4) },// per layer: 1/mean rgb (texture → mean 1), 1/mean lum
   uEnvCur: { value: null }, uEnvAvg: { value: 0.3 },     // camera-zone environment (blended), its mean luminance
@@ -154,7 +155,7 @@ export function createStaticMaterial() {
       ${COMMON}
       uniform sampler2D uLmDay, uLmArt;
       uniform sampler2DArray uMatA, uMatN;
-      uniform float uMatDetail;
+      uniform float uMatDetail, uCheap;
       uniform vec2 uMacro;
       uniform sampler2D uFloorMask;
       uniform vec4 uFloorXf;
@@ -170,7 +171,8 @@ export function createStaticMaterial() {
         float layer = vSurf.x;
         vec3 tex = texture(uMatA, vec3(uv, layer)).rgb;
         // anti-tiling: broad (~15 m) brightness/dirt variation from the noise layer, independent of the tile size
-        float macro = clamp(1.0 + (luma(texture(uMatA, vec3(mat2(0.8, -0.6, 0.6, 0.8) * p * 0.07 + 0.37, uMacro.x)).rgb) * uMacro.y - 1.0) * 3.5, 0.6, 1.3);
+        float macro = 1.0;
+        if (uCheap < 0.5) macro = clamp(1.0 + (luma(texture(uMatA, vec3(mat2(0.8, -0.6, 0.6, 0.8) * p * 0.07 + 0.37, uMacro.x)).rgb) * uMacro.y - 1.0) * 3.5, 0.6, 1.3);
         vec3 albedo = vAlbedo * tex * macro;
         vec3 light = decodeRGBM(texture(uLmDay, vLmUv)) + decodeRGBM(texture(uLmArt, vLmUv)) * vCirc + vVl;
         vec3 N = n;
@@ -186,7 +188,10 @@ export function createStaticMaterial() {
           rough = clamp(vSurf.w + (1.0 - macro) * 0.8, 0.05, 1.0);   // dirtier patches are rougher
         }
         // ground floor: painted lines / dock hatching (worn), contact grime, tyre marks (generated floor mask)
-        vec4 fm = texture(uFloorMask, (vWorld.xz - uFloorXf.xy) * uFloorXf.zw) * ((n.y > 0.5 && abs(vWorld.y) < 0.25) ? 1.0 : 0.0);
+        // (fetched only on ground-floor fragments: gradients taken outside the non-uniform branch)
+        vec2 fuv = (vWorld.xz - uFloorXf.xy) * uFloorXf.zw, fdx = dFdx(fuv), fdy = dFdy(fuv);
+        vec4 fm = vec4(0.0);
+        if (n.y > 0.5 && abs(vWorld.y) < 0.25) fm = textureGrad(uFloorMask, fuv, fdx, fdy);
         float paint = fm.r * clamp(macro * 1.6 - 0.45 + (tex.g * vLumInv - 1.0), 0.0, 1.0);
         vec3 paintC = mix(vec3(0.60, 0.40, 0.025), vec3(0.62, 0.62, 0.60), fm.b);
         albedo = mix(albedo * (1.0 - fm.g * 0.42) * (1.0 - fm.a * 0.55), paintC * (1.0 - fm.g * 0.3), paint);
@@ -196,7 +201,8 @@ export function createStaticMaterial() {
         // specular: camera-zone env cube × analytic BRDF, occluded where the baked light is darker than the env
         float occ = clamp(luma(light) / uEnvAvg, 0.0, 1.0);
         float gloss = (1.0 - rough) * (1.0 - rough) * 1.6;
-        vec3 spec = envSample(reflect(-V, N)) * (envBRDF(nv, rough) * vSurf.z * uSpec * occ * gloss);
+        vec3 spec = vec3(0.0);
+        if (uCheap < 0.5) spec = envSample(reflect(-V, N)) * (envBRDF(nv, rough) * vSurf.z * uSpec * occ * gloss);
         vec3 fs;
         vec3 dl = dynLight(vWorld, N, V, rough, fs);
         vec3 c = albedo * (light + dl) + spec + fs * vSurf.z + vEmit;
@@ -410,6 +416,9 @@ export async function loadMaterials(ctx, loader, manifest) {
     U.uMatA.value = arrays.a;
     if (arrays.n) U.uMatN.value = arrays.n;
     U.uMatDetail.value = detail ? 1 : 0;
+    // vlow: cheapest static path (tier switches only flip the uniform — no shader compile)
+    U.uCheap.value = tier.id === 'vlow' ? 1 : 0;
+    ctx.events.on('quality:change', (t) => { U.uCheap.value = t?.id === 'vlow' ? 1 : 0; });
   } catch (e) { console.warn('[materials] layers not loaded:', e.message); }
   try {
     if (ctx.world?.gen) { U.uFloorMask.value = buildFloorMask(ctx.world.gen); ctx.render.trackTexture('floorMask', FM.w * FM.h * 4 * 1.34); }

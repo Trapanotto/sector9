@@ -13,12 +13,14 @@
 import { createRng } from './rng.js';
 import { findCover, coverScratch } from './cover.js';
 
+// integration tuning: fewer hits but each one counts (player vest 0.8: pistol/rifle torso 3 hits, head 1; smg ~6 in a burst;
+// shotgun 2 at close range) — expected damage per shot about as before, more near misses (whizz) in between
 export const WEAPONS = {
-  pistol: { dmg: 26, range: 55, rof: [0.34, 0.6], burst: [2, 4], mag: 15, reload: 1.7, acc: 0.55, pellets: 1, spread: 0, anim: 'pistol', model: 'pistol' },
-  smg: { dmg: 15, range: 40, rof: [0.085, 0.11], burst: [3, 7], mag: 30, reload: 2.2, acc: 0.34, pellets: 1, spread: 0, anim: 'smg', model: 'smg' },
-  shotgun: { dmg: 11, range: 26, rof: [0.95, 1.25], burst: [1, 2], mag: 6, reload: 2.2, acc: 0.7, pellets: 7, spread: 0.04, anim: 'shotgun', model: 'shotgun' },
+  pistol: { dmg: 44, range: 55, rof: [0.34, 0.6], burst: [2, 4], mag: 15, reload: 1.7, acc: 0.32, pellets: 1, spread: 0, anim: 'pistol', model: 'pistol' },
+  smg: { dmg: 22, range: 40, rof: [0.085, 0.11], burst: [3, 7], mag: 30, reload: 2.2, acc: 0.2, pellets: 1, spread: 0, anim: 'smg', model: 'smg' },
+  shotgun: { dmg: 12, range: 26, rof: [0.95, 1.25], burst: [1, 2], mag: 6, reload: 2.2, acc: 0.45, pellets: 7, spread: 0.04, anim: 'shotgun', model: 'shotgun' },
   // no rifle model in the CC0 set: a long gun with the shotgun's visuals and stances, rifle ballistics
-  rifle: { dmg: 34, range: 85, rof: [0.5, 0.8], burst: [1, 3], mag: 20, reload: 2.2, acc: 0.66, pellets: 1, spread: 0, anim: 'shotgun', model: 'shotgun' },
+  rifle: { dmg: 48, range: 85, rof: [0.5, 0.8], burst: [1, 3], mag: 20, reload: 2.2, acc: 0.4, pellets: 1, spread: 0, anim: 'shotgun', model: 'shotgun' },
 };
 
 // damage multiplier per hit capsule (player pistol 34 dmg vs HEALTH 65: head 1, torso 2, limbs 3–4 hits)
@@ -347,7 +349,7 @@ export function createBrain(env, defs, opts = {}) {
     if (!e.alerted) { e.alerted = true; evE.id = e.id; evE.enemy = e; evE.amount = 0; evE.part = ''; env.emit('enemy:alert', evE); }
     setState(e, 'combat');
     // reaction time: startled unaware enemies are slower; the very first shot is often rushed (see fire())
-    const react = (wasUnaware ? rng.range(0.55, 1.0) : rng.range(0.3, 0.6)) + dist * 0.008;
+    const react = (wasUnaware ? rng.range(0.7, 1.2) : rng.range(0.4, 0.7)) + dist * 0.008;
     e.reactAt = Math.max(e.busyUntil, now + react);
     e.shotsThisContact = 0; e.onTargetT = 0;
     if (now - lastShout.alert > 2.5) { lastShout.alert = now; shoutAlert(e, 'alert'); }

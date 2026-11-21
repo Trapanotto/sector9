@@ -65,7 +65,7 @@ export function createPlayer(ctx) {
     onHit(res) {
       if (p.dead || ctx.bench || ctx.debug.god) return;
       // duty vest: torso hits reduced; head doubled
-      const k = res.part === 'head' ? 2 : res.part === 'torso' ? 0.65 : 0.85;
+      const k = res.part === 'head' ? 2.4 : res.part === 'torso' ? 0.8 : 0.8;
       const dmg = res.damage * k;
       p.health -= dmg;
       // flinch: camera kicked away from the shot, brief desaturation / vignette (composite hooks)

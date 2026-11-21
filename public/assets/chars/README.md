@@ -25,7 +25,7 @@ Built by `scripts/chars/` (see "Rebuilding" below); credits and licences in `/CR
 | `weapons/weapons.json` | attach bone + offset per weapon, muzzle/support points | |
 | `hitboxes.json` | per-bone capsules | |
 | `manifest.json` | everything above in one index | |
-| `../arms/fp_arms_pistol.glb` | first-person arms + pistol + 7 clips (8 352 + 416 tris, 2 materials) | 215 KB |
+| `../arms/fp_arms_pistol.glb` | first-person arms + pistol, 8 clips + 4 index-finger poses (8 352 + 644 tris, 1 material) | 299 KB |
 | `../arms/fp_arms_pistol.clips.json`, `penetration_report.json`, `penetration_mesh_check.json` | FP clip list and finger/gun penetration checks | |
 
 Meshes are `EXT_meshopt_compression` + `KHR_mesh_quantization`; textures `EXT_texture_webp`.
@@ -153,36 +153,38 @@ function spawn(name) {
 
 Loop flags: `manifest.clips[].loop`. Faces get pixelated by the game, so there are no blend shapes.
 
-## First-person arms (`../arms/fp_arms_pistol.glb`)
+## First-person arms (`../arms/fp_arms_pistol.glb`, v2)
 
 ```
-fp_root            (origin = eye, looking down -Z like a three.js camera; add it to the viewmodel camera)
-├ fp_arms          SkinnedMesh: MakeHuman arms, navy sleeves, coyote gloves (material 1, 1024 WebP)
-├ eye, camera_chest  markers; camera_chest = 0.25 m below the eye (bodycam position)
-└ root … hand_r ─ pistol ─ pistol_frame | pistol_slide | pistol_trigger | pistol_magazine (material 2, vertex colours)
+fp_root            (origin = CHEST CAMERA (bodycam on the sternum, 0.30 m below the eyes), looking down -Z)
+├ fp_arms          ONE SkinnedMesh / ONE draw: MakeHuman arms, navy uniform sleeves, coyote tactical gloves + pistol
+└ root … hand_r ─ pistol (joint) ─ pistol_slide | pistol_trigger | pistol_magazine (joints)
+                                  └ pistol_muzzle, pistol_port, pistol_sight_rear (markers)
 ```
 
-Viewmodel: render the scene with the chest camera (FOV 95), clear depth, render `fp_root` with a 70 deg camera at
-the same position (`tools/char-viewer/arms.js`). `fp_root`'s origin is the eye: with the bodycam 0.25 m below the
-eye, parent `fp_root` to the camera with `position.y = +0.25` (what the viewer does).
+8 352 arm + 644 pistol triangles, one 1024 WebP atlas, 299 KB. In the game (`src/player/viewmodel.js`) the arms live
+in world space at the camera pose and are drawn with their own narrower lens (`VM_ZOOM` 1.25); two-bone IK keeps both
+hands on the gun while `weapon.js` layers free aim, sway, bob, recoil, wall retraction and the framing offsets
+(`ctx.weapon.frame`: hip raised 4.5 cm, ADS raised 6.5 cm and tipped 3°) on top of the clips.
 
 | clip | s | loop | notes |
 |---|---|---|---|
-| fp_idle | 4.00 | loop | two-handed thumbs-forward grip at chest height, finger indexed |
-| fp_aim | 4.00 | loop | sights on the eye line (rear sight 2.5 cm below the eye, 0.35 m out) |
-| fp_fire | 0.32 | once | trigger press, slide 32 mm cycle, 6.5 deg muzzle flip, recovery |
-| fp_dry_fire | 0.45 | once | trigger press, no slide |
-| fp_lowready | 3.00 | loop | muzzle 55 deg down |
-| fp_sprint | 0.66 | loop | tucked, two-step bob |
-| fp_reload | 2.40 | once | empty reload: mag drop, new mag, insert, slide release (magazine `scale` 0 while out of view) |
+| fp_idle | 1.00 | loop | hip/ready hold: gun 30 cm in front of the chest camera and 11 cm low, finger indexed, thumbs forward |
+| fp_aim | 1.00 | loop | ADS from the chest camera: sights 3.5 cm under the lens axis, 33 cm out, zeroed at 15 m, finger on the trigger |
+| fp_lowready | 1.00 | loop | muzzle depressed 38°, finger indexed |
+| fp_sprint | 0.66 | loop | tucked low with a two-step bob |
+| fp_fire / fp_dry_fire | 0.30 / 0.45 | once | trigger press, slide cycle 32 mm (fire), muzzle flip 5° |
+| fp_reload | 2.50 | once | empty reload: slide locked, mag drop, new mag from the belt, insert, slide-stop release |
+| fp_reload_tac | 2.20 | once | tactical reload (round chambered): mag drop, new mag from the belt, insert |
+| fp_pose_index_off / _mid / _trigger / _press | 0.1 | pose | index finger poses blended procedurally (trigger discipline, press) |
 
-All FP clips are made (the grip is contact-solved against the pistol's signed distance field: palm slid onto the
-grip, each finger joint curled until contact with a 2.5 mm margin). Penetration numbers: `penetration_report.json`
-(SDF of the modelling primitives) and `penetration_mesh_check.json` (independent check on the exported GLB,
-ray-parity against the exported pistol meshes): **0 mm in idle/aim/fire/dry_fire/sprint, 0.2 mm in low-ready,
-up to 15 mm in reload** (support hand vs the magazine it carries, strong ring/little finger vs the magazine on
-its way out/in).
-
+Reload stage times used by the game (`RL` in `src/player/weapon.js`): mag out 0.30 s, pouch 0.75 s, mag in 1.45 s,
+slide release 2.03 s. The grip is contact-solved against the pistol's signed distance field (2.5 mm margin).
+Penetration: `penetration_report.json` (modelling SDF) and `penetration_mesh_check.json` (exported GLB, CPU-skinned
+glove vertices vs the exact pistol SDF, 60 fps): **0 mm in every clip including both reloads and the procedural
+trigger press**. Known limit (integration QA 2026-11-21): the strong thumb misses its forward target by 3 cm
+(`grip.strongThumbSearch.tipMiss` 0.0305 m) and rests across the back of the grip; fixing it needs a rebuild with the
+CC0 source cache (`STRONG_THUMB` / `STRONG_THUMB_MCP` in `build_arms.mjs`).
 ## Rebuilding
 
 ```

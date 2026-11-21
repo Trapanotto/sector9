@@ -154,7 +154,11 @@ export function createMachines(ctx) {
     const g = geometryFromBuilder(b);
     g.setIndex(new THREE.BufferAttribute(b.targets.get('m').view().slice(), 1));
     g.boundingSphere = new THREE.Sphere(new THREE.Vector3(70, 3, 30), 80);
-    skinned = new THREE.SkinnedMesh(g, material);
+    // own material instance (same uniforms object): three re-derives the program parameters every frame when ONE
+    // material alternates between skinned and static meshes (≈ 7 KB garbage + CPU per frame)
+    const skinMat = createArtMaterial(material.uniforms.uMap?.value ?? null);
+    skinMat.uniforms = material.uniforms;
+    skinned = new THREE.SkinnedMesh(g, skinMat);
     skinned.name = 'art:machines';
     skinned.frustumCulled = false;
     skinned.add(root);
