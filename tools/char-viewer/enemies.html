@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Enemy Viewer</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #9aa3ab; }
+    #ui { position: fixed; right: 8px; top: 8px; font: 13px monospace; background: #000a; color: #fff; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+    #ui select, #ui button { font: 13px monospace; }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <select id="clip"></select>
+    <label><input type="checkbox" id="cycle" checked /> cycle clips</label>
+    <select id="lod"><option value="both">LOD0 front / LOD1 back</option><option value="0">LOD0</option><option value="1">LOD1</option></select>
+    <label><input type="checkbox" id="skel" /> skeleton</label>
+    <label><input type="checkbox" id="hit" /> hit capsules</label>
+    <label><input type="checkbox" id="weapons" checked /> weapons</label>
+  </div>
+  <script type="module" src="./enemies.js"></script>
+</body>
+</html>

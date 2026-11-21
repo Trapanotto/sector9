@@ -1,0 +1,186 @@
+{
+ "margin_m": 0.0025,
+ "grip": {
+  "strongSlides_m": [
+   0.003,
+   0.02,
+   0.001
+  ],
+  "strongPalmClearance": 0.0025560659853142743,
+  "strongCurls": {
+   "trigger": {
+    "middle": [
+     60,
+     100,
+     80
+    ],
+    "ring": [
+     70,
+     100,
+     80
+    ],
+    "pinky": [
+     64,
+     100,
+     80
+    ],
+    "indexSwing": -10,
+    "index": [
+     16,
+     0,
+     34
+    ],
+    "thumb": [
+     -34,
+     34,
+     6
+    ]
+   },
+   "indexed": {
+    "middle": [
+     60,
+     100,
+     80
+    ],
+    "ring": [
+     70,
+     100,
+     80
+    ],
+    "pinky": [
+     64,
+     100,
+     80
+    ],
+    "index": [
+     8,
+     4,
+     0
+    ],
+    "thumb": [
+     -34,
+     34,
+     6
+    ]
+   }
+  },
+  "supportSlides_m": [
+   0.002
+  ],
+  "supportPalmClearance": 0.002521123859628195,
+  "supportCurls": {
+   "index": [
+    64,
+    100,
+    80
+   ],
+   "middle": [
+    70,
+    100,
+    80
+   ],
+   "ring": [
+    68,
+    2,
+    80
+   ],
+   "pinky": [
+    68,
+    2,
+    2
+   ],
+   "thumb": [
+    6,
+    0,
+    12
+   ]
+  }
+ },
+ "clips": {
+  "fp_idle": {
+   "frames": 121,
+   "gloveVerts": 2954,
+   "penetratingVertexFrames": 0,
+   "maxDepth_mm": 0,
+   "worstAt_s": 0,
+   "maxWristReachError_mm": 0,
+   "maxDepthByBone_mm": {}
+  },
+  "fp_aim": {
+   "frames": 121,
+   "gloveVerts": 2954,
+   "penetratingVertexFrames": 0,
+   "maxDepth_mm": 0,
+   "worstAt_s": 0,
+   "maxWristReachError_mm": 0,
+   "maxDepthByBone_mm": {}
+  },
+  "fp_fire": {
+   "frames": 11,
+   "gloveVerts": 2954,
+   "penetratingVertexFrames": 0,
+   "maxDepth_mm": 0,
+   "worstAt_s": 0,
+   "maxWristReachError_mm": 0,
+   "maxDepthByBone_mm": {}
+  },
+  "fp_dry_fire": {
+   "frames": 15,
+   "gloveVerts": 2954,
+   "penetratingVertexFrames": 0,
+   "maxDepth_mm": 0,
+   "worstAt_s": 0,
+   "maxWristReachError_mm": 0,
+   "maxDepthByBone_mm": {}
+  },
+  "fp_lowready": {
+   "frames": 91,
+   "gloveVerts": 2954,
+   "penetratingVertexFrames": 0,
+   "maxDepth_mm": 0,
+   "worstAt_s": 0,
+   "maxWristReachError_mm": 0,
+   "maxDepthByBone_mm": {}
+  },
+  "fp_sprint": {
+   "frames": 21,
+   "gloveVerts": 2954,
+   "penetratingVertexFrames": 0,
+   "maxDepth_mm": 0,
+   "worstAt_s": 0,
+   "maxWristReachError_mm": 0,
+   "maxDepthByBone_mm": {}
+  },
+  "fp_reload": {
+   "frames": 73,
+   "gloveVerts": 2954,
+   "penetratingVertexFrames": 2086,
+   "maxDepth_mm": 15.32,
+   "worstAt_s": 1.267,
+   "maxWristReachError_mm": 64,
+   "maxDepthByBone_mm": {
+    "thumb_03_l": 8.15,
+    "ring_02_r": 9.2,
+    "pinky_02_r": 6.07,
+    "pinky_03_r": 9.79,
+    "middle_02_r": 2.85,
+    "middle_01_r": 0.88,
+    "ring_03_l": 1.55,
+    "index_01_l": 15.32,
+    "middle_01_l": 0.08,
+    "hand_l": 15.17,
+    "index_02_l": 2.55,
+    "thumb_02_l": 14.69,
+    "thumb_01_l": 15.18,
+    "index_03_l": 3.47,
+    "middle_03_l": 4.69
+   }
+  }
+ },
+ "tris": {
+  "arms": 8352,
+  "pistol": 416,
+  "total": 8768
+ },
+ "bytes": 214720
+}

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Character Viewer</title>
+  <style>
+    body { margin: 0; padding: 24px 16px; font: 15px/1.5 system-ui, sans-serif; background: #1d2024; color: #e8e8e8; }
+    a { color: #8cc8ff; }
+    code { background: #0004; padding: 1px 4px; }
+  </style>
+</head>
+<body>
+  <h1>SECTOR 9 character assets</h1>
+  <ul>
+    <li><a href="./enemies.html">enemies.html</a> - all six variants, LOD0 front row / LOD1 back row, cycling through every clip (options: <code>?clip=walk&amp;paused&amp;lod=0|1|both&amp;skel=1&amp;hit=1&amp;cam=front|close|side|back|top|low</code>)</li>
+    <li><a href="./arms.html">arms.html</a> - first-person arms + pistol from the chest bodycam (scene FOV 95, viewmodel FOV 70; <code>?view=chest|eye|orbit</code>)</li>
+  </ul>
+  <p>Serve with <code>npx vite --config tools/char-viewer/vite.config.js</code> (port 5183). Screenshots: <code>tools/char-viewer/shots/</code>.</p>
+</body>
+</html>

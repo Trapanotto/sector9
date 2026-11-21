@@ -1,0 +1,15 @@
+{
+  "name": "sector9-chars-pipeline",
+  "private": true,
+  "type": "module",
+  "description": "Offline build pipeline for SECTOR 9 character assets (not part of the game bundle).",
+  "dependencies": {
+    "three": "0.170.0",
+    "@gltf-transform/core": "4.1.1",
+    "@gltf-transform/extensions": "4.1.1",
+    "@gltf-transform/functions": "4.1.1",
+    "meshoptimizer": "0.22.0",
+    "sharp": "0.33.5",
+    "puppeteer-core": "23.9.0"
+  }
+}
