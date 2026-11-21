@@ -30,7 +30,8 @@ export function profile(pts, width, col, { bevel = 0.0015, x = 0 } = {}) {
     bevelSegments: 1, curveSegments: 4,
   });
   // shape (x=z_w, y=y_w), extrusion along +Z -> weapon X
-  const m = new THREE.Matrix4().set(0, 0, 1, x - (width - 2 * bevel) / 2, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1);
+  // (x mirrored so the matrix keeps a positive determinant and the winding stays outward)
+  const m = new THREE.Matrix4().set(0, 0, -1, x + (width - 2 * bevel) / 2, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1);
   g.applyMatrix4(m);
   return colorize(g, col);
 }

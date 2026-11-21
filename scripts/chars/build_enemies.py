@@ -86,7 +86,7 @@ VARIANTS = {
             dict(mhclo=CL + '/male_worksuit01/male_worksuit01.mhclo', rect=R_TOP, ao=0.7,
                  tint=dict(color=(66, 74, 60), detail=0.85)),
             dict(mhclo='mh_hats01/clothes/toigo_maga_hat/toigo_maga_hat.mhclo', rect=R_HEAD,
-                 tint=dict(color=(30, 36, 52), detail=0.6, flatten=6, noise=0.05)),
+                 tint=dict(color=(30, 36, 52), detail=0.0, noise=0.06)),
             dict(mhclo=CL + '/shoes03/shoes03.mhclo', rect=R_SHOE, ao=0.5),
             EYES,
         ]),

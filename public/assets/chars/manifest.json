@@ -60,7 +60,7 @@
    "rootScale": 0.99481,
    "height": 1.819,
    "weapon": "pistol",
-   "bytes": 166580
+   "bytes": 166004
   },
   {
    "name": "thug_female",
@@ -492,7 +492,7 @@
     0.165
    ],
    "support": null,
-   "bytes": 5636
+   "bytes": 5640
   },
   "smg": {
    "file": "weapons/smg.glb",
@@ -521,7 +521,7 @@
     0.005,
     0.2
    ],
-   "bytes": 6576
+   "bytes": 6560
   },
   "shotgun": {
    "file": "weapons/shotgun.glb",
@@ -550,7 +550,7 @@
     -0.005,
     0.36
    ],
-   "bytes": 5676
+   "bytes": 5712
   }
  },
  "hitboxes": "hitboxes.json"

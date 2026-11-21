@@ -183,6 +183,8 @@ export class Rig {
   placeHand(s, wrist, q, pole) {
     this.ik(`upperarm_${s}`, `lowerarm_${s}`, `hand_${s}`, wrist, pole);
     this.setWorldQuat(`hand_${s}`, q);
+    this.ikError = this.ikError || {};
+    this.ikError[s] = this.wpos(`hand_${s}`).distanceTo(wrist);
   }
 
   /** Curl fingers toward the palm. amounts: {thumb:[a1,a2,a3], index:[...], ...} in degrees. */

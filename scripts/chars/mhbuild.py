@@ -211,6 +211,8 @@ def build_character(cfg, cache, ual, bones, full_hands, atlas_size=1024, keep_pa
     body = mhlib.Proxy(os.path.join(cache, cfg['proxy']))
     skin = load_rgba(os.path.join(cache, cfg['skin']))
     skin.putalpha(255)
+    if cfg.get('skin_solid'):
+        skin = tint(skin, dict(color=cfg['skin_solid'], detail=0.3))
     bpart = part_from_proxy('body', body, bv, Wbase, skin, cfg['skin_rect'])
     if cfg.get('buzzcut'):
         # short hair painted on the scalp: mask the UV islands of scalp faces (mesh-driven)
@@ -300,6 +302,8 @@ def build_character(cfg, cache, ual, bones, full_hands, atlas_size=1024, keep_pa
     out_pos, out_nrm, out_uv, out_j, out_w, out_idx = [], [], [], [], [], []
     voff = 0
     stats = {}
+    ground_all = []
+    arm_cols = [col[b] for b in names if b.split('_')[0] in ('upperarm', 'lowerarm', 'hand', 'thumb', 'index', 'middle', 'ring', 'pinky')]
     for item, part in parts:
         if keep_parts and part.name not in keep_parts and item.get('name') not in keep_parts:
             continue
@@ -317,8 +321,14 @@ def build_character(cfg, cache, ual, bones, full_hands, atlas_size=1024, keep_pa
             newpos[m] += w[m, None] * ((pos[m] - P[b]) @ D[b].T + NP[b])
         ws = Wp.sum(1)
         newpos[ws == 0] = pos[ws == 0]
+        ground_all.append(newpos[:, 1].min())
         # faces -> triangles, unique (v, vt) corners
         cull = part.cull
+        if cfg.get('arm_crop'):
+            # first-person arms: keep only geometry skinned (mostly) to the arm chains
+            armw = Wp[:, arm_cols].sum(1)
+            c2 = armw < cfg['arm_crop']
+            cull = c2 if cull is None else (cull | c2)
         corner_map = {}
         vlist, tlist = [], []
         tris = []
@@ -372,13 +382,13 @@ def build_character(cfg, cache, ual, bones, full_hands, atlas_size=1024, keep_pa
         stats[part.name] = len(tris)
     pos = np.concatenate(out_pos)
     # ground: lowest vertex at y = 0
-    ground = pos[:, 1].min()
+    ground = min(ground_all)
     pos[:, 1] -= ground
     for b in NP:
         NP[b] = NP[b] - np.array([0, ground, 0])
     root_pos = np.array([NP['pelvis'][0], 0.0, NP['pelvis'][2]])
     pelvis_h = NP['pelvis'][1]
-    scale = pelvis_h / H_REF
+    scale = 1.0 if cfg.get('unit_scale') else pelvis_h / H_REF
     geo = dict(pos=pos, nrm=np.concatenate(out_nrm), uv=np.concatenate(out_uv), joints=np.concatenate(out_j),
                weights=np.concatenate(out_w), idx=np.concatenate(out_idx))
     rig = dict(names=names, parent=parent, NP=NP, root_pos=root_pos, scale=scale, R={b: ual.R[b] for b in names})

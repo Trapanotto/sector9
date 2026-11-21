@@ -32,5 +32,5 @@ if (!only || only === 'enemies' || only === 'anims') {
 if (!only || only === 'arms') {
   run('python', ['-I', 'build_arms.py', cache, path.join(raw, 'arms_raw.glb')]);
   run('node', ['build_arms.mjs', cache, path.join(raw, 'arms_raw.glb'), arms]);
-  run('node', ['check_penetration.mjs', path.join(arms, 'fp_arms_pistol.glb'), path.join(arms, 'penetration_report.json')]);
+  run('node', ['check_penetration.mjs', path.join(arms, 'fp_arms_pistol.glb'), path.join(arms, 'penetration_mesh_check.json')]);
 }

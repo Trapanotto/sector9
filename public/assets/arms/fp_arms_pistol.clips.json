@@ -1,0 +1,51 @@
+[
+ {
+  "name": "fp_idle",
+  "duration": 4,
+  "loop": true,
+  "made": true,
+  "source": "made: contact-solved two-handed grip, breathing sway"
+ },
+ {
+  "name": "fp_aim",
+  "duration": 4,
+  "loop": true,
+  "made": true,
+  "source": "made: sights on the eye line (rear sight 2.5 cm under the eye, 0.35 m out), finger on trigger"
+ },
+ {
+  "name": "fp_fire",
+  "duration": 0.32,
+  "loop": false,
+  "made": true,
+  "source": "made: trigger press, slide cycle (32 mm), muzzle flip 6.5 deg + 28 mm push-back, recovery"
+ },
+ {
+  "name": "fp_dry_fire",
+  "duration": 0.45,
+  "loop": false,
+  "made": true,
+  "source": "made: slow trigger press with no slide movement (click), small dip, trigger reset"
+ },
+ {
+  "name": "fp_lowready",
+  "duration": 3,
+  "loop": true,
+  "made": true,
+  "source": "made: muzzle depressed 55 deg, finger indexed"
+ },
+ {
+  "name": "fp_sprint",
+  "duration": 0.66,
+  "loop": true,
+  "made": true,
+  "source": "made: tucked low-ready with a two-step bob (one loop = left+right step)"
+ },
+ {
+  "name": "fp_reload",
+  "duration": 2.4,
+  "loop": false,
+  "made": true,
+  "source": "made: empty-gun reload: mag drop, new mag from the belt pouch, insert, support hand back on, slide-stop release"
+ }
+]

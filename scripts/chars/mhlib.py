@@ -238,6 +238,8 @@ def base_weights(skel, nverts, bone_map, out_bones):
         tgt = bone_map(mh_bone)
         if tgt is None:
             continue
+        if tgt not in col:
+            tgt = 'pelvis'  # bone absent from this (trimmed) skeleton
         c = col[tgt]
         arr = np.array(lst, dtype=np.float64).reshape(-1, 2)
         np.add.at(W[:, c], arr[:, 0].astype(np.int64), arr[:, 1])
