@@ -103,7 +103,10 @@ export function createBrain(env, defs, opts = {}) {
       caps: new Float32Array(17 * 7), capN: 0, capNames: null,
       // director
       hold: false, scripted: null,
-      surrendered: false, executed: false, fled: false,
+      surrendered: false, executed: false, fled: false, bait: false, flashlight: false, despawned: false,
+      // declared up front (stable object shape, unboxed double fields on the hot path)
+      wp: 0, wpWait: 0.5, searchN: 0, pleadT: 0.5, suppress: 0.5, retreated: false, turning: 0, noPath: 0, retreatedT: 0.5,
+      dropX: 0.5, dropY: 0.5, dropZ: 0.5, dropYaw: 0.5, lastCapsule: '', raycast: null, onHit: null,
     };
     list.push(e);
   });
@@ -111,7 +114,7 @@ export function createBrain(env, defs, opts = {}) {
   const api = {
     list, stats, rng,
     get now() { return now; },
-    reset, update, alert, ambush, wake, spawn, setHold, moveTo, say, trigger, noise, raycast, applyHit,
+    reset, update, alert, ambush, stage, despawn, wake, spawn, setHold, moveTo, say, trigger, noise, raycast, applyHit,
     /** for tests: enemy by id */
     get(id) { return list.find((e) => e.id === id); },
   };
@@ -124,7 +127,7 @@ export function createBrain(env, defs, opts = {}) {
     lastShout.alert = lastShout.command = lastShout.taunt = -99;
     for (const k in stats) stats[k] = typeof stats[k] === 'string' ? '' : 0;
     if (C) C.owner.fill(-1);
-    for (const e of list) {
+    for (let li = 0; li < list.length; li++) { const e = list[li];
       const d = e.def;
       e.pos.x = d.pos[0]; e.pos.y = d.pos[1]; e.pos.z = d.pos[2];
       e.yaw = e.faceYaw = e.bodyYaw = e.aimYaw = e.lookYaw = d.yaw;
@@ -137,7 +140,7 @@ export function createBrain(env, defs, opts = {}) {
       e.coverIdx = -1; e.peekUntil = e.hideUntil = 0; e.peeking = false; e.flankAt = -1; e.isFlanker = false; e.ffBlockT = -99; e.strafeUntil = -1;
       e.lean = 0; e.oneShot = ''; e.busyUntil = 0; e.deathClip = ''; e.deathT = -1; e.writheUntil = -1;
       e.armed = true; e.weaponDropped = false; e.limp = false; e.startleUntil = -1; e.hold = false; e.scripted = null;
-      e.surrendered = e.executed = e.fled = false; e.wp = 0; e.wpWait = 0; e.actI = 0; e.clipT = 0; e.moveSign = 1;
+      e.surrendered = e.executed = e.fled = false; e.bait = false; e.flashlight = false; e.despawned = false; e.retreated = false; e.suppress = 0; e.searchN = 0; e.turning = 0; e.wp = 0; e.wpWait = 0; e.actI = 0; e.clipT = 0; e.moveSign = 1;
       e.cstate.grounded = true;
       // anchored activities (sit / lie): the visual root sits on the seat / bed
       const anchor = d.seat ?? d.bed;
@@ -188,9 +191,9 @@ export function createBrain(env, defs, opts = {}) {
   function shoutAlert(e, kind) {
     voice(e, kind);
     const P = env.player;
-    for (const o of list) {
+    for (let li = 0; li < list.length; li++) { const o = list[li];
       if (o === e || o.dead || !o.active || o.state === 'surrender' || o.state === 'flee') continue;
-      const dy = Math.abs(o.pos.y - e.pos.y), d = Math.hypot(o.pos.x - e.pos.x, o.pos.z - e.pos.z) + dy * 3;
+      const dy = Math.abs(o.pos.y - e.pos.y), d = hyp(o.pos.x - e.pos.x, o.pos.z - e.pos.z) + dy * 3;
       let r = 26;
       A.x = e.pos.x; A.y = e.pos.y + 1.6; A.z = e.pos.z; B.x = o.pos.x; B.y = o.pos.y + 1.6; B.z = o.pos.z;
       if (d > r) continue;
@@ -237,7 +240,7 @@ export function createBrain(env, defs, opts = {}) {
       const dy = Math.abs(n.y - e.pos.y);
       let r = n.r * (dy > 2.5 ? 0.5 : 1);
       if (sleeping) r *= 0.45;
-      const d = Math.hypot(n.x - e.pos.x, n.z - e.pos.z) + dy;
+      const d = hyp(n.x - e.pos.x, n.z - e.pos.z) + dy;
       if (d > r) continue;
       A.x = e.pos.x; A.y = e.pos.y + 1.6; A.z = e.pos.z; B.x = n.x; B.y = n.y + 0.5; B.z = n.z;
       if (d > r * 0.5 && !env.los(A, B)) continue;   // occluded: only the nearer half of the radius carries
@@ -247,8 +250,8 @@ export function createBrain(env, defs, opts = {}) {
     // footsteps (continuous, masked by machines)
     if (P.moving > 0.6 && !sleeping) {
       let r = P.crouched ? 1.6 : P.moving > 3.5 ? 11 : P.moving > 1.6 ? 5.5 : 2.5;
-      r *= 1 - 0.75 * env.maskAt(e.pos.x, e.pos.y, e.pos.z);
-      const d = Math.hypot(P.pos.x - e.pos.x, P.pos.z - e.pos.z) + Math.abs(P.pos.y - e.pos.y) * 2;
+      r *= 1 - 0.75 * Math.max(env.maskAt(e.pos.x, e.pos.y, e.pos.z), env.playerMask ? env.playerMask() : 0);
+      const d = hyp(P.pos.x - e.pos.x, P.pos.z - e.pos.z) + Math.abs(P.pos.y - e.pos.y) * 2;
       if (d < r) onHeardPlayer(e, d / r);
     }
     // ---- vision
@@ -256,10 +259,10 @@ export function createBrain(env, defs, opts = {}) {
     if (sleeping || e.pose === 'sit' && e.busyUntil > now) return;
     const ex = e.pos.x, ey = e.pos.y + (e.crouch ? 1.05 : e.pose === 'sit' ? 1.15 : 1.62), ez = e.pos.z;
     const dx = P.eye.x - ex, dy = P.eye.y - ey, dz = P.eye.z - ez;
-    const dist = Math.hypot(dx, dy, dz);
+    const dist = hyp(dx, dy, dz);
     if (dist > 55) { decay(e, dt); return; }
     const fy = e.lookYaw;
-    const cosA = (-Math.sin(fy) * dx - Math.cos(fy) * dz) / Math.max(Math.hypot(dx, dz), 1e-3);
+    const cosA = (-Math.sin(fy) * dx - Math.cos(fy) * dz) / Math.max(hyp(dx, dz), 1e-3);
     const engaged = e.state === 'combat' || e.state === 'alert' || e.state === 'search' || e.state === 'ambush';
     const fovCos = engaged ? -0.1 : 0.42;
     let periph = 1;
@@ -277,9 +280,10 @@ export function createBrain(env, defs, opts = {}) {
     // detection time: distance, light, posture, state
     let light = env.lightAt(P.pos.x, P.pos.y + 1, P.pos.z);
     if (P.flashlight) {
-      const f = -(P.forward.x * dx + P.forward.z * dz) / Math.max(Math.hypot(dx, dz), 1e-3);
+      const f = -(P.forward.x * dx + P.forward.z * dz) / Math.max(hyp(dx, dz), 1e-3);
       light = Math.max(light, f > 0.5 ? 1 : 0.6);
     }
+    if (e.flashlight && dist < 22 && cosA > 0.8) light = Math.max(light, 0.85);   // torch beam on the player
     light = Math.max(0.18, Math.min(1, light));
     let tDet = (0.2 + dist * 0.055) / light * periph;
     tDet *= P.crouched ? 1.5 : 1;
@@ -390,7 +394,7 @@ export function createBrain(env, defs, opts = {}) {
       e.wp = (e.wp + 1) % d.patrol.length;
       const w = d.patrol[e.wp];
       goTo(e, w[0], d.pos[1], w[1], 1.25);
-    } else if (e.pose === 'stand' && Math.hypot(e.pos.x - d.pos[0], e.pos.z - d.pos[2]) > 1.0 && !(d.seat || d.bed)) {
+    } else if (e.pose === 'stand' && hyp(e.pos.x - d.pos[0], e.pos.z - d.pos[2]) > 1.0 && !(d.seat || d.bed)) {
       // back to the post (after a search)
       if (!e.wantMove) goTo(e, d.pos[0], d.pos[1], d.pos[2], 1.2);
       else if (arrived(e)) { e.wantMove = false; e.faceYaw = d.yaw; applyActivity(e, 0); }
@@ -399,7 +403,7 @@ export function createBrain(env, defs, opts = {}) {
 
   function thinkSuspicious(e) {
     // look toward the interest point, then go and check it (sleepers/sitters just look)
-    const dx = e.interest.x - e.pos.x, dz = e.interest.z - e.pos.z, d = Math.hypot(dx, dz);
+    const dx = e.interest.x - e.pos.x, dz = e.interest.z - e.pos.z, d = hyp(dx, dz);
     e.lookYaw = Math.atan2(-dx, -dz);
     if (e.startleUntil < 0) e.faceYaw = e.lookYaw;
     e.weaponOut = e.armed; e.pose = 'stand';
@@ -411,7 +415,7 @@ export function createBrain(env, defs, opts = {}) {
 
   function thinkAmbush(e, P) {
     e.pose = 'crouch'; e.crouch = true; e.weaponOut = e.armed; e.wantMove = false;
-    const dx = P.pos.x - e.pos.x, dz = P.pos.z - e.pos.z, d = Math.hypot(dx, dz);
+    const dx = P.pos.x - e.pos.x, dz = P.pos.z - e.pos.z, d = hyp(dx, dz);
     if (!e.canSee) {
       if (now - e.stateT > 90 && e.heardT > 0) { setState(e, 'alert'); }
       return;
@@ -471,7 +475,7 @@ export function createBrain(env, defs, opts = {}) {
     if (e.pose === 'sit' || e.pose === 'lie') { wakeUp(e); return; }
     if (!e.armed) { startFlee(e); return; }
     const lk = e.lastKnown;
-    const dx = lk.x - e.pos.x, dz = lk.z - e.pos.z, dist = Math.hypot(dx, dz);
+    const dx = lk.x - e.pos.x, dz = lk.z - e.pos.z, dist = hyp(dx, dz);
     e.lookYaw = Math.atan2(-dx, -dz);
     const lost = now - e.seenT;
     // surrender / flee when cornered and outgunned
@@ -500,7 +504,7 @@ export function createBrain(env, defs, opts = {}) {
       // pick a flanker (one per engagement) and announce it
       if (!e.isFlanker && e.flankAt < 0 && rng.chance(0.15)) {
         let engaged = 0, flankers = 0;
-        for (const o of list) if (!o.dead && o.state === 'combat') { engaged++; if (o.isFlanker) flankers++; }
+        for (let li = 0; li < list.length; li++) { const o = list[li]; if (!o.dead && o.state === 'combat') { engaged++; if (o.isFlanker) flankers++; } }
         if (engaged >= 2 && flankers === 0 && dist > 6) {
           e.isFlanker = true; e.flankAt = now + rng.range(1.5, 4);
           if (now - lastShout.command > 6) { lastShout.command = now; voice(e, 'command'); }
@@ -508,7 +512,7 @@ export function createBrain(env, defs, opts = {}) {
       }
     } else if (arrived(e)) e.wantMove = false;
     if (!e.wantMove) e.faceYaw = e.lookYaw;
-    const atCover = e.coverIdx >= 0 && !e.wantMove && Math.hypot(e.pos.x - C.x[e.coverIdx], e.pos.z - C.z[e.coverIdx]) < 0.6;
+    const atCover = e.coverIdx >= 0 && !e.wantMove && hyp(e.pos.x - C.x[e.coverIdx], e.pos.z - C.z[e.coverIdx]) < 0.6;
     const high = atCover && (C.bits[e.coverIdx] >> 4);
     e.crouch = atCover && !high && !e.peeking;
     e.lean = atCover && high && e.peeking ? e.coverSide : 0;
@@ -518,7 +522,7 @@ export function createBrain(env, defs, opts = {}) {
   function checkBreak(e, P, dist) {
     if (e.def.brave || e.def.role === 'ambusher') return false;
     let allies = 0;
-    for (const o of list) if (o !== e && !o.dead && o.state !== 'surrender' && o.state !== 'flee' && Math.hypot(o.pos.x - e.pos.x, o.pos.z - e.pos.z) < 14) allies++;
+    for (let li = 0; li < list.length; li++) { const o = list[li]; if (o !== e && !o.dead && o.state !== 'surrender' && o.state !== 'flee' && hyp(o.pos.x - e.pos.x, o.pos.z - e.pos.z) < 14) allies++; }
     const aimed = -(P.forward.x * (P.pos.x - e.pos.x) + P.forward.z * (P.pos.z - e.pos.z)) / Math.max(dist, 1e-3) > 0.94;
     const weak = e.health < HEALTH * 0.5 || !e.armed || e.ammo === 0 && e.reloadUntil < now;
     if (allies === 0 && dist < 7 && e.canSee && aimed && weak) {
@@ -529,18 +533,21 @@ export function createBrain(env, defs, opts = {}) {
     return false;
   }
 
-  function surrender(e) {
+  /** bait: keeps a hidden weapon (a later ambush() makes them draw and fire); wounded: kneels hurt, moans */
+  function surrender(e, bait = false, wounded = false) {
+    wakeUp(e, 0); e.busyUntil = now + 0.3;
     setState(e, 'surrender');
-    e.surrendered = true; stats.surrendered++;
-    e.wantMove = false; e.aiming = false; e.weaponOut = false; e.crouch = false; e.lean = 0;
-    if (e.armed) dropWeapon(e);
+    e.surrendered = true; e.bait = bait; stats.surrendered++;
+    e.wantMove = false; e.aiming = false; e.weaponOut = false; e.crouch = false; e.lean = 0; e.scripted = null;
+    if (e.armed && !bait) dropWeapon(e);
+    if (wounded) { e.limp = true; e.health = Math.min(e.health, HEALTH * 0.35); e.pose = 'kneel'; e.clip = 'kneel_hands_head'; e.clipT = now + 1e9; voice(e, 'dying'); e.pleadT = now; env.emit('d:surrender', stateEvt(e)); return; }
     e.pose = 'hands'; e.clip = 'surrender'; e.clipT = now + rng.range(2.5, 4);
     voice(e, 'plead'); e.pleadT = now;
     env.emit('d:surrender', stateEvt(e));
   }
   function thinkSurrender(e, P) {
     if (e.pose === 'hands' && now > e.clipT) { e.pose = 'kneel'; e.clip = 'kneel_hands_head'; }
-    const d = Math.hypot(P.pos.x - e.pos.x, P.pos.z - e.pos.z);
+    const d = hyp(P.pos.x - e.pos.x, P.pos.z - e.pos.z);
     e.lookYaw = Math.atan2(-(P.pos.x - e.pos.x), -(P.pos.z - e.pos.z));
     if (d < 9 && now - e.pleadT > rng.range(6, 11)) { e.pleadT = now; voice(e, 'plead'); }
   }
@@ -553,16 +560,16 @@ export function createBrain(env, defs, opts = {}) {
   function thinkFlee(e, P) {
     if (!e.wantMove) {
       const p = C ? findCover(C, cs, env.los, e, e.pos.x, e.pos.y, e.pos.z, P.pos.x, P.pos.y + 1.4, P.pos.z, 'flee', e.index, 30) : -1;
-      if (p >= 0 && Math.hypot(C.x[p] - e.pos.x, C.z[p] - e.pos.z) > 3) { claimCover(e, p); goTo(e, C.x[p], C.y[p], C.z[p], 4.0); }
-      else if (e.canSee && Math.hypot(P.pos.x - e.pos.x, P.pos.z - e.pos.z) < 8) { surrender(e); return; }
+      if (p >= 0 && hyp(C.x[p] - e.pos.x, C.z[p] - e.pos.z) > 3) { claimCover(e, p); goTo(e, C.x[p], C.y[p], C.z[p], 4.0); }
+      else if (e.canSee && hyp(P.pos.x - e.pos.x, P.pos.z - e.pos.z) < 8) { surrender(e); return; }
       else if (now - e.stateT > 20 && e.armed) { setState(e, 'alert'); return; }
     } else if (arrived(e)) { e.wantMove = false; e.crouch = true; if (e.armed && now - e.stateT > 6) setState(e, 'alert'); }
-    if (e.canSee && Math.hypot(P.pos.x - e.pos.x, P.pos.z - e.pos.z) < 5) surrender(e);
+    if (e.canSee && hyp(P.pos.x - e.pos.x, P.pos.z - e.pos.z) < 5) surrender(e);
   }
 
   function strafe(e) {
     // a short sidestep perpendicular to the threat (also clears a blocked line of fire)
-    const lk = e.lastKnown, dx = lk.x - e.pos.x, dz = lk.z - e.pos.z, l = Math.hypot(dx, dz) || 1;
+    const lk = e.lastKnown, dx = lk.x - e.pos.x, dz = lk.z - e.pos.z, l = hyp(dx, dz) || 1;
     const s = rng.chance(0.5) ? 1 : -1, r = rng.range(1.5, 3);
     const k = nav.nearest(e.pos.x - dz / l * r * s, e.pos.y + 0.2, e.pos.z + dx / l * r * s, 1);
     if (k >= 0) { goTo(e, nav.nodeX(k), nav.nodeY[k], nav.nodeZ(k), 1.6); e.strafeUntil = now + rng.range(2, 4); }
@@ -619,7 +626,7 @@ export function createBrain(env, defs, opts = {}) {
     const tx = suppress ? e.lastKnown.x : P.pos.x, tz = suppress ? e.lastKnown.z : P.pos.z;
     const ty = (suppress ? e.lastKnown.y : P.pos.y) + (P.crouched ? 0.8 : 1.2);
     let dx = tx - o.x, dy = ty - o.y, dz = tz - o.z;
-    const dist = Math.hypot(dx, dy, dz);
+    const dist = hyp(dx, dy, dz);
     if (dist > e.w.range && !suppress) return;
     // the aimed line must be clear (no shooting through walls / closed doors); suppression only at the spot
     B.x = tx; B.y = ty; B.z = tz;
@@ -630,7 +637,7 @@ export function createBrain(env, defs, opts = {}) {
       dy = B.y - o.y;
     }
     // friendly fire: an ally in the line of fire → hold and sidestep
-    for (const a of list) {
+    for (let li = 0; li < list.length; li++) { const a = list[li];
       if (a === e || a.dead || !a.active) continue;
       const ax = a.pos.x - o.x, ay = a.pos.y + 1.1 - o.y, az = a.pos.z - o.z;
       const t = (ax * dx + ay * dy + az * dz) / (dist * dist);
@@ -653,14 +660,14 @@ export function createBrain(env, defs, opts = {}) {
     let ox = 0, oy = 0, oz = 0;
     const l = dist || 1;
     // perpendicular basis (right r, up u) to the line of fire
-    const rx = -dz / Math.hypot(dx, dz), rz = dx / Math.hypot(dx, dz);
+    const rx = -dz / hyp(dx, dz), rz = dx / hyp(dx, dz);
     if (hit) { const g = 0.11; ox = rx * rng.gauss() * g; oz = rz * rng.gauss() * g; oy = rng.gauss() * g * 1.4; }
     else {
       const r = suppress ? rng.range(0.2, 1.6) : rng.range(0.45, 1.3), a = rng.range(0, Math.PI * 2);
       ox = rx * Math.cos(a) * r; oz = rz * Math.cos(a) * r; oy = Math.abs(Math.sin(a)) * r * (rng.chance(0.75) ? 1 : -0.6);
     }
     dx += ox; dy += oy; dz += oz;
-    const n = Math.hypot(dx, dy, dz); dx /= n; dy /= n; dz /= n;
+    const n = hyp(dx, dy, dz); dx /= n; dy /= n; dz /= n;
     e.ammo--; e.fireSeq++;
     evFire.id = e.id; evFire.enemy = e; evFire.weapon = e.def.weapon;
     evFire.origin.x = o.x; evFire.origin.y = o.y; evFire.origin.z = o.z; evFire.dir.x = dx; evFire.dir.y = dy; evFire.dir.z = dz;
@@ -672,7 +679,7 @@ export function createBrain(env, defs, opts = {}) {
       D.x = dx; D.y = dy; D.z = dz;
       if (pel > 1) {
         D.x += rng.gauss() * e.w.spread; D.y += rng.gauss() * e.w.spread * 0.7; D.z += rng.gauss() * e.w.spread;
-        const m = Math.hypot(D.x, D.y, D.z); D.x /= m; D.y /= m; D.z /= m;
+        const m = hyp(D.x, D.y, D.z); D.x /= m; D.y /= m; D.z /= m;
       }
       stats.shots++;
       if (!suppress && opts.audit) opts.audit(e, o, D, P);
@@ -682,7 +689,7 @@ export function createBrain(env, defs, opts = {}) {
       const ex = P.eye.x - o.x, ey = P.eye.y - o.y, ez = P.eye.z - o.z;
       const t = Math.max(0, Math.min(res.t, ex * D.x + ey * D.y + ez * D.z));
       const qx = o.x + D.x * t - P.eye.x, qy = o.y + D.y * t - P.eye.y, qz = o.z + D.z * t - P.eye.z;
-      const cd = Math.hypot(qx, qy, qz);
+      const cd = hyp(qx, qy, qz);
       if (cd < closest) { closest = cd; cx = qx + P.eye.x; cy = qy + P.eye.y; cz = qz + P.eye.z; }
     }
     if (!anyHit && closest < 1.4) {
@@ -700,7 +707,7 @@ export function createBrain(env, defs, opts = {}) {
     e.wantMove = e.goalNode >= 0; e.pathLen = 0; e.pathI = 0; e.pathPending = e.wantMove; e.repaths = 0;
     e.progT = now; e.lastProg.x = e.pos.x; e.lastProg.z = e.pos.z; e.stuckT = 0;
   }
-  function arrived(e) { return !e.wantMove || (e.pathLen > 0 && e.pathI >= e.pathLen) || Math.hypot(e.goal.x - e.pos.x, e.goal.z - e.pos.z) < 0.4 && Math.abs(e.goal.y - e.pos.y) < 1; }
+  function arrived(e) { return !e.wantMove || (e.pathLen > 0 && e.pathI >= e.pathLen) || hyp(e.goal.x - e.pos.x, e.goal.z - e.pos.z) < 0.4 && Math.abs(e.goal.y - e.pos.y) < 1; }
 
   function computePath(e) {
     if (pathsThisFrame >= PATHS_PER_FRAME) return false;
@@ -727,7 +734,7 @@ export function createBrain(env, defs, opts = {}) {
   }
   function straightWalkable(ax, ay, az, k) {
     const bx = nav.nodeX(k), by = nav.nodeY[k], bz = nav.nodeZ(k);
-    const l = Math.hypot(bx - ax, bz - az), n = Math.ceil(l / 0.25);
+    const l = hyp(bx - ax, bz - az), n = Math.ceil(l / 0.25);
     for (let s = 1; s < n; s++) {
       const t = s / n;
       const m = navAt(ax + (bx - ax) * t, ay + (by - ay) * t, az + (bz - az) * t);
@@ -741,7 +748,7 @@ export function createBrain(env, defs, opts = {}) {
     if (e.pathPending || (e.pathLen === 0 && e.goalNode >= 0)) { if (!computePath(e)) return; if (!e.wantMove) return; }
     if (e.pathI >= e.pathLen) {
       // path truncated (long route) → continue
-      if (Math.hypot(e.goal.x - e.pos.x, e.goal.z - e.pos.z) > 0.6) { e.pathPending = true; }
+      if (hyp(e.goal.x - e.pos.x, e.goal.z - e.pos.z) > 0.6) { e.pathPending = true; }
       else e.wantMove = false;
       e.speed = Math.max(0, e.speed - dt * 6);
       return;
@@ -749,7 +756,7 @@ export function createBrain(env, defs, opts = {}) {
     // advance past reached nodes
     while (e.pathI < e.pathLen) {
       const k = e.path[e.pathI];
-      if (Math.hypot(nav.nodeX(k) - e.pos.x, nav.nodeZ(k) - e.pos.z) < 0.35 && Math.abs(nav.nodeY[k] - e.pos.y) < 0.6) e.pathI++;
+      if (hyp(nav.nodeX(k) - e.pos.x, nav.nodeZ(k) - e.pos.z) < 0.35 && Math.abs(nav.nodeY[k] - e.pos.y) < 0.6) e.pathI++;
       else break;
     }
     if (e.pathI >= e.pathLen) return;
@@ -770,10 +777,10 @@ export function createBrain(env, defs, opts = {}) {
     e.waitDoor = -1;
     const tx = nav.nodeX(k), tz = nav.nodeZ(k);
     let dx = tx - e.pos.x, dz = tz - e.pos.z;
-    const d = Math.hypot(dx, dz) || 1;
+    const d = hyp(dx, dz) || 1;
     dx /= d; dz /= d;
     // separation from other enemies
-    for (const o of list) {
+    for (let li = 0; li < list.length; li++) { const o = list[li];
       if (o === e || o.dead || !o.active) continue;
       const ox = e.pos.x - o.pos.x, oz = e.pos.z - o.pos.z, od = ox * ox + oz * oz;
       if (od < 0.5 && od > 1e-4 && Math.abs(o.pos.y - e.pos.y) < 1) { const s = (0.5 - od) * 1.5; dx += ox * s; dz += oz * s; }
@@ -801,7 +808,7 @@ export function createBrain(env, defs, opts = {}) {
       }
     }
     // progress / stuck detection
-    if (Math.hypot(e.pos.x - e.lastProg.x, e.pos.z - e.lastProg.z) > 0.4) { e.lastProg.x = e.pos.x; e.lastProg.z = e.pos.z; e.progT = now; e.stuckT = 0; }
+    if (hyp(e.pos.x - e.lastProg.x, e.pos.z - e.lastProg.z) > 0.4) { e.lastProg.x = e.pos.x; e.lastProg.z = e.pos.z; e.progT = now; e.stuckT = 0; }
     else {
       e.stuckT = now - e.progT;
       if (e.stuckT > stats.stuckMax) { stats.stuckMax = e.stuckT; stats.stuckId = e.id; }
@@ -880,7 +887,7 @@ export function createBrain(env, defs, opts = {}) {
     if (byPlayer) {
       e.lastKnown.x = P.pos.x; e.lastKnown.y = P.pos.y; e.lastKnown.z = P.pos.z;
       if (e.state !== 'surrender' && e.state !== 'flee') {
-        if (e.state !== 'combat') { e.aware = 1.2; e.seenT = now; enterCombat(e, Math.hypot(P.pos.x - e.pos.x, P.pos.z - e.pos.z)); }
+        if (e.state !== 'combat') { e.aware = 1.2; e.seenT = now; enterCombat(e, hyp(P.pos.x - e.pos.x, P.pos.z - e.pos.z)); }
         e.reactAt = Math.max(e.reactAt, now + 0.35);   // flinch delays the next shot
       }
     }
@@ -946,7 +953,76 @@ export function createBrain(env, defs, opts = {}) {
       if (e.state === 'hidden') armAmbush(e); else becomeAlert(e, rng.range(0, 0.4));
     }
   }
-  function ambush(ids) { for (const e of sel(ids)) if (!e.dead) { e.active = true; if (e.state === 'hidden' || e.state === 'idle') { setState(e, 'hidden'); armAmbush(e); } } }
+  /**
+   * Director: spring an ambush. Hidden ambushers arm (wait silently, fire when the player passes / comes close);
+   * anyone else (incl. a bait surrender) draws and opens fire quickly toward pos (the player).
+   */
+  function ambush(ids, pos) {
+    const P = env.player, p = pos ?? P.pos;
+    for (const e of sel(ids)) {
+      if (e.dead) continue;
+      e.active = true; e.scripted = null;
+      if (e.state === 'hidden' || (e.def.role === 'ambusher' && e.state === 'idle')) { if (e.state !== 'hidden') setState(e, 'hidden'); armAmbush(e); continue; }
+      if (e.state === 'ambush') continue;
+      if (e.state === 'surrender' && !e.bait) continue;   // a real surrender stays down
+      e.lastKnown.x = p.x; e.lastKnown.y = p.y; e.lastKnown.z = p.z;
+      if (e.state === 'surrender') { e.surrendered = false; e.bait = false; e.armed = !e.weaponDropped; e.pose = 'stand'; setState(e, 'alert'); }
+      if (!e.armed) continue;
+      wakeUp(e, 0);
+      e.aware = 1.2; e.seenT = now; e.firstSeenT = now;
+      if (!e.alerted) { e.alerted = true; evE.id = e.id; evE.enemy = e; evE.amount = 0; evE.part = ''; env.emit('enemy:alert', evE); }
+      setState(e, 'combat');
+      e.reactAt = Math.max(e.busyUntil, now + rng.range(0.2, 0.45)); e.shotsThisContact = 0; e.onTargetT = 0.4;
+    }
+  }
+
+  /** Director: scripted behaviours. id: enemy id or group; behaviour: surrender | wounded | runner | investigate | flashlight | assault */
+  function stage(id, behaviour, o = {}) {
+    const P = env.player;
+    const pos = o.pos === 'player' || !o.pos ? null : o.pos;
+    for (const e of sel(typeof id === 'string' ? [id] : id)) {
+      if (e.dead) continue;
+      e.active = true;
+      switch (behaviour) {
+        case 'surrender': surrender(e, !!o.bait, false); break;
+        case 'wounded': surrender(e, !!o.bait, true); break;
+        case 'flashlight': e.flashlight = o.on !== false; break;
+        case 'runner': {
+          // dash across from → to (seen in passing), then hunt from there
+          if (o.from) { e.pos.x = o.from[0]; e.pos.y = o.from[1]; e.pos.z = o.from[2]; e.cstate.grounded = true; }
+          wakeUp(e, 0); e.busyUntil = now;
+          if (e.state === 'idle' || e.state === 'hidden' || e.state === 'suspicious') setState(e, 'alert');
+          const t = o.to ?? [P.pos.x, P.pos.y, P.pos.z];
+          e.scripted = { x: t[0], y: t[1], z: t[2], run: true }; goTo(e, t[0], t[1], t[2], 4.0);
+          e.lastKnown.x = P.pos.x; e.lastKnown.y = P.pos.y; e.lastKnown.z = P.pos.z; e.heardT = now;
+          break;
+        }
+        case 'investigate': {
+          const x = pos ? pos[0] : P.pos.x, y = pos ? pos[1] : P.pos.y, z = pos ? pos[2] : P.pos.z;
+          e.interest.x = x; e.interest.y = y; e.interest.z = z;
+          if (e.state === 'idle' || e.state === 'hidden') { becomeSuspicious(e); e.stateT = now - 1.6; }
+          else if (e.state === 'alert' || e.state === 'search' || e.state === 'suspicious') { e.lastKnown.x = x; e.lastKnown.y = y; e.lastKnown.z = z; if (e.state !== 'suspicious') { setState(e, 'search'); e.searchN = 0; e.wantMove = false; } }
+          break;
+        }
+        case 'assault': {
+          const x = pos ? pos[0] : P.pos.x, y = pos ? pos[1] : P.pos.y, z = pos ? pos[2] : P.pos.z;
+          e.lastKnown.x = x; e.lastKnown.y = y; e.lastKnown.z = z;
+          if (e.state === 'surrender' || e.state === 'combat') break;
+          becomeAlert(e, rng.range(0, 0.3));
+          setState(e, 'search'); e.searchN = 1; goTo(e, x, y, z, 3.2);
+          break;
+        }
+        default: break;
+      }
+    }
+  }
+
+  /** Director (checkpoint restore): remove an enemy silently — no body, no events */
+  function despawn(id) {
+    const e = list.find((q) => q.id === id); if (!e) return;
+    e.dead = true; e.health = 0; e.active = false; e.wantMove = false; e.weaponDropped = false; e.despawned = true;
+    if (e.coverIdx >= 0) { C.owner[e.coverIdx] = -1; e.coverIdx = -1; }
+  }
   function wake(ids) { for (const e of sel(ids)) if (!e.dead && e.state === 'idle') { e.interest.x = env.player.pos.x; e.interest.y = env.player.pos.y; e.interest.z = env.player.pos.z; becomeSuspicious(e); } }
   function spawn(ids) { for (const e of sel(ids)) e.active = true; }
   function setHold(ids, on = true) { for (const e of sel(ids)) e.hold = on; }
@@ -954,7 +1030,7 @@ export function createBrain(env, defs, opts = {}) {
   function say(id, kind) { const e = list.find((q) => q.id === id); if (e && !e.dead) voice(e, kind); }
   /** a staged moment fired: arm its ambushers, alert enemies bound to it */
   function trigger(momentId) {
-    for (const e of list) {
+    for (let li = 0; li < list.length; li++) { const e = list[li];
       if (e.def.trigger !== momentId || e.dead) continue;
       e.active = true;
       if (e.def.role === 'ambusher') ambush([e.id]); else alert([e.id]);
@@ -992,6 +1068,9 @@ const DEATH_HEAD_F = ['death_headshot', 'death_backward', 'death_slump'];
 const DEATH_HEAD_B = ['death_forward', 'death_headshot', 'death_slump'];
 const DEATH_COMPACT = ['death_slump'];
 const YAW_TRIES = [0, 0.5, -0.5, 1.0, -1.0];
+
+/** sqrt-hypot (Math.hypot allocates and is slow in V8) */
+export function hyp(a, b, c = 0) { return Math.sqrt(a * a + b * b + c * c); }
 
 export function wrap(a) { a %= Math.PI * 2; return a > Math.PI ? a - Math.PI * 2 : a < -Math.PI ? a + Math.PI * 2 : a; }
 

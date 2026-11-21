@@ -6,31 +6,32 @@
 import * as THREE from 'three';
 import { createDynamicMaterial, U } from '../render/materials.js';
 
-export function createCharacterMaterial(map, headBone, tint = [1, 1, 1]) {
+export function createCharacterMaterial(map, headInv, tint = [1, 1, 1]) {
   const m = createDynamicMaterial({ map, color: tint });
   m.name = 'S9Enemy';
-  m.uniforms.uHeadBone = { value: headBone };
+  m.uniforms.uHeadInv = { value: headInv };   // inverse bind matrix of the Head bone
+  m.uniforms.uPixelate = { value: 1 };   // settings.pixelateFaces
   m.vertexShader = m.vertexShader
-    .replace('varying vec3 vIrr;', 'uniform float uHeadBone; varying float vHead; varying vec3 vIrr;')
+    .replace('varying vec3 vIrr;', 'uniform mat4 uHeadInv; varying float vHead; varying vec3 vIrr;')
     .replace('vec4 wp = vec4(transformed, 1.0);', `vec4 wp = vec4(transformed, 1.0);
         #ifdef USE_SKINNING
-          vHead = dot(skinWeight, vec4(equal(skinIndex, vec4(uHeadBone))));
+          // rest pose in Head-bone space: above the chin line (y > -0.065 bone units) = head (hair, face, ears)
+          vec4 hp = uHeadInv * bindMatrix * vec4(position, 1.0);
+          vHead = step(-0.065, hp.y) * step(length(hp.xz), 0.16);
         #else
           vHead = 0.0;
         #endif`);
   m.fragmentShader = m.fragmentShader
-    .replace('varying vec3 vIrr;', 'varying float vHead; varying vec3 vIrr;')
+    .replace('varying vec3 vIrr;', 'uniform float uPixelate; varying float vHead; varying vec3 vIrr;')
     .replace('albedo *= texture(uMap, vUv).rgb;', `
-          // privacy mosaic (head): derivatives outside the branch, blocks ≈ 5 cm on screen
-          float mpp = length(fwidth(vWorld)) * 0.7071;
-          float blk = clamp(0.055 / max(mpp, 1e-5), 2.0, 48.0);
-          vec2 off = (floor(gl_FragCoord.xy / blk) + 0.5) * blk - gl_FragCoord.xy;
-          vec2 uvB = vUv + dFdx(vUv) * off.x + dFdy(vUv) * off.y;
-          vec3 irrB = vIrr + dFdx(vIrr) * off.x + dFdy(vIrr) * off.y;
-          float hm = step(0.5, vHead);
-          vec3 tx = mix(texture(uMap, vUv).rgb, textureLod(uMap, uvB, 4.5).rgb * 0.92, hm);
-          albedo *= tx;
-          vec3 irrUse = mix(vIrr, max(irrB, vec3(0.0)), hm);`)
+// privacy mosaic (head): the head's texture sampled on a coarse grid in atlas space (cells stay on
+          // the face island, move rigidly with the head; reads as a pixelated face at any distance)
+          float hm = step(0.5, vHead) * uPixelate;
+          vec2 uvQ = (floor(vUv * 12.0) + 0.5) / 12.0;
+          vec3 mos = textureLod(uMap, uvQ, 2.5).rgb;
+          mos = mix(vec3(dot(mos, vec3(0.3, 0.55, 0.15))), mos, 0.7);
+          albedo *= mix(texture(uMap, vUv).rgb, mos, hm);
+          vec3 irrUse = vIrr;`)
     .replace('vec3 c = albedo * (vIrr + dynLight(vWorld, normalize(vN))) + uEmissive;', `
         #ifdef USE_S9MAP
           vec3 c = albedo * (irrUse + dynLight(vWorld, normalize(vN))) + uEmissive;
@@ -78,6 +79,33 @@ export function createBlobMaterial() {
         float r = length(vP);
         float k = (1.0 - smoothstep(0.25, 1.0, r)) * 0.55;
         gl_FragColor = vec4(vec3(1.0 - k), 1.0);
+      }`,
+  });
+}
+
+/** visible torch beam (enemy flashlights; no extra dynamic light — the contract allows one): additive cone */
+export function createTorchMaterial() {
+  return new THREE.ShaderMaterial({
+    name: 'S9EnemyTorch',
+    uniforms: { uExposure: U.uExposure },
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+    vertexShader: /* glsl */`
+      varying float vT; varying vec3 vW; varying vec3 vN;
+      void main() {
+        vT = clamp(position.z / 7.0, 0.0, 1.0);
+        vec4 wp = modelMatrix * instanceMatrix * vec4(position, 1.0);
+        vW = wp.xyz; vN = normalize(mat3(modelMatrix * instanceMatrix) * normal);
+        gl_Position = projectionMatrix * viewMatrix * wp;
+      }`,
+    fragmentShader: /* glsl */`
+      uniform float uExposure;
+      varying float vT; varying vec3 vW; varying vec3 vN;
+      void main() {
+        vec3 V = normalize(cameraPosition - vW);
+        float edge = pow(1.0 - abs(dot(V, normalize(vN))), 1.5);   // soft volume look: fades at the silhouette
+        float near = smoothstep(0.8, 4.0, length(cameraPosition - vW));   // no full-screen wash when looking into it
+        float a = (1.0 - vT) * (1.0 - vT) * (1.0 - edge) * (1.0 - edge) * near * smoothstep(0.0, 0.06, vT) * 0.09;
+        gl_FragColor = vec4(vec3(1.0, 0.93, 0.8) * a * 1.6 * uExposure, 1.0);
       }`,
   });
 }

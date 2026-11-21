@@ -135,6 +135,9 @@ export function createAnimator(actor, lib, opts) {
     return set(e.turning ? 'walk' : c, c, false, e.turning ? 0.6 : 1);
   }
 
+  // create the common actions now (binding setup is the expensive part of a first play)
+  for (const n of ['idle', 'walk', 'run', 'sprint', 'crouch_walk', 'crouch_idle', WN.idle, WN.aim, WN.crouch, 'look_around']) { action('L', n); action('U', n); }
+
   return {
     mixer, B, st,
     get frozen() { return st.frozen; },

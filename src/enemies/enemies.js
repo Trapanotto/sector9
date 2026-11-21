@@ -11,8 +11,6 @@
 //   death|dying|taunt|plead|surprise, pos, zone}, d:nearmiss {id, enemy, point, dist}, d:step {id, enemy, pos, run},
 //   d:surrender {id, enemy}, d:executed {id, enemy} (shot while surrendered → debrief), d:state {id, enemy, from, to}.
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { url } from '../core/loader.js';
@@ -21,7 +19,7 @@ import { createBrain, WEAPONS } from './brain.js';
 import { buildCover } from './cover.js';
 import { makeFallClear, makeMasking } from './envkit.js';
 import { createAnimLib, createAnimator, updateActorWorld } from './anim.js';
-import { createCharacterMaterial, createWeaponMaterial, createBlobMaterial } from './look.js';
+import { createCharacterMaterial, createWeaponMaterial, createBlobMaterial, createTorchMaterial } from './look.js';
 
 const BASE = 'assets/chars/';
 const ATLAS = 512;          // character atlases are downscaled to fit D's texture budget (6 × 1.4 MB)
@@ -30,8 +28,9 @@ const KICK = { pistol: 0.05, smg: 0.03, shotgun: 0.12 };
 export function createEnemies(ctx) {
   const api = { id: 'enemies', order: ctx.ORDER.enemies, list: [] };
   const A = {};             // loaded assets
-  let brain = null, lib = null, blobs = null, masking = null;
+  let brain = null, lib = null, blobs = null, masking = null, torches = null;
   const weaponMeshes = {};  // model → InstancedMesh
+  const wmList = [];
   const actors = [];        // per enemy: { actor, lod0, lod1, anim, mat, skel, dirty, adt, … }
   const budget = { visible: 0, lod0: 0, draws: 0, tris: 0, animated: 0, cpuMs: 0, aiMs: 0 };
   api.budget = budget;
@@ -39,6 +38,8 @@ export function createEnemies(ctx) {
 
   // ---------------------------------------------------------------------------------------------------
   api.load = async (loader) => {
+    // dynamic like core's loader.gltf (one lazily loaded chunk, no build warning)
+    const [{ GLTFLoader }, { MeshoptDecoder }] = await Promise.all([import('three/examples/jsm/loaders/GLTFLoader.js'), import('three/examples/jsm/libs/meshopt_decoder.module.js')]);
     const gl = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     const parse = (bytes) => new Promise((res, rej) => gl.parse(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), url(BASE), res, rej));
     const [manifest, hit, weapons] = await Promise.all([
@@ -67,7 +68,8 @@ export function createEnemies(ctx) {
       const map = downscale(lod0.material.map, ATLAS);
       texBytes += ATLAS * ATLAS * 4 * 1.34;
       const headBone = lod0.skeleton.bones.findIndex((b) => b.name === 'Head');
-      vinfo[name] = { map, headBone, rs: v.def.rootScale, tris0: tri(lod0.geometry), tris1: tri(lod1.geometry), tris2: tri(v.scene.getObjectByName(v.def.lod2 ?? name + '_LOD2').geometry) };
+      const headInv = lod0.skeleton.boneInverses[headBone].clone();
+      vinfo[name] = { map, headBone, headInv, rs: v.def.rootScale, tris0: tri(lod0.geometry), tris1: tri(lod1.geometry), tris2: tri(v.scene.getObjectByName(v.def.lod2 ?? name + '_LOD2').geometry) };
       lod0.material.map?.dispose(); lod0.material.dispose();
     }
     ctx.render.trackTexture?.('enemies', texBytes);
@@ -84,7 +86,7 @@ export function createEnemies(ctx) {
       m.name = `enemyWeapons:${model}`; m.frustumCulled = false; m.count = 0;
       m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       m.userData.tris = tri(geo);
-      scene.add(m); weaponMeshes[model] = m;
+      scene.add(m); weaponMeshes[model] = m; wmList.push(m);
     }
     // contact-shadow blobs
     const bgeo = new THREE.PlaneGeometry(1, 1); bgeo.rotateX(-Math.PI / 2);
@@ -92,6 +94,13 @@ export function createEnemies(ctx) {
     blobs.name = 'enemyBlobs'; blobs.frustumCulled = false; blobs.count = 0; blobs.renderOrder = 1;
     blobs.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     scene.add(blobs);
+
+    // torch beams (director 'flashlight' stage): one instanced additive draw
+    const tgeo = new THREE.ConeGeometry(1.5, 7, 16, 1, true); tgeo.translate(0, -3.5, 0); tgeo.rotateX(-Math.PI / 2);
+    torches = new THREE.InstancedMesh(tgeo, createTorchMaterial(), 8);
+    torches.name = 'enemyTorches'; torches.frustumCulled = false; torches.count = 0; torches.renderOrder = 2;
+    torches.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    scene.add(torches);
 
     // brain + env adapter
     masking = makeMasking(W.gen.zoneIndex, W.zoneAt);
@@ -116,6 +125,7 @@ export function createEnemies(ctx) {
         return Math.min(1, lum / LIGHT_REF);
       },
       maskAt: (x, y, z) => masking.at(x, y, z),
+      playerMask: () => ctx.director?.masking ?? 0,   // F: loud machines near the player (0..1)
       doorOpen: (i) => { const r = W.doors.list[i]; return r.kind === 'swing' ? (r.t > 0.35 ? 1 : r.t) : r.t; },
       doorState: (i) => W.doors.list[i].state,
       openDoor: (i) => { const r = W.doors.list[i]; if (r.state === 'locked' || r.target > 0.5) return; doorByEnemy = true; W.doors.set(r.id, 'open'); doorByEnemy = false; },
@@ -136,7 +146,7 @@ export function createEnemies(ctx) {
       const lod0 = actor.getObjectByName(v.def.lod0), lod1 = actor.getObjectByName(v.def.lod1), lod2 = actor.getObjectByName(v.def.lod2 ?? vname + '_LOD2');
       lod1.bind(lod0.skeleton, lod1.bindMatrix); lod2.bind(lod0.skeleton, lod2.bindMatrix);
       const tint = e.def.tint ?? [1, 1, 1];
-      const mat = createCharacterMaterial(vi.map, vi.headBone, tint);
+      const mat = createCharacterMaterial(vi.map, vi.headInv, tint);
       for (const m of [lod0, lod1, lod2]) { m.material = mat; m.frustumCulled = false; m.matrixAutoUpdate = false; }
       lod1.visible = false; lod2.visible = false;
       actor.matrixWorldAutoUpdate = false;
@@ -148,6 +158,7 @@ export function createEnemies(ctx) {
       const model = WEAPONS[e.def.weapon]?.model ?? 'pistol';
       const wd = A.weapons[model];
       rec.wModel = model;
+      rec.tOff = new THREE.Matrix4().makeTranslation(...wd.muzzle);
       rec.wOff = new THREE.Matrix4().compose(new THREE.Vector3(...wd.offset.position), new THREE.Quaternion(...wd.offset.quaternion), new THREE.Vector3(1, 1, 1).multiplyScalar(1 / vi.rs));
       rec.hand = actor.getObjectByName('hand_r');
       rec.anim = createAnimator(actor, lib, { capsules: A.hit.capsules, rootScale: vi.rs, wanim: WEAPONS[e.def.weapon]?.anim ?? 'pistol', now: () => brain.now, fireKick: KICK[WEAPONS[e.def.weapon]?.anim] ?? 0.05 });
@@ -174,11 +185,11 @@ export function createEnemies(ctx) {
       if (Math.hypot(ctx.player.pos.x - x, ctx.player.pos.z - z) < 4) brain.noise(x, r.y0 + 1, z, r.kind === 'roller' ? 22 : 9, 'door', null);
     });
     ctx.events.on('machine:state', (m) => masking.onMachine(m));
-    ctx.events.on('trigger:enter', (t) => { if (t.first) brain.trigger(t.id); });
+    // staged moments: the director (F) drives timing through ambush()/alert()/stage(); trigger boxes alone wake nobody
     api.reset();
     // place everything once (and visible) so the shader warm-up compiles skinned + instanced programs
     for (const r of actors) { r.dirty = true; poseActor(r, 0.016, true); r.actor.visible = true; }
-    weaponMeshes.pistol.count = 1; blobs.count = 1;
+    weaponMeshes.pistol.count = 1; blobs.count = 1; torches.count = 1;
     budget.initMs = performance.now() - t0;
   };
 
@@ -226,7 +237,9 @@ export function createEnemies(ctx) {
   };
   api.alert = (ids, pos) => brain?.alert(ids, pos);
   api.alive = () => api.list.reduce((n, e) => n + (e.dead ? 0 : 1), 0);
-  api.ambush = (ids) => brain.ambush(ids);
+  api.ambush = (ids, playerPos) => brain.ambush(ids, playerPos);
+  api.stage = (id, behaviour, opts) => brain.stage(id, behaviour, opts ?? {});
+  api.despawn = (id) => { brain.despawn(id); const r = actors.find((q) => q.e.id === id); if (r) r.actor.visible = false; };
   api.wake = (ids) => brain.wake(ids);
   api.spawn = (ids) => brain.spawn(ids);
   api.hold = (ids, on = true) => brain.setHold(ids, on);
@@ -239,6 +252,7 @@ export function createEnemies(ctx) {
   const _m = new THREE.Matrix4(), _m2 = new THREE.Matrix4(), _fr = new THREE.Frustum(), _sph = new THREE.Sphere();
   const _p = new THREE.Vector3(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _e = new THREE.Euler();
   const order = new Int32Array(64), dist = new Float32Array(64);
+  let pixState = 1;
 
   /** place the actor root from the brain and (optionally) advance the animation */
   function poseActor(r, dt, animate) {
@@ -263,6 +277,8 @@ export function createEnemies(ctx) {
     if (!brain) return;
     const t0 = performance.now();
     const P = ctx.player, pl = api.env.player;
+    const pix = ctx.settings.data.pixelateFaces === false ? 0 : 1;
+    if (pix !== pixState) { pixState = pix; for (const r of actors) r.mat.uniforms.uPixelate.value = pix; }
     pl.crouched = P.crouched; pl.moving = P.moving; pl.dead = P.dead; pl.flashlight = P.flashlight;
     if (ctx.state === 'playing') brain.update(dt);
     const t1 = performance.now();
@@ -273,7 +289,7 @@ export function createEnemies(ctx) {
     let nv = 0;
     for (let i = 0; i < actors.length; i++) {
       const r = actors[i], e = r.e;
-      const lvl = e.active ? ctx.lod.level(e.pos.x, e.pos.y, e.pos.z) : 3;
+      const lvl = e.active && !e.despawned ? ctx.lod.level(e.pos.x, e.pos.y, e.pos.z) : 3;
       e.lod = lvl;
       let vis = lvl < 3;
       if (vis) { _sph.center.set(e.pos.x, e.pos.y + 0.9, e.pos.z); _sph.radius = e.dead || e.pose === 'lie' ? 1.6 : 1.1; vis = _fr.intersectsSphere(_sph); }
@@ -314,7 +330,7 @@ export function createEnemies(ctx) {
       // aim pitch toward the player's chest while aiming
       if (e.aiming) {
         const dx = P.pos.x - e.pos.x, dz = P.pos.z - e.pos.z;
-        e.aimPitch = Math.max(-0.7, Math.min(0.7, Math.atan2(P.pos.y + 1.2 - (e.pos.y + (e.crouch ? 1.0 : 1.42)), Math.hypot(dx, dz))));
+        e.aimPitch = Math.max(-0.7, Math.min(0.7, Math.atan2(P.pos.y + 1.2 - (e.pos.y + (e.crouch ? 1.0 : 1.42)), Math.sqrt(dx * dx + dz * dz))));
       } else e.aimPitch = 0;
       const adt = e.dead ? r.adt : Math.min(r.adt, 0.25);
       r.adt = 0;
@@ -323,14 +339,15 @@ export function createEnemies(ctx) {
       animated++;
     }
     // ---- instanced weapons and blobs for the visible set
-    for (const m of Object.values(weaponMeshes)) m.count = 0;
-    let nb = 0;
+    for (const m of wmList) m.count = 0;
+    let nb = 0, nt = 0;
     for (let k = 0; k < nv; k++) {
       const r = actors[order[k]], e = r.e;
       if (e.weaponOut && e.armed && !e.dead) {
         const wm = weaponMeshes[r.wModel];
         _m2.multiplyMatrices(r.hand.matrixWorld, r.wOff);
         wm.setMatrixAt(wm.count++, _m2);
+        if (e.flashlight && nt < 8) { _m2.multiply(r.tOff); torches.setMatrixAt(nt++, _m2); }
       }
       // blob
       if (r.blob) { _m2.compose(_p.set(r.blob.x, r.blob.y, r.blob.z), _q.setFromEuler(_e.set(0, r.blob.yaw, 0)), _s.set(r.blob.w, 1, r.blob.l)); }
@@ -355,8 +372,10 @@ export function createEnemies(ctx) {
       if (wm.count < 32) wm.setMatrixAt(wm.count++, r.dropM);
     }
     let draws = 0, wt = 0;
-    for (const m of Object.values(weaponMeshes)) { m.visible = m.count > 0; m.instanceMatrix.needsUpdate = m.count > 0; if (m.count) { draws++; wt += m.count * m.userData.tris; } }
+    for (const m of wmList) { m.visible = m.count > 0; m.instanceMatrix.needsUpdate = m.count > 0; if (m.count) { draws++; wt += m.count * m.userData.tris; } }
     blobs.count = nb; blobs.visible = nb > 0; blobs.instanceMatrix.needsUpdate = nb > 0;
+    torches.count = nt; torches.visible = nt > 0; torches.instanceMatrix.needsUpdate = nt > 0;
+    if (nt) draws++;
     if (nb) draws++;
     let ct = 0; for (let k = 0; k < nv; k++) { const r = actors[order[k]]; ct += r.lodSel === 0 ? r.vi.tris0 : r.lodSel === 1 ? r.vi.tris1 : r.vi.tris2; }
     budget.visible = nv; budget.lod0 = lod0n; budget.lod2 = 0; for (let k = 0; k < nv; k++) if (actors[order[k]].lodSel === 2) budget.lod2++; budget.draws = draws + nv; budget.tris = ct + wt + nb * 2; budget.animated = animated;

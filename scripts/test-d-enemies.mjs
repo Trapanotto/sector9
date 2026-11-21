@@ -57,6 +57,38 @@ export default async function ({ W, bvh, nav, LAYOUT, ok, warn }) {
   warn(deaths < 3, 'the bot died in every run: enemies may be unfair (bot is simple, so this is only a hint)');
   console.log(`  total ${((performance.now() - t0) / 1000).toFixed(2)} s`);
 
+  // ---- director hooks (F): stage / ambush / despawn behave as documented
+  {
+    const env = createSimEnv({ W, bvh, nav, LAYOUT });
+    const b = createBrain(env, defs, { seed: 5, proxyCaps: true });
+    env.setBrain(b); b.reset(5);
+    env.player.pos.x = 12; env.player.pos.z = 40; env.player.eye.x = 12; env.player.eye.y = 1.5; env.player.eye.z = 40;
+    const g = (id) => b.get(id);
+    b.stage('e07', 'surrender', { bait: true });
+    ok(g('e07').state === 'surrender' && g('e07').surrendered && g('e07').armed, 'stage surrender {bait}: surrendered but keeps a hidden weapon');
+    b.ambush(['e07'], env.player.pos);
+    ok(g('e07').state === 'combat' && !g('e07').surrendered, 'ambush() on a bait surrender: draws and fights');
+    b.stage('e13', 'wounded', {});
+    ok(g('e13').state === 'surrender' && g('e13').pose === 'kneel' && !g('e13').armed, 'stage wounded: kneels, unarmed');
+    b.ambush(['e13'], env.player.pos);
+    ok(g('e13').state === 'surrender', 'ambush() does not revive a real surrender');
+    ok(g('e08').state === 'hidden', 'ambusher e08 waits hidden until the director springs it');
+    b.ambush(['e08'], env.player.pos);
+    ok(g('e08').state === 'ambush', 'ambush() arms a hidden ambusher (waits for the player to pass)');
+    b.stage('e16', 'runner', { from: [50.1, 0, 20], to: [50.1, 0, 40] });
+    ok(g('e16').wantMove && g('e16').speedWant > 3, 'stage runner: running to its target');
+    b.stage('@x', 'flashlight', { on: true }); b.stage('e15', 'flashlight', { on: true });
+    ok(g('e15').flashlight, 'stage flashlight {on}');
+    b.stage('e05', 'investigate', { pos: [12, 0, 57] });
+    ok(g('e05').state === 'suspicious', 'stage investigate: suspicious, goes to look');
+    b.stage('e03', 'assault', { pos: [12, 0, 60] });
+    ok(g('e03').state === 'search' && g('e03').alerted, 'stage assault: alerted, moving in');
+    b.despawn('e21');
+    ok(g('e21').dead && !g('e21').active, 'despawn(): gone (checkpoint restore)');
+    for (let i = 0; i < 300; i++) b.update(1 / 30);
+    ok(b.list.every((e) => Number.isFinite(e.pos.x)), 'hooks: simulation stays finite');
+  }
+
   // ---- assets: hit capsules cover the top of the head (fixed head capsule)
   const hb = JSON.parse(readFileSync('public/assets/chars/hitboxes.json', 'utf8'));
   const head = hb.capsules.find((c) => c.part === 'head');

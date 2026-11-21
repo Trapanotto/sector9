@@ -4,6 +4,8 @@
 // Queries rank candidates cheaply and validate the best few with real line-of-sight rays. Owner: D.
 import { F_OCC } from '../world/gen.js';
 
+const hyp = (a, b) => Math.sqrt(a * a + b * b);
+
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const CELL = 4;
 
@@ -64,8 +66,9 @@ export function findCover(C, s, los, e, ex, ey, ez, tx, ty, tz, mode, selfId, ma
     if (mode === 'flee') return p;
     // peek check: stand up over low cover, or step out sideways from high cover
     if (!high) { B.y = py + 1.55; if (los(A, B)) return p; continue; }
-    const dx = tx - px, dz = tz - pz, l = Math.hypot(dx, dz) || 1;
-    for (const sgn of [1, -1]) {
+    const dx = tx - px, dz = tz - pz, l = hyp(dx, dz) || 1;
+    for (let si = 0; si < 2; si++) {
+      const sgn = si ? -1 : 1;
       B.x = px - dz / l * 0.7 * sgn; B.z = pz + dx / l * 0.7 * sgn; B.y = py + 1.5;
       if (los(A, B)) { s.side = sgn; return p; }
     }
@@ -76,7 +79,7 @@ export function findCover(C, s, los, e, ex, ey, ez, tx, ty, tz, mode, selfId, ma
 function rankCover(C, s, e, ex, ey, ez, tx, ty, tz, mode, selfId, maxR) {
   const best = s.best, score = s.score, K = best.length;
   let cnt = 0;
-  const dT0 = Math.hypot(ex - tx, ez - tz);
+  const dT0 = hyp(ex - tx, ez - tz);
   const ci0 = Math.floor((ex - maxR - C.x0) / C.cell), ci1 = Math.floor((ex + maxR - C.x0) / C.cell);
   const cj0 = Math.floor((ez - maxR - C.z0) / C.cell), cj1 = Math.floor((ez + maxR - C.z0) / C.cell);
   for (let cj = Math.max(0, cj0); cj <= Math.min(C.H - 1, cj1); cj++) for (let ci = Math.max(0, ci0); ci <= Math.min(C.W - 1, ci1); ci++) {
@@ -87,9 +90,9 @@ function rankCover(C, s, e, ex, ey, ez, tx, ty, tz, mode, selfId, maxR) {
       const py = C.y[p];
       if (Math.abs(py - ey) > 1.0) continue;
       const px = C.x[p], pz = C.z[p];
-      const dE = Math.hypot(px - ex, pz - ez);
+      const dE = hyp(px - ex, pz - ez);
       if (dE > maxR) continue;
-      const dx = tx - px, dz = tz - pz, dT = Math.hypot(dx, dz);
+      const dx = tx - px, dz = tz - pz, dT = hyp(dx, dz);
       if (dT < 3.5) continue;
       // a blocking side must face the threat
       const ux = dx / dT, uz = dz / dT, b = C.bits[p];
