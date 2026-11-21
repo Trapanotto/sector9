@@ -72,8 +72,8 @@ const PAGE = /* js */`async (SIZE, LAYERS, PHOTO) => {
       const p = (u * 4) % 1;   // one pitch
       // profile: crest 0.0-0.18, web 0.18-0.3, valley 0.3-0.88, web 0.88-1.0
       let h, shade;
-      if (p < 0.18) { h = 1; shade = 1.06; } else if (p < 0.3) { h = 1 - (p - 0.18) / 0.12; shade = 0.80; }
-      else if (p < 0.88) { h = 0; shade = 0.97 + 0.03 * Math.sin((p - 0.3) / 0.58 * 3.14 * 3); } else { h = (p - 0.88) / 0.12; shade = 1.12; }
+      if (p < 0.18) { h = 1; shade = 1.03; } else if (p < 0.3) { h = 1 - (p - 0.18) / 0.12; shade = 0.90; }
+      else if (p < 0.88) { h = 0; shade = 0.97 + 0.03 * Math.sin((p - 0.3) / 0.58 * 3.14 * 3); } else { h = (p - 0.88) / 0.12; shade = 1.06; }
       const streak = fbm(5, 4, u * 0.25, v) * 0.6 + fbm2(4, 4, u * 8, v * 0.5) * 0.4;   // vertical run-off streaks
       const dirt = cl((v - 0.55) * 1.2) * 0.12 + (streak - 0.5) * 0.16;
       const c = 0.72 * shade - dirt;
@@ -126,16 +126,23 @@ const PAGE = /* js */`async (SIZE, LAYERS, PHOTO) => {
       return [c, c, c * 0.98, bar ? 1 : 0, bar ? 0.5 : 0.9];
     }, 10),
     // painted / powder-coated steel: subtle orange-peel, scratches and chips to bare metal, edge grime
-    paint: () => proc((u, v) => {
-      const n = fbm(6, 4, u, v), peel = fbm2(3, 32, u, v);
-      let c = 0.80 + (n - 0.5) * 0.06;
-      const scr = Math.abs(Math.sin((u * 0.8 + v * 0.3) * 90 + fbm2(2, 4, u, v) * 40)) > 0.995 && fbm(3, 8, u, v) > 0.55;
-      const chip = fbm2(5, 8, u + 0.3, v) > 0.8;
-      if (chip || scr) c = 0.55;
-      const grime = cl((0.15 - v) * 4) * 0.12;
-      return [c - grime, c - grime, c - grime, chip ? 0.3 : 0.5 + peel * 0.05, chip || scr ? 0.45 : 0.55 + n * 0.1];
-    }, 3),
-    flat: () => proc((u, v) => { const n = fbm(6, 4, u, v); const c = 0.8 + (n - 0.5) * 0.1; return [c, c, c, n, 0.7 + n * 0.2]; }, 1),
+    paint: () => {
+      // sparse short straight scratches (precomputed segments) + small chips to primer
+      const segs = []; for (let k = 0; k < 90; k++) { const x = rnd(), y = rnd(), a = (rnd() - 0.5) * 0.8 + (rnd() < 0.5 ? 0 : 1.57), l = 0.01 + rnd() * 0.06; segs.push([x, y, Math.cos(a) * l, Math.sin(a) * l]); }
+      const scrMap = new Float32Array(SIZE * SIZE);
+      for (const [x, y, dx, dy] of segs) for (let t = 0; t <= 1; t += 0.5 / (Math.hypot(dx, dy) * SIZE)) {
+        const px = Math.floor(((x + dx * t) % 1 + 1) % 1 * SIZE), py = Math.floor(((y + dy * t) % 1 + 1) % 1 * SIZE); scrMap[py * SIZE + px] = 1;
+      }
+      return proc((u, v) => {
+        const n = fbm(6, 4, u, v), peel = fbm2(3, 32, u, v);
+        let c = 0.80 + (n - 0.5) * 0.07;
+        const scr = scrMap[Math.min(SIZE - 1, Math.floor(v * SIZE)) * SIZE + Math.min(SIZE - 1, Math.floor(u * SIZE))] > 0;
+        const chip = fbm2(5, 16, u + 0.3, v) > 0.82;
+        if (chip) c = 0.5; else if (scr) c = 0.68;
+        const grime = cl((0.15 - v) * 4) * 0.1;
+        return [c - grime, c - grime, c - grime, chip ? 0.3 : 0.5 + peel * 0.04, chip ? 0.6 : scr ? 0.35 : 0.5 + n * 0.1];
+      }, 3);
+    },    flat: () => proc((u, v) => { const n = fbm(6, 4, u, v); const c = 0.8 + (n - 0.5) * 0.1; return [c, c, c, n, 0.7 + n * 0.2]; }, 1),
   };
   const out = [];
   for (const name of LAYERS) {

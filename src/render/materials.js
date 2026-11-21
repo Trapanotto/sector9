@@ -51,7 +51,8 @@ export const U = {
   uLayerInv: { value: new Float32Array(MAX_LAYERS * 4) },// per layer: 1/mean rgb (texture → mean 1), 1/mean lum
   uEnvCur: { value: null }, uEnvAvg: { value: 0.3 },     // camera-zone environment (blended), its mean luminance
   uSpec: { value: 1 },                                   // global specular strength (tier)
-  uMacro: { value: new THREE.Vector2(13, 1) },           // anti-tiling noise layer index, its 1/mean luminance
+  uMacro: { value: new THREE.Vector2(13, 1) },
+  uFloorMask: { value: null }, uFloorXf: { value: new THREE.Vector4(-16, -16, 1 / 128, 1 / 126) },   // ground-floor paint/grime/tyre mask           // anti-tiling noise layer index, its 1/mean luminance
 };
 
 const COMMON = /* glsl */`
@@ -155,6 +156,8 @@ export function createStaticMaterial() {
       uniform sampler2DArray uMatA, uMatN;
       uniform float uMatDetail;
       uniform vec2 uMacro;
+      uniform sampler2D uFloorMask;
+      uniform vec4 uFloorXf;
       varying vec3 vAlbedo; varying vec2 vLmUv; varying vec3 vVl; varying float vCirc; varying vec3 vEmit;
       varying vec3 vWorld; varying vec3 vN; varying float vDist;
       flat varying vec4 vSurf; flat varying float vLumInv;
@@ -182,6 +185,12 @@ export function createStaticMaterial() {
         } else {
           rough = clamp(vSurf.w + (1.0 - macro) * 0.8, 0.05, 1.0);   // dirtier patches are rougher
         }
+        // ground floor: painted lines / dock hatching (worn), contact grime, tyre marks (generated floor mask)
+        vec4 fm = texture(uFloorMask, (vWorld.xz - uFloorXf.xy) * uFloorXf.zw) * ((n.y > 0.5 && abs(vWorld.y) < 0.25) ? 1.0 : 0.0);
+        float paint = fm.r * clamp(macro * 1.6 - 0.45 + (tex.g * vLumInv - 1.0), 0.0, 1.0);
+        vec3 paintC = mix(vec3(0.60, 0.40, 0.025), vec3(0.62, 0.62, 0.60), fm.b);
+        albedo = mix(albedo * (1.0 - fm.g * 0.42) * (1.0 - fm.a * 0.55), paintC * (1.0 - fm.g * 0.3), paint);
+        rough = clamp(mix(rough, 0.95, fm.g * 0.5) - fm.a * 0.2 + paint * 0.05, 0.05, 1.0);
         vec3 V = normalize(cameraPosition - vWorld);
         float nv = max(dot(N, V), 1e-3);
         // specular: camera-zone env cube × analytic BRDF, occluded where the baked light is darker than the env
@@ -392,7 +401,7 @@ export async function loadMaterials(ctx, loader, manifest) {
       t.format = THREE.RGBAFormat; t.type = THREE.UnsignedByteType;
       t.wrapS = t.wrapT = THREE.RepeatWrapping;
       t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter; t.generateMipmaps = true;
-      t.anisotropy = Math.min(detail ? 8 : 4, ctx.render.renderer.capabilities.getMaxAnisotropy());
+      t.anisotropy = Math.min(detail ? 8 : tier.id === 'vlow' ? 2 : 4, ctx.render.renderer.capabilities.getMaxAnisotropy());
       if (k === 'a') t.colorSpace = THREE.SRGBColorSpace;
       t.needsUpdate = true; t.name = `mat_${k}`;
       arrays[k] = t;
@@ -401,6 +410,10 @@ export async function loadMaterials(ctx, loader, manifest) {
     U.uMatA.value = arrays.a;
     if (arrays.n) U.uMatN.value = arrays.n;
     U.uMatDetail.value = detail ? 1 : 0;
+  } catch (e) { console.warn('[materials] layers not loaded:', e.message); }
+  try {
+    if (ctx.world?.gen) { U.uFloorMask.value = buildFloorMask(ctx.world.gen); ctx.render.trackTexture('floorMask', FM.w * FM.h * 4 * 1.34); }
+    U.uFloorXf.value.set(FM.x0, FM.z0, 1 / (FM.w * FM.res), 1 / (FM.h * FM.res));
   } catch (e) { console.warn('[materials] layers not loaded:', e.message); }
   // baked environment cubes (per zone, day + art)
   try {
@@ -415,6 +428,102 @@ export async function loadMaterials(ctx, loader, manifest) {
     }
   } catch (e) { console.warn('[materials] env not loaded:', e.message); }
   done();
+}
+
+// ------------------------------------------------------------------------------------------------------------
+// Ground-floor "floor mask" generated from the level at load: R = paint coverage, G = grime (contact dirt along
+// walls/racks + patchy wear), B = paint colour (0 yellow, 1 white), A = tyre marks. 0.125 m over the whole site.
+const FM = { x0: -16, z0: -16, res: 0.125, w: 1024, h: 1008 };
+function buildFloorMask(gen) {
+  const { w, h, res, x0, z0 } = FM, n = w * h;
+  const R = new Float32Array(n), Gd = new Float32Array(n), B = new Float32Array(n), A = new Float32Array(n), occ = new Float32Array(n);
+  let seed = 12345;
+  const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  const cx = (x) => Math.floor((x - x0) / res), cz = (z) => Math.floor((z - z0) / res);
+  const fill = (arr, xa, za, xb, zb, v, mode = 0) => {
+    const i0 = Math.max(0, cx(xa)), i1 = Math.min(w - 1, cx(xb)), j0 = Math.max(0, cz(za)), j1 = Math.min(h - 1, cz(zb));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const k = j * w + i; arr[k] = mode ? Math.max(arr[k], v) : v; }
+  };
+  // occupancy of everything standing on the ground floor
+  const racks = new Map();
+  for (const b of gen.boxes) {
+    if (!b.render || b.min[1] > 0.3 || b.max[1] < 0.05 || b.min[1] < -0.5) continue;
+    if (b.cls === 'arch' && b.max[1] - b.min[1] < 0.4) continue;   // slabs themselves
+    fill(occ, b.min[0], b.min[2], b.max[0], b.max[2], 1);
+    if (b.group === 'rack' && b.tag) {
+      const r = racks.get(b.tag) ?? [Infinity, Infinity, -Infinity, -Infinity];
+      r[0] = Math.min(r[0], b.min[0]); r[1] = Math.min(r[1], b.min[2]); r[2] = Math.max(r[2], b.max[0]); r[3] = Math.max(r[3], b.max[2]);
+      racks.set(b.tag, r);
+    }
+  }
+  // contact grime: blurred occupancy (separable box blur, 2 passes ≈ Gaussian ~0.5 m)
+  const blur = (src, dst, rad) => {
+    const tmp = new Float32Array(n);
+    for (let pass = 0; pass < 2; pass++) {
+      const s = pass ? dst : src;
+      for (let j = 0; j < h; j++) { let acc = 0; for (let i = -rad; i < w + rad; i++) { if (i + rad < w) acc += s[j * w + i + rad] ?? 0; if (i - rad - 1 >= 0) acc -= s[j * w + i - rad - 1]; if (i >= 0 && i < w) tmp[j * w + i] = acc / (2 * rad + 1); } }
+      for (let i = 0; i < w; i++) { let acc = 0; for (let j = -rad; j < h + rad; j++) { if (j + rad < h) acc += tmp[(j + rad) * w + i]; if (j - rad - 1 >= 0) acc -= tmp[(j - rad - 1) * w + i]; if (j >= 0 && j < h) dst[j * w + i] = acc / (2 * rad + 1); } }
+    }
+  };
+  blur(occ, Gd, 3);
+  // aisle lines: yellow, 0.1 m wide, 0.2 m in front of the long sides of each rack run
+  for (const r of racks.values()) {
+    const alongZ = r[3] - r[1] > r[2] - r[0];
+    if (alongZ) { fill(R, r[0] - 0.3, r[1], r[0] - 0.2, r[3], 1); fill(R, r[2] + 0.2, r[1], r[2] + 0.3, r[3], 1); }
+    else { fill(R, r[0], r[1] - 0.3, r[2], r[1] - 0.2, 1); fill(R, r[0], r[3] + 0.2, r[2], r[3] + 0.3, 1); }
+  }
+  // dock bays: yellow/black hatching 3.5 m deep inside every roller door at ground level; white edge lines
+  for (const d of gen.doors ?? []) {
+    if (d.kind !== 'roller' || d.y0 > 0.3) continue;
+    const ax = d.axis === 'x' ? 0 : 2;
+    for (const side of [-1, 1]) {
+      const p = [0, 0.5, 0], q = [0, 0.5, 0];
+      p[ax] = (d.a + d.b) / 2; p[2 - ax] = d.at + side * 2;
+      if (gen.zoneLookup.at(p[0], p[1], p[2]) < 0 || gen.zones[gen.zoneLookup.at(p[0], p[1], p[2])].acoustic === 'outdoor') continue;
+      const a0 = d.a - 0.3, a1 = d.b + 0.3, t0 = d.at + side * (d.th / 2 + 0.05), t1 = d.at + side * (d.th / 2 + 3.5);
+      const tl = Math.min(t0, t1), th = Math.max(t0, t1);
+      const i0 = cx(ax === 0 ? a0 : tl), i1 = cx(ax === 0 ? a1 : th), j0 = cz(ax === 0 ? tl : a0), j1 = cz(ax === 0 ? th : a1);
+      for (let j = Math.max(0, j0); j <= Math.min(h - 1, j1); j++) for (let i = Math.max(0, i0); i <= Math.min(w - 1, i1); i++) {
+        const edge = i - i0 < 1 || i1 - i < 1 || j - j0 < 1 || j1 - j < 1;
+        const diag = ((i + j) * res) % 1.0 < 0.5;
+        if (edge || diag) { R[j * w + i] = 1; B[j * w + i] = edge ? 1 : 0; }
+      }
+      void q;
+    }
+  }
+  // tyre marks: forklift track pairs along the main directions in the halls, curving near the ends
+  for (let k = 0; k < 160; k++) {
+    let x = 30 + rnd() * 64, z = 2 + rnd() * 60;
+    if (k < 40) { x = 2 + rnd() * 25; z = 38 + rnd() * 25; }   // goods-in
+    const alongZ = rnd() < 0.65, len = 6 + rnd() * 18, curve = (rnd() - 0.5) * 0.12, str = 0.25 + rnd() * 0.5;
+    let ang = alongZ ? (rnd() < 0.5 ? 0 : Math.PI) : (rnd() < 0.5 ? Math.PI / 2 : -Math.PI / 2);
+    for (let s = 0; s < len; s += res * 0.7) {
+      ang += curve * res * 0.7 * (s > len * 0.7 ? 4 : 0.3);
+      const dx = Math.sin(ang), dz = Math.cos(ang);
+      x += dx * res * 0.7; z += dz * res * 0.7;
+      for (const off of [-0.55, 0.55]) {
+        const px = x + dz * off, pz = z - dx * off, i = cx(px), j = cz(pz);
+        if (i < 1 || j < 1 || i >= w - 1 || j >= h - 1 || occ[j * w + i] > 0) continue;
+        const fade = Math.min(1, s / 2, (len - s) / 2) * str;
+        A[j * w + i] = Math.max(A[j * w + i], fade); A[j * w + i + 1] = Math.max(A[j * w + i + 1], fade * 0.6);
+      }
+    }
+  }
+  // pack (+ patchy wear noise into G)
+  const out = new Uint8Array(n * 4);
+  const grid = new Float32Array(66 * 66); for (let i = 0; i < grid.length; i++) grid[i] = rnd();
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    const k = j * w + i;
+    const u = i / w * 64, v = j / h * 64, iu = u | 0, iv = v | 0, fu = u - iu, fv = v - iv;
+    const nz = (grid[iv * 66 + iu] * (1 - fu) + grid[iv * 66 + iu + 1] * fu) * (1 - fv) + (grid[(iv + 1) * 66 + iu] * (1 - fu) + grid[(iv + 1) * 66 + iu + 1] * fu) * fv;
+    const grime = occ[k] > 0 ? 0 : Math.min(1, Gd[k] * 1.6) * (0.6 + 0.6 * nz) + Math.max(0, nz - 0.6) * 0.5;
+    out[k * 4] = Math.round(R[k] * 255); out[k * 4 + 1] = Math.round(Math.min(1, grime) * 255);
+    out[k * 4 + 2] = Math.round(B[k] * 255); out[k * 4 + 3] = Math.round(Math.min(1, A[k]) * 255);
+  }
+  const t = new THREE.DataTexture(out, w, h, THREE.RGBAFormat, THREE.UnsignedByteType);
+  t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter; t.generateMipmaps = true;
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.anisotropy = 4; t.needsUpdate = true; t.name = 'floorMask';
+  return t;
 }
 
 /** per frame: blend the current env cube towards the camera zone's (day + art × circuit level) */

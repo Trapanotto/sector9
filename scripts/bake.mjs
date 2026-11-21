@@ -602,17 +602,28 @@ function worker() {
   }
 
   const hD = [0, 0, 0], hA = [0, 0, 0], art = [0, 0, 0], q = [0, 0, 0];
+  const qc = [0, 0, 0];
   function direct(i) {
-    const x = buf.sPos[i * 3], y = buf.sPos[i * 3 + 1], z = buf.sPos[i * 3 + 2];
+    let x = buf.sPos[i * 3], y = buf.sPos[i * 3 + 1], z = buf.sPos[i * 3 + 2];
     const valid = !insideOcc(x, y, z);
     buf.valid[i] = valid ? 1 : 0;
     const nx = buf.sNrm[i * 3], ny = buf.sNrm[i * 3 + 1], nz = buf.sNrm[i * 3 + 2];
     const f = faces[buf.sFace[i]];
-    // jitter extent inside the texel (lightmap) or around the corner (vertex)
+    // jitter extent: inside the texel (lightmap); vertex corners integrate DIRECT light over their quarter of
+    // the face (a sun spot on one corner of an 8 m rack upright must not smear a gradient over the whole face)
     let hu, hv;
-    if (i < kV) { hu = (f.u1 - f.u0) / f.lmRect[2] * 0.5; hv = (f.v1 - f.v0) / f.lmRect[3] * 0.5; } else { hu = hv = 0.02; }
+    let NS = P.sunSamples;
+    if (i < kV) { hu = (f.u1 - f.u0) / f.lmRect[2] * 0.5; hv = (f.v1 - f.v0) / f.lmRect[3] * 0.5; }
+    else {
+      const qd = (i - kV) & 3;   // corner order (u0,v0),(u1,v0),(u1,v1),(u0,v1)
+      hu = (f.u1 - f.u0) * 0.25; hv = (f.v1 - f.v0) * 0.25;
+      qc[f.axis] = f.plane + (f.pos ? 0.01 : -0.01);
+      qc[f.ua] = qd === 0 || qd === 3 ? f.u0 + hu : f.u1 - hu; qc[f.va] = qd < 2 ? f.v0 + hv : f.v1 - hv;
+      x = qc[0]; y = qc[1]; z = qc[2];
+      if (Math.max(hu, hv) > 0.3) NS = Math.max(NS, 16);
+    }
     const rnd = rngFor(i * 2654435761 + 11);
-    const NS = P.sunSamples, gx = Math.ceil(Math.sqrt(NS));
+    const gx = Math.ceil(Math.sqrt(NS));
     const cs = nx * sd[0] + ny * sd[1] + nz * sd[2];
     let sunAcc = 0, sunN = 0;
     if (cs > 0) {

@@ -110,6 +110,7 @@ export function createCompositeMaterial() {
         // grade: neutral, slightly muted colour, firm blacks (no lift, no tint)
         C *= 0.9;
         Y = max(Y - 0.012, 0.0) * 1.013;
+        float Yc = clamp(Y, 0.0, 1.0); Y = mix(Y, Yc * Yc * (3.0 - 2.0 * Yc), 0.3);   // gentle S-curve: denser shadows, punchier mids
         vec3 rgb = vec3(Y + 1.402 * C.y, Y - 0.344 * C.x - 0.714 * C.y, Y + 1.772 * C.x);
         rgb = clamp(rgb, 0.0, 1.0);
 

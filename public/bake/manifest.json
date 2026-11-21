@@ -2,7 +2,7 @@
  "format": "sector9-bake",
  "version": 3,
  "hash": "a6c3898f",
- "created": "2026-11-21T11:35:38.067Z",
+ "created": "2026-11-21T11:48:41.759Z",
  "quick": false,
  "params": {
   "sunSamples": 9,
@@ -1438,40 +1438,40 @@
  },
  "files": {
   "lm_day.bin": {
-   "bytes": 2423097,
+   "bytes": 2419461,
    "raw": 7995392
   },
   "lm_art.bin": {
-   "bytes": 2142586,
+   "bytes": 2142923,
    "raw": 7995392
   },
   "vlight.bin": {
-   "bytes": 1036738,
+   "bytes": 1022680,
    "raw": 1369504
   },
   "probes.bin": {
-   "bytes": 2182300,
+   "bytes": 2175497,
    "raw": 3735324
   },
   "env.bin": {
-   "bytes": 374342,
+   "bytes": 375724,
    "raw": 602112
   }
  },
  "stats": {
   "keller_treppe": {
    "texels": 3631,
-   "meanDay": 0.2523,
-   "meanArt": 0.1494,
-   "maxDay": 5.038,
-   "geoMean": 0.2065
+   "meanDay": 0.2517,
+   "meanArt": 0.1499,
+   "maxDay": 5.035,
+   "geoMean": 0.2066
   },
   "keller_treppe_h": {
    "texels": 4293,
    "meanDay": 0.0181,
-   "meanArt": 0.1218,
+   "meanArt": 0.1222,
    "maxDay": 0.188,
-   "geoMean": 0.0952
+   "geoMean": 0.0956
   },
   "technik": {
    "texels": 30420,
@@ -1483,49 +1483,49 @@
   "tunnel": {
    "texels": 11096,
    "meanDay": 0.0008,
-   "meanArt": 0.1851,
+   "meanArt": 0.1927,
    "maxDay": 0.017,
-   "geoMean": 0.1382
+   "geoMean": 0.1463
   },
   "geld": {
    "texels": 10996,
    "meanDay": 0.0001,
-   "meanArt": 0.0416,
+   "meanArt": 0.0417,
    "maxDay": 0.013,
-   "geoMean": 0.0326
+   "geoMean": 0.0328
   },
   "buero": {
    "texels": 12235,
-   "meanDay": 0.0345,
+   "meanDay": 0.0344,
    "meanArt": 0.0345,
-   "maxDay": 1.085,
-   "geoMean": 0.0578
+   "maxDay": 1.081,
+   "geoMean": 0.0577
   },
   "leitstand": {
    "texels": 12697,
-   "meanDay": 0.0462,
-   "meanArt": 0.0383,
-   "maxDay": 1.252,
+   "meanDay": 0.0461,
+   "meanArt": 0.0384,
+   "maxDay": 1.248,
    "geoMean": 0.068
   },
   "flur_og": {
    "texels": 19236,
-   "meanDay": 0.0033,
+   "meanDay": 0.0032,
    "meanArt": 0.061,
-   "maxDay": 0.119,
-   "geoMean": 0.0458
+   "maxDay": 0.103,
+   "geoMean": 0.0457
   },
   "schlafen": {
    "texels": 21708,
-   "meanDay": 0.0746,
+   "meanDay": 0.0726,
    "meanArt": 0.0149,
-   "maxDay": 6.056,
-   "geoMean": 0.0278
+   "maxDay": 6.052,
+   "geoMean": 0.0266
   },
   "umkleide": {
    "texels": 13974,
    "meanDay": 0.0012,
-   "meanArt": 0.0276,
+   "meanArt": 0.0277,
    "maxDay": 0.009,
    "geoMean": 0.0187
   },
@@ -1533,7 +1533,7 @@
    "texels": 26499,
    "meanDay": 0.0642,
    "meanArt": 0.0302,
-   "maxDay": 6.011,
+   "maxDay": 6.01,
    "geoMean": 0.0508
   },
   "sozial": {
@@ -1547,14 +1547,14 @@
    "texels": 17396,
    "meanDay": 0.0024,
    "meanArt": 0.0254,
-   "maxDay": 1.057,
-   "geoMean": 0.0182
+   "maxDay": 1.054,
+   "geoMean": 0.0183
   },
   "treppe_w": {
    "texels": 27017,
-   "meanDay": 0.164,
+   "meanDay": 0.1639,
    "meanArt": 0.0296,
-   "maxDay": 4.773,
+   "maxDay": 4.772,
    "geoMean": 0.0628
   },
   "packerei": {
@@ -1566,190 +1566,190 @@
   },
   "wareneingang": {
    "texels": 115199,
-   "meanDay": 0.519,
+   "meanDay": 0.5185,
    "meanArt": 0.0856,
-   "maxDay": 6.362,
-   "geoMean": 0.3076
+   "maxDay": 6.361,
+   "geoMean": 0.3069
   },
   "steg": {
    "texels": 18463,
-   "meanDay": 0.0624,
-   "meanArt": 0.2435,
-   "maxDay": 1.213,
-   "geoMean": 0.2299
+   "meanDay": 0.0621,
+   "meanArt": 0.2453,
+   "maxDay": 1.209,
+   "geoMean": 0.2316
   },
   "halle_n": {
    "texels": 29188,
-   "meanDay": 0.1655,
-   "meanArt": 0.1622,
+   "meanDay": 0.1653,
+   "meanArt": 0.1638,
    "maxDay": 4.377,
-   "geoMean": 0.2345
+   "geoMean": 0.2363
   },
   "halle_m": {
    "texels": 15856,
-   "meanDay": 0.1044,
-   "meanArt": 0.2448,
+   "meanDay": 0.1035,
+   "meanArt": 0.2464,
    "maxDay": 5.946,
-   "geoMean": 0.2942
+   "geoMean": 0.2949
   },
   "halle_s": {
    "texels": 58210,
-   "meanDay": 0.3594,
-   "meanArt": 0.1673,
-   "maxDay": 7.043,
-   "geoMean": 0.3072
+   "meanDay": 0.362,
+   "meanArt": 0.1684,
+   "maxDay": 7.041,
+   "geoMean": 0.3104
   },
   "gang0_n": {
    "texels": 17574,
-   "meanDay": 0.0203,
-   "meanArt": 0.1016,
+   "meanDay": 0.0204,
+   "meanArt": 0.1013,
    "maxDay": 0.093,
-   "geoMean": 0.0864
+   "geoMean": 0.0861
   },
   "gang0_s": {
    "texels": 24292,
-   "meanDay": 0.0479,
-   "meanArt": 0.1099,
-   "maxDay": 0.526,
-   "geoMean": 0.1181
+   "meanDay": 0.0481,
+   "meanArt": 0.1095,
+   "maxDay": 0.527,
+   "geoMean": 0.1178
   },
   "gang1_n": {
    "texels": 7087,
-   "meanDay": 0.0582,
-   "meanArt": 0.173,
-   "maxDay": 5.826,
-   "geoMean": 0.1962
+   "meanDay": 0.0587,
+   "meanArt": 0.1745,
+   "maxDay": 5.825,
+   "geoMean": 0.1973
   },
   "gang1_s": {
    "texels": 7191,
    "meanDay": 0.06,
-   "meanArt": 0.1653,
+   "meanArt": 0.1667,
    "maxDay": 5.866,
-   "geoMean": 0.1938
+   "geoMean": 0.1945
   },
   "gang2_n": {
    "texels": 7591,
-   "meanDay": 0.068,
-   "meanArt": 0.1776,
-   "maxDay": 6.081,
-   "geoMean": 0.1995
+   "meanDay": 0.0687,
+   "meanArt": 0.1785,
+   "maxDay": 6.082,
+   "geoMean": 0.2
   },
   "gang2_s": {
    "texels": 7272,
-   "meanDay": 0.1265,
-   "meanArt": 0.1749,
+   "meanDay": 0.1266,
+   "meanArt": 0.1761,
    "maxDay": 6.099,
-   "geoMean": 0.2214
+   "geoMean": 0.2215
   },
   "gang3_n": {
    "texels": 7581,
-   "meanDay": 0.0563,
-   "meanArt": 0.1839,
-   "maxDay": 5.828,
-   "geoMean": 0.2062
+   "meanDay": 0.0569,
+   "meanArt": 0.185,
+   "maxDay": 5.829,
+   "geoMean": 0.2068
   },
   "gang3_s": {
    "texels": 7702,
-   "meanDay": 0.0973,
-   "meanArt": 0.1779,
-   "maxDay": 5.863,
-   "geoMean": 0.2074
+   "meanDay": 0.0976,
+   "meanArt": 0.1788,
+   "maxDay": 5.864,
+   "geoMean": 0.2078
   },
   "gang4_n": {
    "texels": 7349,
-   "meanDay": 0.0845,
-   "meanArt": 0.1837,
+   "meanDay": 0.0835,
+   "meanArt": 0.1849,
    "maxDay": 5.897,
-   "geoMean": 0.222
+   "geoMean": 0.2212
   },
   "gang4_s": {
    "texels": 7538,
-   "meanDay": 0.1588,
-   "meanArt": 0.1802,
+   "meanDay": 0.1598,
+   "meanArt": 0.1812,
    "maxDay": 5.92,
-   "geoMean": 0.2347
+   "geoMean": 0.2357
   },
   "gang5_n": {
    "texels": 7727,
-   "meanDay": 0.0524,
-   "meanArt": 0.1796,
+   "meanDay": 0.0529,
+   "meanArt": 0.181,
    "maxDay": 5.829,
-   "geoMean": 0.1992
+   "geoMean": 0.2
   },
   "gang5_s": {
    "texels": 7754,
    "meanDay": 0.0976,
-   "meanArt": 0.1718,
-   "maxDay": 5.869,
-   "geoMean": 0.2015
+   "meanArt": 0.1726,
+   "maxDay": 5.868,
+   "geoMean": 0.2012
   },
   "gang6_n": {
    "texels": 7741,
-   "meanDay": 0.0713,
-   "meanArt": 0.1749,
+   "meanDay": 0.0726,
+   "meanArt": 0.1764,
    "maxDay": 5.874,
-   "geoMean": 0.2034
+   "geoMean": 0.2057
   },
   "gang6_s": {
    "texels": 7440,
-   "meanDay": 0.1102,
-   "meanArt": 0.1699,
-   "maxDay": 5.927,
-   "geoMean": 0.2071
+   "meanDay": 0.109,
+   "meanArt": 0.1705,
+   "maxDay": 5.926,
+   "geoMean": 0.2054
   },
   "gang7_n": {
    "texels": 7276,
-   "meanDay": 0.0414,
-   "meanArt": 0.1694,
-   "maxDay": 5.95,
-   "geoMean": 0.1849
+   "meanDay": 0.0405,
+   "meanArt": 0.1712,
+   "maxDay": 5.949,
+   "geoMean": 0.1853
   },
   "gang7_s": {
    "texels": 7358,
-   "meanDay": 0.1148,
-   "meanArt": 0.1654,
-   "maxDay": 5.958,
-   "geoMean": 0.197
+   "meanDay": 0.1139,
+   "meanArt": 0.1664,
+   "maxDay": 5.957,
+   "geoMean": 0.1965
   },
   "gang8_n": {
    "texels": 10536,
-   "meanDay": 0.0424,
+   "meanDay": 0.0418,
    "meanArt": 0.085,
    "maxDay": 4.222,
-   "geoMean": 0.085
+   "geoMean": 0.0842
   },
   "gang8_s": {
    "texels": 14640,
-   "meanDay": 0.0558,
-   "meanArt": 0.1059,
-   "maxDay": 4.106,
-   "geoMean": 0.1049
+   "meanDay": 0.0559,
+   "meanArt": 0.1056,
+   "maxDay": 4.107,
+   "geoMean": 0.1051
   },
   "buehne": {
    "texels": 8104,
-   "meanDay": 0.3781,
-   "meanArt": 0.1924,
+   "meanDay": 0.378,
+   "meanArt": 0.1926,
    "maxDay": 4.313,
-   "geoMean": 0.3268
+   "geoMean": 0.327
   },
   "auto_n": {
    "texels": 36150,
    "meanDay": 0.0541,
-   "meanArt": 0.1302,
+   "meanArt": 0.1305,
    "maxDay": 5.903,
-   "geoMean": 0.0888
+   "geoMean": 0.089
   },
   "auto_s": {
    "texels": 38720,
-   "meanDay": 0.081,
-   "meanArt": 0.2106,
+   "meanDay": 0.0812,
+   "meanArt": 0.211,
    "maxDay": 5.919,
-   "geoMean": 0.2516
+   "geoMean": 0.2523
   },
   "akl": {
    "texels": 59771,
    "meanDay": 0.001,
-   "meanArt": 0.004,
+   "meanArt": 0.0042,
    "maxDay": 0.211,
    "geoMean": 0.0007
   },
@@ -1762,46 +1762,46 @@
   },
   "roboter": {
    "texels": 19553,
-   "meanDay": 0.0701,
-   "meanArt": 0.0462,
+   "meanDay": 0.0704,
+   "meanArt": 0.0463,
    "maxDay": 2.912,
-   "geoMean": 0.0929
+   "geoMean": 0.0932
   },
   "versand": {
    "texels": 38107,
-   "meanDay": 0.6401,
-   "meanArt": 0.1048,
+   "meanDay": 0.6417,
+   "meanArt": 0.1049,
    "maxDay": 5.901,
-   "geoMean": 0.2822
+   "geoMean": 0.2837
   },
   "hof": {
    "texels": 42227,
-   "meanDay": 5.9858,
-   "meanArt": 0.0049,
-   "maxDay": 7.647,
-   "geoMean": 5.7913
+   "meanDay": 5.9879,
+   "meanArt": 0.005,
+   "maxDay": 7.646,
+   "geoMean": 5.7935
   },
   "west": {
    "texels": 15113,
-   "meanDay": 5.0866,
+   "meanDay": 5.0858,
    "meanArt": 0.0001,
    "maxDay": 6.405,
-   "geoMean": 5.0188
+   "geoMean": 5.0181
   },
   "nord": {
    "texels": 26410,
-   "meanDay": 1.3927,
+   "meanDay": 1.3901,
    "meanArt": 0.0002,
-   "maxDay": 5.94,
-   "geoMean": 1.2217
+   "maxDay": 5.939,
+   "geoMean": 1.219
   },
   "ost": {
    "texels": 21258,
-   "meanDay": 1.4697,
+   "meanDay": 1.5015,
    "meanArt": 0,
-   "maxDay": 5.898,
-   "geoMean": 1.1459
+   "maxDay": 5.9,
+   "geoMean": 1.1811
   }
  },
- "seconds": 58.5
+ "seconds": 95.7
 }
