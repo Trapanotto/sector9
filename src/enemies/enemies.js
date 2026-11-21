@@ -385,7 +385,7 @@ export function createEnemies(ctx) {
   };
 
   // head (bone origin at the skull base) → face centre ≈ 9 cm above; ellipse radius 0.2 m (whole head + hair)
-  const _eye = new THREE.Vector3(), _hp = new THREE.Vector3();
+  const _eye = new THREE.Vector3(), _hp = new THREE.Vector3(), _sp = new THREE.Vector3();
   const _losA = { x: 0, y: 0, z: 0 }, _losB = { x: 0, y: 0, z: 0 };
   const FACE_R = 0.2, FACE_MAX_D = 40;
   function faceMosaic(pix) {
@@ -397,6 +397,14 @@ export function createEnemies(ctx) {
       cam.updateMatrixWorld();
       _eye.setFromMatrixPosition(cam.matrixWorld);
       const tanV = Math.tan(cam.fov * Math.PI / 360);
+      // the first-person gun is drawn after the world without depth the composite could test: never mosaic the
+      // sights (aiming at a head) — the head's own texture mosaic still covers that face
+      const vm = ctx.weapon?.vm;
+      let sx = 9, sy = 9, mx = 9, my = 9;
+      if (vm?.ready && vm.visible) {
+        vm.toWorldLens(vm.rearSight, cam, _sp).project(cam); sx = _sp.x * 0.5 + 0.5; sy = _sp.y * 0.5 + 0.5;
+        vm.toWorldLens(vm.muzzle, cam, _sp).project(cam); mx = _sp.x * 0.5 + 0.5; my = _sp.y * 0.5 + 0.5;
+      }
       for (let k = 0; k < nvLast && n < cu.uFaces.value.length; k++) {
         const r = actors[order[k]];
         const hm = r.anim.B?.head?.matrixWorld; if (!hm) continue;
@@ -408,8 +416,11 @@ export function createEnemies(ctx) {
         _hp.project(cam);
         if (_hp.z > 1 || Math.abs(_hp.x) > 1.3 || Math.abs(_hp.y) > 1.3) continue;
         // radius in source uv (0..1 of the frame height); generous for motion between pose updates
-        const ry = Math.min(0.25, (FACE_R / Math.max(0.3, d)) / tanV * 0.5 * 1.15);
-        cu.uFaces.value[n++].set(_hp.x * 0.5 + 0.5, _hp.y * 0.5 + 0.5, ry / cam.aspect, ry);
+        const ry = Math.min(0.25, (FACE_R / Math.max(0.3, d)) / tanV * 0.5 * 1.15), rx = ry / cam.aspect;
+        const fx = _hp.x * 0.5 + 0.5, fy = _hp.y * 0.5 + 0.5;
+        const inS = ((sx - fx) / rx) ** 2 + ((sy - fy) / ry) ** 2 < 1.7, inM = ((mx - fx) / rx) ** 2 + ((my - fy) / ry) ** 2 < 1.7;
+        if (inS || inM) continue;
+        cu.uFaces.value[n++].set(fx, fy, rx, ry);
       }
     }
     cu.uFaceN.value = n;
