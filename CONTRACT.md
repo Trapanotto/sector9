@@ -1,120 +1,223 @@
-# SECTOR 9 — module contract
+# SECTOR 9 v2 — binding contract for the parallel workstreams
 
-Original single-player bodycam-style tactical FPS for the browser. Setting: abandoned factory, overcast daylight.
-One mission: clear the building of armed hostiles, then reach extraction. One or two hits kill (both sides), die-and-retry.
-It is an ORIGINAL game: do not use the name, logo, characters, levels or story of any existing game.
+Original bodycam-style tactical FPS (German UI). A lone police officer clears a drug gang's logistics depot by day.
+This document is **binding**: interfaces, file ownership, update order, events and budgets. If you need something
+that is not here, add it in *your own* files behind the interfaces below, or ask the integration lead to amend
+this contract. Never edit another workstream's files.
 
-Stack: Vite + `three@0.170` (npm, ES modules, `three/addons/...` for examples). WebGL2 `WebGLRenderer`. No other dependencies.
-Units: metres, Y up, right-handed. Player eye height 1.68 standing. UI text in German, code/comments in English.
+- Run: `npm install`, `npm run dev` (port 5173; agents use their own port, e.g. `npx vite --port 5181`).
+- Bake (after ANY change to architecture, props, machines' static frames, lights, surfaces): `npm run bake` (~45 s,
+  all cores) — commit `public/bake/*`. `npm run bake:quick` for iteration (≈7 s, noisier; never commit it — the test warns).
+- Test: `npm test` (Node, < 2 s). Must pass before every commit. `npx vite build` must stay warning-free.
+- Browser checks (throwaway InPrivate headless profile): `node scripts/browser-check.mjs bench|shots|tour|walk|script`.
+- Automation: `window.__ctx` is the shared context; set `window.__fakeLock = true` to play without pointer lock;
+  `await __ctx.dev.autopilot(__ctx.dev.tour)` walks the whole level with the real controller; `__bench.run()`.
 
-Already written, do not edit (read them first): `index.html`, `src/main.js`, `src/core/input.js`, `src/core/combat.js`.
-`main.js` builds a shared `ctx` and calls every module's factory with it. Read sibling modules from `ctx` lazily
-(inside functions, at call time), never at creation time: creation order is
-game → audio → level → pipeline → fx → combat → player → enemies.
+---------------------------------------------------------------------------------------------------------------------
 
-`ctx = { renderer, scene, camera, input, game, audio, level, pipeline, fx, combat, player, enemies }`
+## 1. Workstreams and file ownership
 
-Per frame (main.js): `player.update, enemies.update` (only while `game.state === 'playing'`), then
-`level.update, fx.update, audio.update, game.update, pipeline.render`, then `input.endFrame()`.
+| WS | Scope | Owns (create/edit freely) | Entry factory (keep name + file) |
+|----|-------|---------------------------|----------------------------------|
+| core | engine, loop, ctx, input, settings, loader, perf HUD, combat, collision, nav, raycasts, PVS/visibility, doors, glass, triggers, light-circuit runtime, layout skeleton, tests | `src/main.js`, `src/core/**`, `src/render/pipeline.js`, `src/world/{gen,bvh,nav,collision,world,doors,probes,lmpack}.js`, `src/world/layout/{index,dsl,site}.js`, `scripts/test.mjs`, `scripts/browser-check.mjs`, `index.html`, `vite.config.js`, `package.json`, `CONTRACT.md` | — |
+| **A** | world art, props, machines & their animation | `src/world/layout/{props,proptypes,machines}.js`, `src/world/machines.js`, `src/world/art/**` (new), `public/assets/world/**`, `scripts/test-a-*.mjs` | `createMachines(ctx)` in `src/world/machines.js` |
+| **B** | bake quality, materials, post look, sky, exposure, quality tiers tuning | `scripts/bake.mjs`, `src/render/{materials,composite,sky,osd,exposure,quality}.js`, `src/world/skymodel.js`, `src/world/layout/{lights,surfaces}.js`, `public/bake/**` (generated), `public/assets/materials/**`, `scripts/test-b-*.mjs` | (modules are imported by core; keep exported names) |
+| **C** | player controller, first-person arms/hands + weapon (authored models), weapon FX, impacts/decals | `src/player/**`, `src/fx/**`, `public/assets/viewmodel/**`, `public/assets/fx/**`, `scripts/test-c-*.mjs` | `createPlayer`, `createWeapon` (`src/player/player.js`, `weapon.js`), `createFx` (`src/fx/fx.js`) |
+| **D** | enemies: rigged CC0 characters, animation, AI, enemy roster | `src/enemies/**`, `src/world/layout/actors.js`, `public/assets/characters/**`, `scripts/test-d-*.mjs` | `createEnemies(ctx)` in `src/enemies/enemies.js` |
+| **E** | audio from CC0 recordings, voices/screams, zone acoustics | `src/audio/**`, `public/assets/audio/**`, `scripts/test-e-*.mjs` | `createAudio(ctx)` in `src/audio/audio.js` |
+| **F** | director (staged moments), mission flow, German UI | `src/director/**`, `src/ui/**` (new), `src/world/layout/moments.js`, `scripts/test-f-*.mjs` | `createDirector(ctx)` in `src/director/director.js` |
 
-Each owner writes ONLY inside its own folder. Exact exports and shapes below are binding; extra fields are fine.
+Shared rules
+- `CREDITS.md`: everyone appends (append-only, one section per workstream). **Only CC0 third-party assets**; record
+  source URL, author, licence, local path. Never put personal data (names, e-mails) into requests to outside services.
+- Layout geometry in `site.js` (walls, floors, openings, zones) is core-owned. A/F/D request changes; core applies
+  them, re-bakes and re-tests. A may add/move props and machine frames in its own layout files, then must run
+  `npm run bake && npm test` and commit the bake.
+- `public/bake/*` is generated. On merge conflicts never merge the binaries: take either side and **re-bake**.
+- Stubs in A, C, D, E, F are placeholders: replace their *contents*, keep the factory name, the ctx properties and
+  the events listed below.
 
-## src/render/pipeline.js — `createPipeline(ctx)` (owner: render)
-Owns all post-processing and the bodycam OSD inside `#overlay`. `renderer.toneMapping` etc. are yours to set.
-```
-{ render(dt), setSize(w, h),
-  addTrauma(amount 0..1),        // camera-shake/glitch energy, decays by itself (shots, hits, landing)
-  flash(amount 0..1),            // sensor over-exposure burst (muzzle flash), decays fast
-  damage(amount 0..1),           // red/desaturated hit vignette pulse
-  setDead(bool),                 // death look: camera on the floor look is done by player; here desaturate/blur/signal loss
-  setMenu(bool),                 // true: softer/blurred "standby" look behind menus
-  quality: 'low'|'medium'|'high', setQuality(q) }
-```
-The pipeline must NOT move the camera; the player owns the camera transform. Shake that is purely image-space is fine.
+## 2. Coordinates and conventions
 
-## src/world/ — `createLevel(ctx, onProgress(p 0..1, label))` async (owner: world)
-Builds geometry, materials, lights, sky/environment, fog and adds them to `ctx.scene`. Also owns `scripts/fetch-assets.mjs`
-and everything under `public/assets/`.
-```
-{ colliders: THREE.Box3[],            // static, axis-aligned solids (walls, crates, machines). Floors are NOT colliders.
-  raycastMeshes: THREE.Object3D[],    // everything bullets and line-of-sight should hit (incl. floors/ceilings); keep it lean
-  surfaceOf(object3D) -> 'concrete'|'metal'|'wood',   // reads object.userData.surface up the parent chain, default 'concrete'
-  groundHeight(x, z) -> number,       // floor y at this position (0 on the main floor; supports ramps/stairs/platforms if any)
-  playerSpawn: { position: Vector3 (feet), yaw: number },   // yaw 0 looks toward -Z
-  enemySpawns: [{ position: Vector3 (feet), yaw, patrol?: Vector3[], type?: 'guard'|'patrol' }],   // 8–10 spawns
-  navGraph: { nodes: Vector3[], edges: [number, number][] },   // walkable waypoint graph covering all rooms/doorways
-  coverPoints: Vector3[],             // spots next to solid cover
-  extraction: THREE.Box3,             // reach this after all hostiles are down
-  bounds: THREE.Box3,
-  update(dt) }                        // flickering lights, dust, swaying cables
-```
-All walls must be axis-aligned boxes so AABB collision works. Doorways ≥ 1.1 m wide, ceilings ≥ 3 m. Tag meshes with `userData.surface`.
+- Metres. `+x` east, `+y` up, `+z` south. Building interior `x 0..96, z 0..64`, ground floor top `y = 0`,
+  mezzanine floor `y 4.5`, basement floor `y -3.7`. Yaw: `0` faces north (`-z`), `+π/2` west, `π` south, `-π/2` east
+  (three.js `rotation.y`, camera order `YXZ`).
+- Greybox and gameplay truth are **axis-aligned boxes** (AABB). Collision, nav, bullets, PVS and the bake all use
+  them. Visual art may be anything (A swaps visuals in place), but must keep the proxy footprint.
+- Prop instances rotate in quarter turns `r = 0..3`. Proxy box lists live in `proptypes.js`.
+- Zones: `LAYOUT.zones[i]` `{ id, name (German), acoustic, circuit, parts[[x0,y0,z0,x1,y1,z1]] }`; the first zone
+  containing a point owns it. Acoustic classes: `outdoor, hall_large, hall_medium, room_large, room_small,
+  corridor, stairwell, basement, cold_store`.
+- Surfaces (`surfaces.js`): `SURF[name] = { color, impact }`. `impact` is what raycasts report as `surface`
+  (`concrete, metal, wood, cardboard, plastic, glass, plaster, tile, dirt, rubber, fabric, flesh`).
 
-## src/audio/audio.js — `createAudio(ctx)` (owner: fxaudio)
-Fully procedural WebAudio (no audio files). Positional via PannerNode, listener follows `ctx.camera`.
-```
-{ resume(),                                   // call on first user gesture
-  play(name, { position?: Vector3, volume?: number, pitch?: number }),
-  update(dt), setMuffled(bool), setMasterVolume(v) }
-```
-Names: `shot`, `shot_enemy`, `dry`, `reload_out`, `reload_in`, `slide`, `step_concrete`, `step_metal`, `land`,
-`impact_concrete`, `impact_metal`, `impact_wood`, `impact_flesh`, `hurt`, `death`, `body_fall`, `shell`, `shout`, `radio`, `ui_click`.
-Unknown names must be a silent no-op. Also runs a looping ambience bed (wind, distant hum, room tone) once resumed.
-Everything should sound like it was recorded by a cheap bodycam mic: compressed, clipped loud transients, slight band-limit.
+## 3. The level (`src/world/layout/*`)
 
-## src/fx/effects.js — `createEffects(ctx)` (owner: fxaudio)
-Pooled, allocation-free in steady state.
-```
-{ impact(point, normal, surface),     // dust puff, sparks on metal, bullet-hole decal, debris
-  blood(point, dir),                  // spray particles + wall/floor splatter decals behind the hit along dir
-  bloodPool(position),                // slowly growing pool decal under a body
-  muzzleFlash(position, dir),         // short point-light flash + sprite + smoke wisp
-  tracer(from, to),                   // very subtle, 1–2 frames
-  shell(position, dir),               // ejected casing with simple bounce, plays 'shell'
-  update(dt), reset() }
-```
+Fictional "Logistikzentrum Hafenstraße", fenced site `x -16..112, z -16..110` (128 × 126 m), building 96 × 64 m.
 
-## src/player/player.js — `createPlayer(ctx)` (owner: player)
-Owns the camera transform, movement, AABB collision against `level.colliders`, the weapon and the first-person viewmodel
-(arms + pistol, parented to `ctx.camera`).
-```
-{ position: Vector3 (feet), velocity: Vector3, height: number (current, 1.8 standing / 1.2 crouched),
-  eye: Vector3 (world camera position), yaw, pitch,
-  alive: boolean, health: number (100),
-  ammo: number, reserve: number, magSize: number,
-  isAiming: boolean, noise: number (0..1 current loudness, for AI hearing),
-  update(dt), takeDamage(amount, dirVector3), reset() }
-```
-Shooting: `ctx.combat.fire({ origin, dir, from: 'player', damage })`; then `ctx.enemies.alertNoise(position, radius)`,
-`ctx.fx.muzzleFlash/shell`, `ctx.audio.play('shot')`, `ctx.pipeline.addTrauma/flash`.
-On death call `ctx.game.onPlayerDeath()`. Use `ctx.input` (see input.js) — only act while `ctx.input.locked`.
-Keys: WASD move, Shift sprint, C or Ctrl crouch, Q/E lean, mouse look, LMB fire, RMB aim, R reload, F flashlight.
+| Area | Zone ids | Size / notes |
+|---|---|---|
+| Yard (start at the gate, trailers at docks, containers, guard booth) | `hof`, `west`, `nord`, `ost` | player spawn `(45, 0, 107.5)` facing north; extraction van north side `x 72..82, z -13..-4` |
+| Goods-in, 3 dock roller doors (Tor 2 open), stair to basement | `wareneingang` | 28 × 28 m, 8 m high, skylights |
+| Gang packing area (packing tables, bricks), under-mezz + double height | `packerei` | 28 × 24 m |
+| Lab (cutting/"kitchen"), social room, gang storage | `labor`, `sozial`, `lager_w` | under the mezzanine, 4.2 m high |
+| Mezzanine: cash room, office, control room (window + door onto the catwalk), corridor, sleeping corner, lockers | `geld`, `buero`, `leitstand`, `flur_og`, `schlafen`, `umkleide`, `treppe_w` | floor y 4.5 |
+| Racking hall: 14 single runs (7 double rows), 8 m racks, 3.2 m aisles, 3 cross aisles, catwalk at y 4.5 | `halle_n/m/s`, `gang0..8_n/s`, `steg` | 44 × 64 m, 12 m high, 9 skylights + high windows; rack gaps = crawl/flank routes |
+| Automation: conveyor loop + sorter (elevated crossings you can walk under), AGV loop, platform + stair | `auto_n`, `auto_s`, `buehne` | 12 × 48 m |
+| High-bay store with stacker crane | `akl` | 12 × 34 m, 11 levels |
+| Palletising robot cell (mesh fence) | `roboter` | 12 × 14 m |
+| Shipping (2 docks, Tor 5 half open = crawl entry), cold store | `versand`, `kuehl` | |
+| Basement: technical room, supply tunnel linking goods-in and the hall | `technik`, `tunnel`, `keller_treppe(_h)` | floor y -3.7, no daylight |
 
-## src/enemies/enemies.js — `createEnemies(ctx)` (owner: enemies)
-```
-{ list: Enemy[], aliveCount: number,
-  update(dt), reset(),                              // reset respawns everyone at level.enemySpawns
-  raycast(origin, dir, maxDist) -> { enemy, point: Vector3, distance, part: 'head'|'torso'|'limb' } | null,   // alive enemies only
-  alertNoise(position, radius) }
-Enemy: { position: Vector3 (feet), alive, state, takeDamage(amount, part, dir, point) }
-```
-Enemy shooting: `ctx.combat.fire({ origin, dir, from: 'enemy', damage })`, plus `fx.muzzleFlash`, `audio.play('shot_enemy', {position})`.
-Sight checks: `ctx.combat.lineOfSight(a, b)`. On each death call `ctx.game.onEnemyDeath(enemy)` and `ctx.fx.bloodPool(pos)`.
+Routes from the yard: open dock Tor 2, side door west, personnel door south, half-open Tor 5 (crouch), north
+emergency exit. Inside: hall ↔ goods-in passage, packing ↔ hall door, storage ↔ hall door, catwalk control room ↔
+platform, partition door + big opening hall ↔ automation, basement tunnel goods-in ↔ hall.
 
-## src/game/game.js — `createGame(ctx)` (owner: fxaudio)
-Created FIRST (before level exists). Owns everything inside `#ui`: loading screen, main menu, pause, death, mission-complete, minimal HUD.
-```
-{ state: 'loading'|'menu'|'playing'|'paused'|'dead'|'complete',
-  setLoading(p, label), ready(),
-  update(dt), onPlayerDeath(), onEnemyDeath(enemy) }
-```
-Start/resume: `ctx.audio.resume()`, `ctx.input.requestLock()`. Losing pointer lock while playing → paused.
-Restart: `ctx.player.reset(); ctx.enemies.reset(); ctx.fx.reset()`. Mission complete when `enemies.aliveCount === 0`
-and the player stands inside `level.extraction`. HUD is deliberately minimal (bodycam footage has no HUD): ammo only
-briefly after reload/when checking, objective text fading in/out, hostiles-remaining only on the pause screen.
+Data available (all in `LAYOUT`, `src/world/layout/index.js`): `zones`, `arch`, `props` + `propTypes` + `raw`
+(racks/AKL/pipes), `conveyors`, `sorter`, `agvRoutes`, `agvs`, `cranes`, `robots`, `sun`, `sky`, `circuits`,
+`fixtures` (light fixtures with circuit), `playerSpawn`, `enemies` (22: id, role guard/patrol/sleeper/ambusher,
+pos, yaw, weapon, patrol waypoints, trigger), `moments` (10 staged moments with trigger boxes and beat briefs),
+`extraction`, `benchViews` (7 heaviest views). Generated (`generateWorld(LAYOUT)` → `ctx.world.gen`): `boxes`,
+`faces`, `glass` (42 panes), `doors` (25, with kind swing/roller/slide and state), `openings`, `lm`, `hash`.
 
-## Working rules for all owners
-- Other modules are being written in parallel by other agents; they may not exist yet. Do not create or edit files outside your folder(s).
-- Do not start the dev server and do not run `npm install`. Verify with `node --check <file>` on each of your files, and re-read your code against this contract.
-- Keep it fast: target 60 fps at 1080p on a mid-range GPU. Share geometries/materials, use InstancedMesh for repeated props.
-- Guard every cross-module call that could run before the other module exists (`ctx.fx?.blood(...)`).
+## 4. ctx — the shared context (`window.__ctx`)
+
+| Property | Owner | Content |
+|---|---|---|
+| `layout`, `events`, `settings`, `input`, `time {now, dt, frame, mission}`, `state`, `setState(s)`, `restart()`, `ORDER`, `debug {allZones, god}`, `dev`, `perf`, `lod`, `combat`, `timings` | core | see §5–§7 |
+| `render` | core/B | `{ renderer, gl, scene, camera, vmScene, vmCamera, composite, U, stats, resolution, trackTexture(name, bytes) }` |
+| `quality` | B | `{ tier {id,name,…}, mode, scale, gpu, setMode(mode) }` |
+| `exposure` | B | `{ value, target, avgLum, gain, frozen }` |
+| `world` | core | §6 |
+| `machines` | A | `agv(id) {dispatch(), stop(), state}`, `conveyor(id) {start(), stop(), state}`, `robot(id) {start(), stop()}`, `crane(id)`, lists `agvs, conveyors, robots, cranes` |
+| `player` | C | `pos {x,y,z}` (feet), `vel`, `yaw`, `pitch`, `eye` (Vector3), `forward` (Vector3), `health`, `dead`, `crouched`, `moving` (m/s), `flashlight` (bool), `teleport([x,y,z], yaw, pitch, freeze)`; hittable (`kind 'player'`, `team 'police'`) |
+| `weapon` | C | `ammo`, `reserve`, `reloading` |
+| `fx` | C | `impact(res)`, `blood(point, dir, amount)`, `muzzle()` |
+| `enemies` | D | `list[]` (each: `id, def, pos (Vector3), yaw, health, dead, alerted, lod`), `alert(ids|null, pos)`, `alive()` |
+| `audio` | E | `play(id, opts)`, `playAt(id, pos, opts)`, `unlock()`, `setVolume(v)` |
+| `director` | F | free; must drive `setState` transitions and the UI |
+
+Game states: `boot → loading → menu ⇄ playing ⇄ paused`, `playing → dead | done → menu` (F decides). Modules
+check `ctx.state` themselves in `update`.
+
+## 5. Module factory, update order, frame
+
+```js
+export function createX(ctx) { return {
+  id: 'x', order: ctx.ORDER.x,
+  async load(loader) {},   // optional: fetch/build assets (loader.json/bin/gltf/texture/step) — during loading screen
+  init() {},               // optional: after all loads, before shader warm-up (register hittables, add meshes)
+  update(dt) {},           // every frame; dt seconds (clamped 0.1)
+  reset() {},              // mission restart (die-and-retry)
+}; }
+```
+Per frame (src/core/app.js): `director 10 → player 20 → weapon 30 → enemies 40 → machines 50 → world 60 (visibility,
+circuits, doors, triggers) → fx 70 → audio 80 → exposure 90 → render (scene + view model → composite) → input.endFrame()`.
+All meshes/materials must exist by the end of `init()` so `render.warmup()` compiles every shader before the menu
+(**no shader compiles during play**; tier switches change uniforms/targets only).
+
+## 6. World API (`ctx.world`, core)
+
+- `worldHit(o, d, maxDist, out, opts?)` → bool. `o, d` `{x,y,z}` (d normalised). `out = { hit, t, point, normal,
+  surface, kind: 'static'|'door'|'glass'|'dynamic', id, box, zone, owner }`. Default mask = bullet blockers;
+  `opts.ignoreGlass`. Allocation-free; reuse `out`.
+- `lineOfSight(a, b)` → bool (static opaque geometry and closed doors block; glass and mesh fences don't).
+- `groundHeight(x, z, refY, r = 0)` → highest solid top ≤ refY under the point/disc (`-Infinity` if none).
+- `collision.move(pos, d, {radius, height, step}, state)`, `collision.blocked(...)`, `collision.addDynamic(min, max,
+  owner)` → record `{min, max, enabled, owner}` (owner `{kind, id, surface, shoot, sight}`) — AGVs, doors, glass, …
+- `nav` (0.5 m layered grid): `nearest(x,y,z)`, `findPath(a, b, outInt32)` (reversed node ids), `nodeX/nodeZ(k)`,
+  `nodeY[k]`, `nodeZone[k]`, `nodeDoor[k]`, `doorBlocked[doorIndex]`, `reachable(a)`.
+- `zoneAt(x,y,z)` → index; `zoneId(i)`; `cameraZone`; `zoneVisible` (Uint8Array, PVS this frame);
+  `isZoneVisible(i)`; `isPointVisible(x,y,z)`; `addZoneObject(obj, zone)` (A: merged art per zone follows PVS).
+- `doors.get(id)`, `doors.set(id, 'open'|'closed'|'half'|'locked', {speed, instant})`, `doors.use(x,y,z,fx,fz)`, `doors.list`.
+- `glass.break(id, point)`, `glass.list`.
+- `lights.setCircuit(id, level, fadeSeconds, flicker)`, `lights.level(id)`, `lights.ids` — circuits:
+  `halle, auto, west_eg, og, keller, kuehl, aussen` (baked ART lightmap/probe layer × level; emissive lamps follow).
+- `triggers.list` (moment boxes + extraction), `probes.sample(x,y,z,out)` (baked light: `r,g,b` day L0,
+  `ar,ag,ab` artificial L0, `dx,dy,dz` dominant direction, `sun` visibility) — CPU, allocation-free.
+- `gen` — the generated greybox (boxes/faces/glass/doors/zones/hash).
+
+Combat (`ctx.combat`, core): `register(h)` / `unregister(h)` with `h = { id, kind, team, raycast(o, d, maxT, part) → t|-1
+(set part.name 'head'|'torso'|'legs'|…), onHit(res) }`; `fire({ origin, dir, range, damage, shooter, team })` → shared
+result `{ hit, t, point, normal, surface, kind, id, target, part, damage, shooter, origin, dir, glassBroken }`. Breakable
+glass on the way shatters and the bullet continues. LOD helpers (`ctx.lod`): `level(x,y,z)` 0 < 15 m, 1 < 40 m,
+2 far, 3 PVS-culled; `animStep(index, level)` → update this actor's skeleton this frame? (staggered, tier-aware).
+
+## 7. Events (`ctx.events.on/once/off/emit`, synchronous; payloads are reused — copy what you keep)
+
+| Event | Payload | Emitted by |
+|---|---|---|
+| `state` | `{from, to}` | core (`setState`) |
+| `load:progress` | `{p, label}` | core loader |
+| `quality:change` | tier | B |
+| `mission:restart` | `{}` | core (`restart`) |
+| `trigger:enter` / `trigger:exit` | `{id, def, first}` | core (player feet in a moment/extraction box) |
+| `moment` | `{id, def}` | F (when it stages a moment) |
+| `radio` | `{speaker, text, sound?}` | F (E plays, UI may subtitle) |
+| `door:state` / `door:locked` | `{id, state, door}` / `{id, door}` | core doors |
+| `glass:break` | `{id, point, pane}` | core |
+| `lights:circuit` | `{id, level, fade}` | core |
+| `machine:state` | `{id, kind: 'agv'|'conveyor'|'robot'|'crane', state}` | A |
+| `shot` | combat result (every fired round) | core combat |
+| `hit` | combat result (a hittable was hit) | core combat |
+| `weapon:fire` / `weapon:reload` / `weapon:reloaded` / `weapon:empty` | `{ammo}` / weapon | C |
+| `player:damage` / `player:death` / `player:flashlight` | `{amount, part, health, from}` / `{}` / `{on}` | C |
+| `enemy:damage` / `enemy:death` / `enemy:fire` / `enemy:alert` | `{id, enemy, amount?, part?}` | D |
+
+New events: prefix with your area (`a:…`, `d:…`) and list them in your section of this file via the lead.
+
+## 8. Rendering contract (core + B)
+
+- ONE HDR scene target (RGBA16F when renderable, RGBA8 fallback) + ONE composite pass → canvas. The first-person
+  scene (`render.vmScene`/`vmCamera`, C) renders into the same target after a depth clear. No shadow maps, no extra
+  full-screen passes, no cubemap renders. Dynamic resolution = target viewport (no reallocations).
+- All scene shaders write **exposed** linear HDR (`× U.uExposure`). Use the materials in `src/render/materials.js`:
+  `createStaticMaterial` (world, internal), `createTransparentMaterial`, `createDynamicMaterial({color, map, probe:
+  'volume'|'uniform', emissive})` (skinning + instancing supported), `convertToDynamic(gltfRoot)` for glTF models.
+  Only lights: flashlight spot (`U.uFlash*`, C drives it) and the muzzle point light (`U.uMuzzle*`, C).
+- Shared uniforms `U` (exposure, flashlight, muzzle, fog, circuits, probe textures, sun) — mutate in place.
+- Bake format (`public/bake/manifest.json`): `lightmap {width, height, encoding 'rgbm8', range 16, day, art}` (zlib
+  deflate of RGBA8, rows bottom-up = atlas y), `vertexLight {vertices}` (day then art RGBM per vertex of every
+  vertex-lit face in `gen.faces` order, corners (u0,v0),(u1,v0),(u1,v1),(u0,v1)), `probes {origin, spacing, dims}`
+  (L0 day RGBM, dir·0.5+0.5 + sun visibility, L0 art RGBM; x fastest), `pvs {zoneId: [visible zone ids]}`, `hash`
+  (must equal `generateWorld(LAYOUT).hash`, else the runtime shows "Bake veraltet").
+- Static world draw: per zone one opaque mesh (lightmapped + vertex-lit) + one transparent mesh (glass, mesh fences),
+  shown by PVS(camera zone ∪ zones 0.7 m around) and frustum. Vertex attributes: `position, normal (int8), aColor
+  (rgb albedo, a), aLmUv (uint16), aVlDay/aVlArt (rgbm8), aMisc (circuit, emissive·16, surface index, 0)`.
+- Quality tiers (`quality.js`): `vlow` 720p out, 50–75 % internal, no AA, no bloom; `low` 720p, 60–100 %; `mid` 1080p,
+  60–90 %, mip-bloom; `high` 1440p, 70–100 %, MSAA 4×, mip-bloom. Auto mode picks by GPU string (Intel/AMD APU →
+  low, software → vlow, RTX/RX → high) and steps down when frames stay slow at minimum scale.
+
+## 9. Budgets (lowest tier, worst view; `src/core/budgets.js`, live in the perf HUD — F9 or ^)
+
+| | draw calls | triangles in view | texture MB | notes |
+|---|---|---|---|---|
+| **Frame total** | **≤ 120** | **≤ 200 k** | **≤ 150** | ≤ 2 full-screen passes, 1 dynamic light + muzzle, 16.7 ms |
+| static world (A art + B materials) | ≤ 60 | ≤ 140 k | ≤ 70 | merged per zone; greybox today: ≤ 55 draws / 86 k tris before frustum culling (npm test) |
+| A dynamic machines, doors, glass FX | ≤ 10 | ≤ 15 k | ≤ 20 | AGVs, crane, robot; animate only when `isPointVisible` |
+| B sky + composite (+ lightmaps/probes) | 2 | 0.2 k | ≤ 30 | lightmaps today 2048×928 ×2 RGBA8 = 14.5 MB, probes 3.7 MB |
+| C arms + weapon + fx | ≤ 6 | ≤ 12 k | ≤ 12 | decals/impacts pooled & instanced |
+| D enemies | ≤ 32 | ≤ 30 k | ≤ 16 | ≤ 8 k tris LOD0 (< 15 m), ≤ 2.5 k LOD1, skinning only for visible; `lod.animStep` throttling; one draw per character + weapon |
+| E audio | 0 | 0 | 0 | ≤ 24 voices, decoded audio ≤ 60 MB |
+| F world-space UI | ≤ 2 | ≤ 0.5 k | ≤ 4 | HUD/menus are DOM |
+
+Hot paths (any `update`, raycasts, combat): **no per-frame allocations** (reuse vectors/objects, typed arrays,
+preallocated callbacks). Load to menu ≤ 5 s on a warm cache (today ≈ 1.1 s).
+
+## 10. Tests
+
+- `npm test` runs `scripts/test.mjs` (core: ids, every spawn/trigger/waypoint in a zone and on the nav grid, nav
+  connectivity spawn → every enemy/waypoint/trigger/extraction, every door passable, z-fighting (coplanar
+  overlapping faces), overlapping solids, AGV routes clear, bake freshness, PVS static budgets) and then every
+  `scripts/test-*.mjs`. A workstream test exports `default async ({ W, bvh, nav, LAYOUT, ok, warn }) => {}`; use
+  `ok(cond, msg)` for failures and `warn` for warnings. Keep it Node-only and fast (< 5 s).
+- Browser: `node scripts/browser-check.mjs tour` must end in state `done` (spawn → extraction) after layout
+  changes; `bench` reports GPU-synced frame time, draw calls and triangles per tier for `LAYOUT.benchViews`.
+
+## 11. Staged moments (F) — trigger ids and briefs live in `moments.js`
+
+`m01_ankunft` (yard), `m02_tor_faellt` (Tor 2 slams behind the player), `m03_packerei` (radio stops, ambush e08),
+`m04_keller_licht` (basement lights out, flashlight only), `m05_halle_dunkel` (hall lights out, patrol torches),
+`m06_foerderband` (conveyor + sorter start, masking noise), `m07_agv` (AMR crosses with warning beep), `m08_schrei`
+(scream behind the locked cash-room door), `m09_roboter` (robot swings, ambush e19), `m10_kuehl` (cold store door,
+fog, ambush e22); `extract` = extraction. The director stub already wires the world hooks for each.
