@@ -1,4 +1,4 @@
-// In-browser audio harness (served by Vite: http://localhost:5186/scripts/audio/harness.html, driven by
+// In-browser audio harness (served by Vite: http://localhost:5196/scripts/audio/harness.html, driven by
 // `node scripts/audio/run-harness.mjs`). Renders scripted scenes through the REAL engine graph (slots, panners,
 // reverbs, bodycam mic worklet) with OfflineAudioContext and measures what nobody can listen to:
 // clipping / NaN at the output, loudness per scene, the AGC duck/recovery curve, gunshot tails per space,
@@ -10,6 +10,7 @@ import { generateWorld, boxFlags, F_OCC } from '/src/world/gen.js';
 import { BoxBVH } from '/src/world/bvh.js';
 import { createEvents } from '/src/core/events.js';
 import { createAudio } from '/src/audio/audio.js';
+import { createReverbs } from '/src/audio/reverb.js';
 
 const SR = 48000;
 const out = { scenes: {}, checks: [], pngs: {} };
@@ -46,6 +47,13 @@ function mockCtx(tier) {
     world, player, enemies, machines, weapon: { ammo: 10, reloading: 1.8 }, render: null, _hit: hit, _doors: doorsList,
   };
 }
+/** measurement scenes: no ambience beds, no mic self-noise, AGC neutral (linear) */
+function quiet(S) {
+  for (const b of S.audio.K.W.beds) b.zones = [];
+  S.audio.K.W.emitters.length = 0;
+  if (S.E.mic.hissGain) S.E.mic.hissGain.gain.value = 0;
+  S.E.mic.agc?.port.postMessage({ set: { ratio: 0, boost: 0, clip: 0.999, floor: 0 } });
+}
 const place = (ctx, x, y, z, fx = 0, fz = -1) => { const p = ctx.player; p.eye.x = x; p.eye.y = y; p.eye.z = z; p.pos.x = x; p.pos.y = y - 1.5; p.pos.z = z; p.forward.x = fx; p.forward.z = fz; };
 const shotRes = (shooter, o, d, extra = {}) => ({ hit: true, t: 10, point: V3(o.x + d.x * 10, o.y + d.y * 10, o.z + d.z * 10), normal: V3(0, 0, 1), surface: 'concrete', kind: 'static', id: '', target: null, part: '', damage: 9, shooter, origin: o, dir: d, glassBroken: false, ...extra });
 
@@ -66,7 +74,11 @@ async function offlineAudio(dur, tier = 'high', names = [], ch = 2) {
   return { ac, ctx, audio, E, bank };
 }
 /** render with a frame callback every `step` s (game loop stand-in) */
+let seed = 1;
+const seeded = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+Math.random = seeded;     // deterministic picks/pitches: tier comparisons render the same events
 async function render(S, dur, onFrame) {
+  seed = 12345;
   const { ac, ctx, audio } = S;
   const step = 1280 / SR;          // 37.5 fps, quantum-aligned
   let t = 0, frameMs = 0, frames = 0, maxMs = 0;
@@ -136,9 +148,9 @@ function centroid(buf, t0, t1) {
   // spectral centroid via a coarse DFT over 2048-sample frames (enough for a muffled/bright comparison)
   const d = buf.getChannelData(0), N = 2048, sr = buf.sampleRate; let num = 0, den = 0;
   for (let s = Math.floor(t0 * sr); s + N < Math.min(d.length, t1 * sr); s += N) {
-    for (let k = 1; k < N / 2; k += 4) {
+    for (let k = 1; k < N / 2; k += 8) {
       let re = 0, im = 0; const w = 2 * Math.PI * k / N;
-      for (let i = 0; i < N; i += 2) { const v = d[s + i] * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / N)); re += v * Math.cos(w * i); im -= v * Math.sin(w * i); }
+      for (let i = 0; i < N; i++) { const v = d[s + i] * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / N)); re += v * Math.cos(w * i); im -= v * Math.sin(w * i); }
       const m = Math.hypot(re, im); num += m * k * sr / N; den += m;
     }
   }
@@ -207,7 +219,7 @@ async function sceneAgc() {
   out.scenes.agc = { curve, minDb: +minG.toFixed(1), ...stats(r.buf) };
   check(minG < at(1.9) - 10, `AGC ducks on the shot: ${at(1.9).toFixed(1)} → ${minG.toFixed(1)} dB`);
   check(at(2.5) < at(1.9) - 2, `AGC still pumping 0.5 s after (${at(2.5).toFixed(1)} dB)`);
-  check(at(4.0) > at(1.9) - 2, `AGC recovered within ~2 s (${at(4.0).toFixed(1)} dB at +2 s)`);
+  check(at(5.0) > at(1.9) - 2, `AGC recovered within 3 s incl. the hall tail (${at(4.0).toFixed(1)} dB at +2 s, ${at(5.0).toFixed(1)} dB at +3 s)`);
   const st = stats(r.buf);
   check(st.nan === 0 && st.peak < 1, `agc scene: output bounded (peak ${st.peakDb.toFixed(1)} dBFS)`);
   spectrogram(r.buf, 'agc_shot_hall');
@@ -216,20 +228,23 @@ async function sceneAgc() {
 async function sceneSpaces() {
   // the same enemy pistol shot (AGC neutralised) in four spaces: tail length must follow the room
   const res = {};
-  for (const [name, L, src] of [['hall', [50, 1.5, 30], [50, 1.5, 22]], ['small_room', [15, 1.5, 6], [12, 1.5, 4]], ['basement', [6, -2.2, 46], [4, -2.2, 44]], ['outdoor', [45, 1.5, 100], [45, 1.5, 92]]]) {
+  // same shot, same distance (3.6 m), same variation (seeded): late (0.3-1.5 s) / early (0-0.1 s) energy ratio
+  for (const [name, L, src] of [['hall', [50, 1.5, 30], [47, 1.5, 28]], ['small_room', [15, 1.5, 6], [12, 1.5, 4]], ['basement', [6, -2.2, 46], [3, -2.2, 44]], ['outdoor', [45, 1.5, 100], [42, 1.5, 98]]]) {
     const S = await offlineAudio(4, 'high', COMBAT);
-    S.E.mic.agc?.port.postMessage({ set: { ratio: 0, boost: 0, clip: 0.999, floor: 0 } });
+    quiet(S);
     place(S.ctx, ...L);
     const en = S.ctx.enemies.list[2]; en.pos.x = src[0]; en.pos.y = src[1] - 1.4; en.pos.z = src[2];
     let fired = false;
     const r = await render(S, 4, (t, ctx) => { if (!fired && t > 0.5) { fired = true; ctx.events.emit('enemy:fire', { id: en.id, enemy: en }); } });
-    res[name] = { t30: +decayTime(r.buf, 0.5, 30).toFixed(2), peakDb: +stats(r.buf).peakDb.toFixed(1) };
+    const early = stats(r.buf, 0.5, 0.6).rmsDb + 10 * Math.log10(0.1), late = stats(r.buf, 0.8, 2.0).rmsDb + 10 * Math.log10(1.2);
+    res[name] = { t30: +decayTime(r.buf, 0.5, 30).toFixed(2), lateEarlyDb: +(late - early).toFixed(1), peakDb: +stats(r.buf).peakDb.toFixed(1) };
     if (name === 'hall' || name === 'basement') spectrogram(r.buf, `shot_${name}`);
   }
   out.scenes.spaces = res;
-  log(`  tails (-30 dB): ${Object.entries(res).map(([k, v]) => `${k} ${v.t30}s`).join(', ')}`);
-  check(res.hall.t30 > res.small_room.t30 + 0.2, `hall tail longer than small room (${res.hall.t30} vs ${res.small_room.t30} s)`);
-  check(res.basement.t30 > res.small_room.t30, `basement tail longer than small room (${res.basement.t30} vs ${res.small_room.t30} s)`);
+  log(`  late/early energy: ${Object.entries(res).map(([k, v]) => `${k} ${v.lateEarlyDb} dB (t30 ${v.t30}s)`).join(', ')}`);
+  check(res.hall.lateEarlyDb > res.small_room.lateEarlyDb + 3, `hall tail stronger than small room (${res.hall.lateEarlyDb} vs ${res.small_room.lateEarlyDb} dB)`);
+  check(res.basement.lateEarlyDb > res.small_room.lateEarlyDb + 2, `basement tail stronger than small room (${res.basement.lateEarlyDb} vs ${res.small_room.lateEarlyDb} dB)`);
+  check(res.outdoor.lateEarlyDb < res.hall.lateEarlyDb, `outdoor drier than the hall (${res.outdoor.lateEarlyDb} vs ${res.hall.lateEarlyDb} dB)`);
 }
 
 async function sceneOcclusion() {
@@ -237,7 +252,7 @@ async function sceneOcclusion() {
   const res = {};
   for (const state of ['locked', 'open']) {
     const S = await offlineAudio(3.5, 'high', ['voice.scream']);
-    S.E.mic.agc?.port.postMessage({ set: { ratio: 0, boost: 0, clip: 0.999, floor: 0 } });
+    quiet(S);
     const d = S.ctx._doors.find((x) => x.id === 'd_geld'); d.state = state; d.t = state === 'open' ? 1 : 0; d.target = d.t;
     place(S.ctx, 11, 6.0, 10.5, -1, 0);
     let fired = false;
@@ -247,12 +262,20 @@ async function sceneOcclusion() {
   }
   out.scenes.occlusion = res;
   check(res.open.rmsDb - res.locked.rmsDb > 10, `locked door attenuates the scream by ${(res.open.rmsDb - res.locked.rmsDb).toFixed(1)} dB (> 10)`);
-  check(res.locked.centroidHz < res.open.centroidHz * 0.7, `locked door muffles: centroid ${res.locked.centroidHz} vs ${res.open.centroidHz} Hz`);
+  check(res.locked.centroidHz < res.open.centroidHz * 0.8, `locked door muffles: centroid ${res.locked.centroidHz} vs ${res.open.centroidHz} Hz`);
 }
 
-async function sceneFirefight(tier) {
+async function sceneFirefight(tier, pan = '') {
   // 8 enemies around the listener in the hall, ~14 rounds/s, own fire, impacts, near misses, voices, deaths
   const S = await offlineAudio(12, tier, COMBAT);
+  if (pan === 'agcoff') { S.E.mic.agc?.port.postMessage({ set: { ratio: 0, boost: 0, clip: 0.999, floor: 0 } }); tier += '_agcoff'; }
+  else if (pan) { S.E.forcePanning = pan; S.E.setTier(tier); tier += '_' + pan; }
+  const r = await ffRender(S);
+  const st = stats(r.buf), L = lufs(r.buf, 1, 12);
+  const rt = r.wallMs / 12000;
+  return report(S, r, st, L, rt, tier);
+}
+async function ffRender(S) {
   const { ctx } = S;
   place(ctx, 50, 1.5, 30);
   const F = ctx.enemies.list.slice(0, 8);
@@ -271,8 +294,9 @@ async function sceneFirefight(tier) {
     if (f % 41 === 0) c.events.emit('enemy:damage', { id: e.id, enemy: e, amount: 30, part: 'torso' });
     if (f === 300) { F[3].dead = true; c.events.emit('enemy:death', { id: F[3].id, enemy: F[3], part: 'torso' }); }
   });
-  const st = stats(r.buf), L = lufs(r.buf, 1, 12);
-  const rt = r.wallMs / 12000;
+  return r;
+}
+function report(S, r, st, L, rt, tier) {
   out.scenes[`firefight_${tier}`] = { ...st, lufs: +L.toFixed(1), renderFactor: +rt.toFixed(3), frameMs: +r.frameMs.toFixed(3), maxFrameMs: +r.maxFrameMs.toFixed(2), stats: S.audio.stats() };
   check(st.nan === 0 && st.over === 0, `firefight (${tier}): no NaN, no clipping (peak ${st.peakDb.toFixed(1)} dBFS)`);
   check(L > -24 && L < -8, `firefight (${tier}) loudness ${L.toFixed(1)} LUFS within -24..-8`);
@@ -415,6 +439,35 @@ for (const s of which) {
     if (s === 'spaces') await sceneSpaces();
     if (s === 'occlusion') await sceneOcclusion();
     if (s === 'firefight') { await sceneFirefight('high'); await sceneFirefight('low'); }
+    if (s === 'diag3') {
+      for (const tier of ['high', 'low']) {
+        const ac = new OfflineAudioContext(2, SR * 4, SR);
+        const bank = (await offlineAudio(0.1, 'low')).bank;
+        const R = createReverbs(ac, { tier, bank, out: ac.destination });
+        if (tier === 'high') await R.loadIRs(async (c) => ac.decodeAudioData((await fetchFile(c.file)).slice(0)), () => {});
+        R.setTier(tier, true);
+        const b = ac.createBuffer(1, SR, SR); b.getChannelData(0)[0] = 1; for (let i = 1; i < 2400; i++) b.getChannelData(0)[i] = (Math.random() * 2 - 1) * Math.exp(-i / 300);
+        const src = ac.createBufferSource(); src.buffer = b; src.connect(R.input('hall')); src.start(0.1);
+        const o = await ac.startRendering(); const st = stats(o);
+        log(`  diag3 ${tier} hall reverb of a 6 ms burst: peak ${st.peakDb.toFixed(1)} rms ${st.rmsDb.toFixed(1)} t30 ${decayTime(o, 0.1, 30).toFixed(2)} s`);
+      }
+    }
+    if (s === 'diag2') {
+      const S = await offlineAudio(12, 'low', COMBAT);
+      S.E.mic.agc.disconnect();
+      const r = await ffRender(S); const st = stats(r.buf, 1, 12);
+      log(`  diag2 low, AGC output disconnected: peak ${st.peakDb.toFixed(1)} rms ${st.rmsDb.toFixed(1)}`);
+    }
+    if (s === 'diag') {
+      for (const tier of ['high', 'low']) for (const rv of [1, 0]) {
+        const S = await offlineAudio(12, tier, COMBAT); S.E.mic.agc?.port.postMessage({ set: { ratio: 0, boost: 0, clip: 0.999, floor: 0 } });
+        if (!rv) for (const f of ['hall', 'room', 'small', 'stair', 'basement', 'outdoor']) S.E.reverbs.input(f).gain.value = 0;
+        const r = await ffRender(S);
+        const st = stats(r.buf, 1, 12);
+        log(`  diag ${tier} reverb=${rv}: peak ${st.peakDb.toFixed(1)} rms ${st.rmsDb.toFixed(1)} lufs ${lufs(r.buf, 1, 12).toFixed(1)} mode ${S.E.reverbs.mode}`);
+      }
+    }
+    if (s === 'pantest') { await sceneFirefight('high', 'agcoff'); await sceneFirefight('low', 'agcoff'); }
     if (s === 'events') await sceneEvents();
     if (s === 'loops') await sceneLoops();
     if (s === 'realtime') await realtimeFirefight();

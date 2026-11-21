@@ -8,11 +8,11 @@
 import { IR_FAMILIES } from './acoustics.js';
 
 const IR_SPEC = {
-  hall: { sound: 'ir.hall', vi: 0, len: 2.9, gain: 0.55 },
-  room: { sound: 'ir.hall', vi: 1, len: 1.0, gain: 0.6 },
-  small: { sound: 'ir.small', vi: 0, len: 0.5, gain: 0.5 },
-  stair: { sound: 'ir.stairwell', vi: 0, len: 1.7, gain: 0.55 },
-  basement: { sound: 'ir.basement', vi: 0, len: 1.45, gain: 0.6 },
+  hall: { sound: 'ir.hall', vi: 0, len: 2.9, gain: 2.4 },
+  room: { sound: 'ir.hall', vi: 1, len: 1.0, gain: 2.0 },
+  small: { sound: 'ir.small', vi: 0, len: 0.5, gain: 1.3 },
+  stair: { sound: 'ir.stairwell', vi: 0, len: 1.7, gain: 1.9 },
+  basement: { sound: 'ir.basement', vi: 0, len: 1.45, gain: 2.6 },
 };
 const ALGO = { hall: 'big', basement: 'big', stair: 'big', room: 'small', small: 'small' };
 
@@ -60,15 +60,19 @@ export function createReverbs(ac, { tier = 'low', bank, out, log = null }) {
 
   // ---- algorithmic units (low tiers)
   function algo(rt, sizes, damp) {
-    const inp = ac.createGain(), merge = ac.createChannelMerger(2), ret = ac.createGain();
-    ret.gain.value = 0.32;
+    // plain feedback combs (no filter inside the loop: a resonant biquad in a feedback cycle blew up in tests),
+    // damping and stereo spread after the combs, then a short all-pass-like smear by a second delay pair
+    const inp = ac.createGain(), merge = ac.createChannelMerger(2), ret = ac.createGain(), lp = ac.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = damp; lp.Q.value = 0.5;
+    inp.gain.value = 0.25;
+    ret.gain.value = rt > 1 ? 4.0 : 3.0;   // ≈ convolver loudness (harness diag3: same burst, rms within a few dB)
     sizes.forEach((d, k) => {
-      const dl = ac.createDelay(0.2), fb = ac.createGain(), lp = ac.createBiquadFilter();
-      dl.delayTime.value = d; fb.gain.value = Math.pow(10, -3 * d / rt); lp.type = 'lowpass'; lp.frequency.value = damp;
-      inp.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl);
-      lp.connect(merge, 0, k % 2);
+      const dl = ac.createDelay(0.2), fb = ac.createGain();
+      dl.delayTime.value = d; fb.gain.value = Math.min(0.9, Math.pow(10, -3 * d / rt));
+      inp.connect(dl); dl.connect(fb); fb.connect(dl);
+      dl.connect(merge, 0, k % 2);
     });
-    merge.connect(ret);
+    merge.connect(lp); lp.connect(ret);
     return { input: inp, output: ret };
   }
   units.big = algo(2.2, [0.0437, 0.0507, 0.0571, 0.0631], 3200);

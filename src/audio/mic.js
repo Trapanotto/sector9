@@ -20,7 +20,12 @@ export function createMic(ac, { tier = 'low', log = null } = {}) {
   const post = ac.createGain();          // after the mic (UI bus joins here)
   const master = ac.createGain();
   input.connect(hp); hp.connect(pres); pres.connect(lp);
-  ear.connect(post); post.connect(master); master.connect(ac.destination);
+  ear.connect(post); post.connect(master);
+  // last-ditch safety after the master volume: transparent below 0.9, soft knee into ±0.99 (filters after the AGC can
+  // overshoot its ceiling slightly on clipped transients)
+  const guard = ac.createWaveShaper();
+  { const n = 4097, c = new Float32Array(n); for (let i = 0; i < n; i++) { const x = (i / (n - 1)) * 2 - 1; c[i] = AgcCore.sat(x, 0.9) * 0.99; } guard.curve = c; }
+  master.connect(guard); guard.connect(ac.destination);
 
   // fallback dynamics (active until the worklet is up, or for good if worklets are unavailable)
   const shaper = ac.createWaveShaper();
@@ -67,7 +72,7 @@ export function createMic(ac, { tier = 'low', log = null } = {}) {
   wind.connect(windLp); windLp.connect(windG); windG.connect(input);
   hiss.start(); wind.start(ac.currentTime, 1.1);
 
-  m.input = input; m.output = post; m.ear = ear; m.master = master; m.lp = lp;
+  m.input = input; m.output = post; m.ear = ear; m.master = master; m.lp = lp; m.guard = guard;
   m.setMaster = (v) => { master.gain.setTargetAtTime(v, ac.currentTime, 0.05); };
   m.setTier = (t) => { lp.frequency.value = t === 'vlow' ? 7800 : 8500; };
   /** wind/handling rumble level 0..1 (fast movement, turning) */

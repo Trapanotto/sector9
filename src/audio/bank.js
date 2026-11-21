@@ -10,7 +10,8 @@
  *  decoded PCM small (CONTRACT §9: ≤ 60 MB). */
 export function decodeRate(name) {
   if (name.startsWith('ir.')) return 0;
-  if (/^voice\.(muffled|snore|breath\.panic)/.test(name)) return 16000;
+  // beds, long loops and pre-muffled voices: 8 kHz bandwidth is what the mic's 8.5 kHz low-pass lets through anyway
+  if (/^(voice\.(muffled|snore|breath\.panic)|amb\.|loop\.|machine\.alarm\.siren)/.test(name)) return 16000;
   if (/^(amb\.|loop\.|machine\.|voice\.distant|weapon\.distant|door\.roller)/.test(name)) return 22050;
   if (/^(voice\.|door\.)/.test(name)) return 22050;
   return 24000;   // one-shots: 12 kHz bandwidth, above the mic's 8.5 kHz low-pass

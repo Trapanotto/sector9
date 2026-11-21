@@ -52,25 +52,25 @@ export function installDesign(K) {
     switch (cls) {
       case 'hall_large': case 'hall_medium':
         // big hall: the distant-indoor recording is mostly hall slap and roll-off
-        L('weapon.distant.indoor', g * (cls === 'hall_large' ? 0.42 : 0.3), 0.05 + rnd() * 0.03, (o) => { o.lp = 5200; o.send = 0.6; o.prio = 6; o.skipLead = true; });
+        L('weapon.distant.indoor', g * (cls === 'hall_large' ? 0.42 : 0.3), 0.05 + rnd() * 0.03, (o) => { o.lp = 5200; o.send = 0.6; o.cat = 'tail'; o.skipLead = true; });
         break;
       case 'outdoor': {
         // crack outside, the echo comes back from the building facade 0.3–0.7 s later
         const o2 = E.opts(); o2.pos = OUTDOOR_ECHO; o2.gain = g * 0.36; o2.delay = 0.3 + Math.min(0.45, Math.hypot(x - OUTDOOR_ECHO.x, z - OUTDOOR_ECHO.z) / 343);
-        o2.occlude = false; o2.lp = 2600; o2.prio = 6; o2.ref = 30;
+        o2.occlude = false; o2.lp = 2600; o2.cat = 'tail'; o2.ref = 30;
         E.play('weapon.distant.outdoor', o2);
         break;
       }
       case 'basement':
         // concrete box: low boom (the shot itself, slowed + low-passed) and a dense tail
-        L(twoD ? 'weapon.pistol.shot' : 'weapon.rifle.shot', g * 0.55, 0.008, (o) => { o.pitch = 0.72; o.lp = 700; o.send = 1.4; o.prio = 6; });
-        L('weapon.distant.indoor', g * 0.3, 0.03, (o) => { o.lp = 2600; o.prio = 6; });
+        L(twoD ? 'weapon.pistol.shot' : 'weapon.rifle.shot', g * 0.55, 0.008, (o) => { o.pitch = 0.72; o.lp = 700; o.send = 1.4; o.cat = 'tail'; });
+        L('weapon.distant.indoor', g * 0.3, 0.03, (o) => { o.lp = 2600; o.cat = 'tail'; });
         break;
       case 'stairwell': case 'corridor':
-        L('weapon.distant.indoor', g * 0.26, 0.02, (o) => { o.lp = 4200; o.prio = 6; });
+        L('weapon.distant.indoor', g * 0.26, 0.02, (o) => { o.lp = 4200; o.cat = 'tail'; });
         break;
       case 'room_large':
-        L('weapon.distant.indoor', g * 0.22, 0.03, (o) => { o.lp = 4500; o.prio = 6; });
+        L('weapon.distant.indoor', g * 0.22, 0.03, (o) => { o.lp = 4500; o.cat = 'tail'; });
         break;
       default: break;   // small rooms: the convolution/algorithmic room does it
     }

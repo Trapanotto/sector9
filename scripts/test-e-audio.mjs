@@ -149,6 +149,26 @@ export default async function ({ W, bvh, LAYOUT, ok, warn }) {
   const audio = createAudio(ctx, { manifest: man, nullOutput: true, onPlay });
   await audio.load(null);
   audio.init();
+  // ---- every sound id the director (F) and the moment briefs use must be playable (first candidate of a|b lists)
+  {
+    const { readdirSync } = await import('node:fs');
+    const srcs = ['src/world/layout/moments.js', ...readdirSync('src/director').map((f) => `src/director/${f}`), ...(existsSync('src/ui') ? readdirSync('src/ui').map((f) => `src/ui/${f}`) : [])];
+    const re = /['"]((?:voice|loop|machine|door|foley|impact|weapon|step|amb|glass|bullet|debris|cue)\.[a-z0-9_.]+(?:\|[a-z0-9_.]+)*)['"]/g;
+    const ids = new Set();
+    for (const f of srcs) { if (!/\.js$/.test(f)) continue; for (const m of readFileSync(f, 'utf8').matchAll(re)) ids.add(m[1]); }
+    const bad = [], fallback = [];
+    for (const id of ids) {
+      const c = id.split('|');
+      if (!c.some((x) => audio.has(x))) bad.push(id); else if (!audio.has(c[0])) fallback.push(id);
+    }
+    ok(!bad.length, `director/moment sound ids not playable: ${bad.join(', ')}`);
+    ok(!fallback.length, `director ids that only resolve to their fallback: ${fallback.join(', ')}`);
+    const h = audio.playAt('loop.radio', V3(12, 1.1, 28), { loop: true, volume: 0.8, muffled: true });
+    ok(typeof audio.setTension === 'function' && typeof audio.setBusVolume === 'function' && typeof audio.has === 'function', 'director API (has, setTension, setBusVolume)');
+    ok(h && typeof h.stop === 'function', 'playAt returns a handle with stop(fade)');
+    h?.stop(0.1);
+    console.log(`  director: ${ids.size} sound ids used by src/director + moments.js, all playable`);
+  }
   const step = (sec, fn) => { for (let t = 0; t < sec; t += 1 / 60) { ctx.time.now += 1 / 60; fn?.(t); audio.update(1 / 60); } };
   step(0.5);
   const fire = (shooter, origin, dir, extra = {}) => ({ hit: true, t: 12, point: V3(origin.x + dir.x * 12, origin.y, origin.z + dir.z * 12), normal: V3(0, 0, 1), surface: 'concrete', kind: 'static', id: '', target: null, part: '', damage: 9, shooter, origin, dir, glassBroken: false, ...extra });
@@ -192,7 +212,7 @@ export default async function ({ W, bvh, LAYOUT, ok, warn }) {
   // scripted tour to reach the long tail of the library: every staged moment, machines running near the
   // listener, sleepers, unaware guards, slide/roller/metal doors, all impact surfaces, all weapons, bursts
   audio.reset();
-  for (const m of [...LAYOUT.moments.map((x) => x.id), 'extract']) { audio.moment(m); step(0.4); }
+  for (const m of [...LAYOUT.moments.map((x) => x.id), 'extract']) { audio.moment(m, 'start', true); step(0.4); }
   const visit = (x, y, z, sec = 2) => { player.eye.x = x; player.eye.y = y; player.eye.z = z; player.pos.x = x; player.pos.y = y - 1.5; player.pos.z = z; step(sec); };
   machines.agvs.forEach((a) => { a.state = 'running'; }); machines.robots.forEach((r) => { r.state = 'running'; }); machines.cranes.forEach((c) => { c.state = 'running'; });
   machines.conveyors.forEach((c) => { c.state = 'running'; });

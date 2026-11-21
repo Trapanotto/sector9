@@ -1,4 +1,4 @@
-// Body for `node scripts/browser-check.mjs script --url http://localhost:5186/ --jsfile scripts/audio/ingame-check.js
+// Body for `node scripts/browser-check.mjs script --url http://localhost:5196/ --jsfile scripts/audio/ingame-check.js
 //   --flags "--autoplay-policy=no-user-gesture-required"` — the real game with the real audio module: unlock,
 // play, walk the yard, a staged firefight with 8 enemies through the real events, then report audio stats and the
 // audio module's main-thread ms per frame (moving average and max) measured inside ctx.audio.update.

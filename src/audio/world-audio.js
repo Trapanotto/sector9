@@ -46,12 +46,13 @@ export function installWorld(K) {
       if (e.cut) { e.spin = 0; e.cut = false; }
       const d = Math.hypot(e.pos.x - Lp.x, e.pos.y - Lp.y, e.pos.z - Lp.z);
       const audible = e.spin > 0.015 && d < e.max + 4;
-      if (audible && !e.h) {
+      if (audible && !e.h && K.now() >= (e.retry ?? 0)) {
         const o = E.opts();
         o.follow = e.pos; o.loop = true; o.gain = e.gain * e.spin * e.level; o.pitch = e.pitch * (e.rateLo + (1 - e.rateLo) * e.spin);
         o.pitchVar = 0; o.max = e.max; o.lp = e.lp; o.prio = e.prio; o.cat = e.cat; o.fadeIn = 0.4;
         if (e.ref) o.ref = e.ref;
         e.h = E.play(e.name, o);
+        if (!e.h) e.retry = K.now() + 1.0;
         e.lastBase = o.gain; e.lastRate = o.pitch;
       } else if (!audible && e.h) {
         E.stop(e.h, e.spin < 0.02 ? 0.25 : 0.8); e.h = 0;
@@ -171,7 +172,7 @@ export function installWorld(K) {
     if (i === 0) emitter('voice.muffled.laugh', { x: t.p[0], y: t.p[1] + 0.9, z: t.p[2], gain: 0.45, max: 22, lp: 2600, want: () => 1, tau: 0.2, cat: 'murmur', prio: 4 });
   });
   // talk radio on the packing table: stops dead at m03 ("silence as a warning")
-  const radio = emitter('voice.muffled.talk', { x: 12, y: 1.0, z: 31, gain: 0.5, max: 30, lp: 3200, want: () => (W.radioOn ? 1 : 0), tau: 0.1, tauDown: 0.01, cat: 'murmur', prio: 4 });
+  const radio = emitter('voice.muffled.talk', { x: 12, y: 1.0, z: 31, gain: 0.5, max: 30, lp: 3200, want: () => (W.radioOn && !K.directorStages() ? 1 : 0), tau: 0.1, tauDown: 0.01, cat: 'murmur', prio: 4 });
   W.radioOn = true;
   W.killRadio = () => { W.radioOn = false; radio.cut = true; if (radio.h) { E.stop(radio.h, 0.015); radio.h = 0; } };
   // argument in the cash room until the scream (m08) or until the counter (e13) is alerted
@@ -219,7 +220,7 @@ export function installWorld(K) {
   const flur = [K.zoneIndex('flur_og'), K.zoneIndex('treppe_w')];
   W.phoneRang = false;
   function tickPhone() {
-    if (W.phoneRang || !flur.includes(K.L.zone) || K.L.y < 4.4) return;
+    if (W.phoneRang || K.directorStages() || !flur.includes(K.L.zone) || K.L.y < 4.4) return;
     W.phoneRang = true;
     K.D.playAt('machine.phone', 13.5, 5.4, 2.5, 0.75, 1, 1.5, (o) => { o.dur = 7.5; o.max = 60; o.skipLead = true; });
   }
@@ -266,9 +267,10 @@ export function installWorld(K) {
         }
       } else if (Lz < 0 && b.name.startsWith('amb.outside')) g = 1;
       g *= (BED_GAIN[b.name] ?? 0.7) * (b.name === 'loop.conveyor' ? 1 : W.duck);
-      if (g > 0.015 && !b.h) {
+      if (g > 0.015 && !b.h && K.now() >= (b.retry ?? 0)) {
         const o = E.opts(); o.loop = true; o.twoD = true; o.gain = g; o.cat = 'amb'; o.lp = lp; o.fadeIn = 1.5; o.pitchVar = 0;
         b.h = E.play(b.name, o); b.lastG = g; b.idle = 0;
+        if (!b.h) b.retry = K.now() + 1.5;
       } else if (b.h) {
         if (g < 0.01) { b.idle += dt; if (b.idle > 2) { E.stop(b.h, 1.0); b.h = 0; } }
         else b.idle = 0;

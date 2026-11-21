@@ -28,9 +28,9 @@ export const IR_FAMILIES = ['hall', 'room', 'small', 'stair', 'basement', 'outdo
 
 // transmission of a portal kind/state: loss dB, low-pass Hz
 export const PORTAL = {
-  open: [0, 20000], opening: [1, 16000], window_broken: [2, 14000], window: [16, 1400],
-  door_open: [1, 15000], door_half: [5, 4500], door_closed: [19, 700], door_locked: [20, 650],
-  roller_open: [0.5, 18000], roller_half: [5, 5000], roller_closed: [18, 600], wall: [34, 280],
+  open: [0, 20000], opening: [1, 16000], window_broken: [2, 14000], window: [16, 1100],
+  door_open: [1, 15000], door_half: [5, 4500], door_closed: [19, 480], door_locked: [20, 450],
+  roller_open: [0.5, 18000], roller_half: [5, 5000], roller_closed: [18, 450], wall: [34, 280],
 };
 const WALL_LOSS = 34, WALL_LP = 280;
 

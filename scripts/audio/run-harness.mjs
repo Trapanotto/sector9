@@ -12,13 +12,13 @@ const ROOT = resolve(HERE, '../..');
 const OUT = resolve(HERE, 'out');
 const argv = process.argv.slice(2);
 const opt = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : d; };
-const PORT = 5186, DBG = 9486;
+const PORT = +opt('--port', 5196), DBG = 9486;   // 5186 was taken by another workstream's server
 mkdirSync(OUT, { recursive: true });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 let server = null;
 let alive = false;
-try { alive = (await fetch(`http://localhost:${PORT}/`)).ok; } catch { /* no server yet */ }
+try { alive = (await (await fetch(`http://localhost:${PORT}/scripts/audio/harness.html`)).text()).includes('audio harness'); } catch { /* no server yet */ }
 if (!alive && !argv.includes('--no-server')) {
   server = spawn(process.execPath, [resolve(ROOT, 'node_modules/vite/bin/vite.js'), '--port', String(PORT), '--strictPort'], { cwd: ROOT, stdio: 'ignore' });
   for (let i = 0; i < 60; i++) { try { if ((await fetch(`http://localhost:${PORT}/`)).ok) break; } catch { /* starting */ } await sleep(250); }

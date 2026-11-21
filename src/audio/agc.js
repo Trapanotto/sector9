@@ -5,7 +5,7 @@
 //  1. preamp overload: the capsule/preamp saturates hard above `clip` (a close gunshot comes out as a flat-topped,
 //     harsh transient — the signature of real bodycam footage);
 //  2. AGC: feed-forward peak detector; the gain drops within ~2 ms when the input gets loud ("ducks everything
-//     after a shot") and recovers slowly in the dB domain (τ ≈ 0.55 s → ~1.5 s back to normal, audible pumping of the
+//     after a shot") and recovers slowly in the dB domain (τ ≈ 0.45 s → ~1.3 s back to normal once the room has stopped ringing, audible pumping of the
 //     room tone); in quiet passages the gain rises up to +`boost` dB so the room tone and hiss come up;
 //  3. output safety: smooth limiter at 0.97 so the output can never clip / exceed ±1.
 // Output 0 = processed stereo, output 1 = the gain trace (linear) for test harnesses.
@@ -21,7 +21,7 @@ export class AgcCore {
     this.atk = Math.exp(-1 / (0.0005 * sampleRate));   // detector attack 0.5 ms
     this.rel = Math.exp(-1 / (0.09 * sampleRate));     // detector release 90 ms
     this.gAtk = Math.exp(-1 / (0.002 * sampleRate));   // gain falls in ~2 ms
-    this.gRel = Math.exp(-1 / ((p.recover ?? 0.55) * sampleRate)); // gain recovers with τ (dB domain)
+    this.gRel = Math.exp(-1 / ((p.recover ?? 0.45) * sampleRate)); // gain recovers with τ (dB domain)
     this.hold = Math.round((p.hold ?? 0.12) * sampleRate);
     this.env = 0; this.gdb = 0; this.holdN = 0; this.minGdb = 0;
   }

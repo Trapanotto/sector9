@@ -129,6 +129,8 @@ export function createAudio(ctx, opt = {}) {
         fx.x = bf.pos[0]; fx.y = bf.pos[1]; fx.z = bf.pos[2]; return fx;
       },
       heavySwitch: () => heavy,
+      // the real director (F) stages moment sounds itself (it exposes `tension`); the stub does not
+      directorStages: () => !!ctx.director && 'tension' in ctx.director,
       shortThump: () => (thumps.length ? thumps[(Math.random() * thumps.length) | 0] : -1),
       reserved: (file) => findClip(file),
     };
@@ -196,7 +198,7 @@ export function createAudio(ctx, opt = {}) {
   const RADIO_MATCH = [
     [/best[aä]tig|verstanden|roger|okay|ok\b|copy/i, "Roger that."], [/warte|stand ?by|moment/i, 'Stand by.'],
     [/bewegung|movement/i, 'Movement right there.'], [/verwund|verletzt|wounded/i, "He's wounded."],
-    [/gesichert|clear|nichts|keine/i, 'Not seeing any.'], [/zugriff|get him|schnapp/i, 'Get him.'], [/waffe|weapon/i, 'Drop the weapon.'],
+    [/gesichert|clear|nichts|keine/i, 'Not seeing any.'], [/waffe|weapon/i, 'Drop the weapon.'],
   ];
   let lastRadio = -10;
   function radio(text, sound) {
@@ -205,7 +207,7 @@ export function createAudio(ctx, opt = {}) {
     lastRadio = now;
     const sRadio = bank.sounds.get('voice.radio');
     let ci = -1;
-    if (sound && bank.has(sound)) { const o = E.opts(); o.twoD = true; o.cat = 'radio'; E.play(sound, o); }
+    if (sound && sound !== 'voice.radio' && bank.has(sound)) { const o = E.opts(); o.twoD = true; o.cat = 'radio'; E.play(sound, o); }
     else {
       const m = RADIO_MATCH.find(([re]) => re.test(text ?? ''));
       if (m) ci = sRadio?.enabled.find((i) => bank.clips[i].text === m[1]) ?? -1;
@@ -238,12 +240,15 @@ export function createAudio(ctx, opt = {}) {
     ev.on('mission:restart', () => a.reset());
     ev.on('radio', (r) => { K.radioSeen = true; radio(r?.text ?? '', r?.sound ?? null); });
     const fired = new Set();
-    ev.on('moment', (m) => { if (!m?.id || fired.has(m.id)) return; fired.add(m.id); T.moment(m.id, 'start'); });
+    ev.on('moment', (m) => { if (!m?.id || fired.has(m.id)) return; fired.add(m.id); T.moment(m.id, 'start', false, m.variant); });
+    ev.on('f:tension', (e) => a.setTension(e?.level ?? 0));
+    ev.on('f:alarm', (e) => { if (e?.on) T.swell(0.8, 10); });
+    ev.on('f:breach', () => { T.swell(0.7, 6); T.danger(0.2); });
     // fallback when no director stages the moment: the trigger itself starts the audio part
     ev.on('trigger:enter', (t) => {
       if (!t?.id || !t.first) return;
       const id = t.id;
-      sched.at(K.now() + 0.05, () => { if (!fired.has(id)) { fired.add(id); T.moment(id, 'start'); } });
+      sched.at(K.now() + 0.05, () => { if (!fired.has(id)) { fired.add(id); T.moment(id, 'start', true); } });
     });
     ev.on('machine:state', (e) => Wd.machineState(e));
     a._fired = fired;
@@ -260,7 +265,15 @@ export function createAudio(ctx, opt = {}) {
   };
   a.setVolume = (v) => { a.volume = v; ctx.settings.data.volume = v; ctx.settings.save(); applySettings(); };
   a.setCategoryVolume = (cat, v) => { const s = ctx.settings.data; s.audioVolumes = { ...(s.audioVolumes ?? {}), [cat]: v }; ctx.settings.save(); applySettings(); };
+  // virtual ids the director asks for (no dedicated recording): rendered from library sounds
+  // loop.radio: NO CC0 music sourced — a talk-radio programme (muffled talk) through a small-speaker band
+  // loop.tv:    TV show (muffled talk + laughter) through a small-speaker band
+  const VIRTUAL = {
+    'loop.radio': { name: 'voice.muffled.talk', lp: 3000, gain: 0.85, cat: 'murmur' },
+    'loop.tv': { name: 'voice.muffled.laugh', lp: 2600, gain: 0.8, cat: 'murmur' },
+  };
   const resolveId = (id) => ALIASES[id] ?? id;
+  a.has = (id) => { const n = resolveId(id); return !!(VIRTUAL[n] || n.startsWith('cue.') || bank?.resolve(n)); };
   function mapOpts(o, opts) {
     if (!opts) return o;
     if (opts.volume !== undefined) o.gain = opts.volume;
@@ -270,25 +283,45 @@ export function createAudio(ctx, opt = {}) {
     if (opts.follow) o.follow = opts.follow;
     if (opts.dur !== undefined) o.dur = opts.dur;
     if (opts.lp !== undefined) o.lp = opts.lp;
+    if (opts.muffled) { o.lp = Math.min(o.lp, 900); o.gain *= 0.8; }
+    if (opts.cat) o.cat = opts.cat;
     return o;
   }
+  // handles for callers: { h, stop(fade) }. Loops get their own object (kept for long); one-shots share a ring.
+  const ring = Array.from({ length: 32 }, () => mkHandle());
+  let ringI = 0;
+  function mkHandle() { const hd = { h: 0, stop(f = 0.1) { if (hd.h) E?.stop(hd.h, f); hd.h = 0; }, get playing() { return !!E?.isPlaying(hd.h); } }; return hd; }
+  function wrap(h, loop) { if (!h) return null; const hd = loop ? mkHandle() : ring[(ringI = (ringI + 1) % ring.length)]; hd.h = h; return hd; }
+  function playVirtual(n, pos, opts) {
+    const v = VIRTUAL[n] ?? null;
+    const o = mapOpts(E.opts(), opts);
+    if (v) { o.lp = Math.min(o.lp, v.lp); o.gain *= v.gain; o.cat = v.cat; }
+    if (pos) o.pos = pos; else { o.twoD = true; if (!opts?.cat) o.cat = v ? v.cat : 'ui'; }
+    return wrap(E.play(v ? v.name : n, o), o.loop);
+  }
   a.play = (id, opts) => {
-    if (!E) return 0;
+    if (!E) return null;
     const n = resolveId(id);
     if (n.startsWith('cue.')) return cue(n, null, opts);
-    const o = mapOpts(E.opts(), opts); o.twoD = true; o.cat = opts?.cat ?? 'ui';
-    return E.play(n, o);
+    return playVirtual(n, null, opts);
   };
   a.playAt = (id, pos, opts) => {
-    if (!E) return 0;
+    if (!E) return null;
     const n = resolveId(id);
     if (n.startsWith('cue.')) return cue(n, pos, opts);
-    const o = mapOpts(E.opts(), opts); o.pos = pos;
-    return E.play(n, o);
+    return playVirtual(n, pos, opts);
+  };
+  /** director pacing: 0..1 (also the 'f:tension' event) */
+  a.setTension = (v) => { if (T) T.external = Math.max(0, Math.min(1, +v || 0)); };
+  /** settings panel: 'sfx' (Effekte) | 'voice' (Stimmen) | or a group name of setCategoryVolume */
+  a.setBusVolume = (bus, v) => {
+    if (bus === 'sfx') { const s = ctx.settings.data; s.audioVolumes = { ...(s.audioVolumes ?? {}), weapons: v, effects: v, ambience: v }; ctx.settings.save(); applySettings(); }
+    else if (bus === 'voice' || bus === 'voices') a.setCategoryVolume('voices', v);
+    else a.setCategoryVolume(bus, v);
   };
   a.loop = (id, pos, opts) => a.playAt(id, pos, { ...opts, loop: true });
-  a.stop = (h, fade = 0.1) => E?.stop(h, fade);
-  a.moment = (id, phase = 'start') => { if (phase === 'start') a._fired?.add(id); return T?.moment(id, phase) ?? false; };
+  a.stop = (h, fade = 0.1) => { if (h && typeof h === 'object') h.stop(fade); else E?.stop(h, fade); };
+  a.moment = (id, phase = 'start', full = false) => { if (phase === 'start') a._fired?.add(id); return T?.moment(id, phase, full) ?? false; };
   a.cue = (id, pos, opts) => cue(id, pos, opts);
   a.stats = () => {
     const s = E?.stats ?? {};
@@ -296,7 +329,8 @@ export function createAudio(ctx, opt = {}) {
       decodedMB: +(E?.decodedMB?.() ?? 0).toFixed(1), peakDecodedMB: +((s.peakDecodedBytes ?? 0) / 1048576).toFixed(1), decodes: s.decodes,
       evictions: s.evictions, updateMs: +(s.updateMs ?? 0).toFixed(3), updateMsMax: +(s.updateMsMax ?? 0).toFixed(3), rays: s.rays,
       tier: E?.tier, reverb: E?.reverbs?.mode, convolvers: E?.reverbs?.convolverCount?.(), agcWorklet: !!E?.mic?.usingWorklet,
-      state: E?.ac?.state ?? 'none', sampleRate: E?.ac?.sampleRate, frameMs: +(a.frameMs ?? 0).toFixed(3) };
+      state: E?.ac?.state ?? "none", sampleRate: E?.ac?.sampleRate, frameMs: +(a.frameMs ?? 0).toFixed(3),
+      topDrops: [...(s.dropBy ?? [])].sort((x, y) => y[1] - x[1]).slice(0, 8) };
   };
 
   // ---------------------------------------------------------------------------------------------------------

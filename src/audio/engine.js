@@ -12,24 +12,25 @@ import { createMic } from './mic.js';
 import { createReverbs } from './reverb.js';
 
 export const MAX_VOICES = 24;          // CONTRACT §9 (beds and loops included)
-export const DECODED_BUDGET = 52 * 1048576;   // LRU target; CONTRACT cap 60 MB
+export const DECODED_BUDGET = 44 * 1048576;   // LRU target; CONTRACT cap 60 MB
 const RAYS_PER_FRAME = 3;
 
 // per category: voice limit, priority, distance model (ref m, max m, rolloff), reverb send, bus, 2D
 export const CATS = {
   weapon:   { limit: 8, prio: 9, ref: 7, max: 220, roll: 1.0, send: 1.0, bus: 'weapons' },
+  tail:     { limit: 4, prio: 5, ref: 7, max: 220, roll: 1.0, send: 0.8, bus: 'weapons' },
   impact:   { limit: 6, prio: 5, ref: 2, max: 55, roll: 1.15, send: 0.7, bus: 'weapons' },
   handling: { limit: 3, prio: 6, ref: 1, max: 18, roll: 1.3, send: 0.35, bus: 'weapons' },
   voice:    { limit: 6, prio: 7, ref: 2.5, max: 90, roll: 0.95, send: 0.85, bus: 'voices' },
   murmur:   { limit: 3, prio: 4, ref: 2, max: 30, roll: 1.1, send: 0.6, bus: 'voices' },
-  player:   { limit: 2, prio: 8, ref: 1, max: 10, roll: 1, send: 0.15, bus: 'voices', twoD: true },
+  player:   { limit: 3, prio: 8, ref: 1, max: 10, roll: 1, send: 0.15, bus: 'voices', twoD: true },
   radio:    { limit: 1, prio: 8, ref: 1, max: 10, roll: 1, send: 0, bus: 'radio', twoD: true },
   step:     { limit: 5, prio: 2, ref: 1.2, max: 32, roll: 1.25, send: 0.45, bus: 'effects' },
   foley:    { limit: 4, prio: 3, ref: 1.5, max: 30, roll: 1.2, send: 0.4, bus: 'effects' },
   door:     { limit: 3, prio: 5, ref: 3, max: 65, roll: 1.0, send: 0.7, bus: 'effects' },
   machine:  { limit: 8, prio: 3, ref: 4, max: 55, roll: 1.05, send: 0.6, bus: 'ambience' },
   amb:      { limit: 4, prio: 6, ref: 1, max: 10, roll: 1, send: 0, bus: 'ambience', twoD: true },
-  tension:  { limit: 2, prio: 6, ref: 1, max: 10, roll: 1, send: 0.3, bus: 'ambience', twoD: true },
+  tension:  { limit: 3, prio: 6, ref: 1, max: 10, roll: 1, send: 0.3, bus: 'ambience', twoD: true },
   ui:       { limit: 2, prio: 8, ref: 1, max: 10, roll: 1, send: 0, bus: 'ui', twoD: true },
 };
 export const VOLUME_GROUPS = ['weapons', 'voices', 'effects', 'ambience'];
@@ -40,7 +41,7 @@ export function createEngine({ bank, fetchFile, acoustics = null, tier = "low", 
   const E = {
     ac, bank, tier, ready: false, unlocked: !!ac, nullOutput,
     stats: { plays: 0, drops: 0, steals: 0, late: 0, decodedBytes: 0, peakDecodedBytes: 0, decodes: 0, evictions: 0,
-      updateMs: 0, updateMsMax: 0, rays: 0, active: 0, peakActive: 0, byName: new Map() },
+      updateMs: 0, updateMsMax: 0, rays: 0, active: 0, peakActive: 0, byName: new Map(), dropBy: new Map() },
     listener: { x: 0, y: 1.5, z: 0, fx: 0, fy: 0, fz: -1, zone: -1 },
     acoustics, solver: acoustics ? createSolver(acoustics.graph) : null,
     volumes: { master: 0.8, weapons: 1, voices: 1, effects: 1, ambience: 1, radio: 1, ui: 1 },
@@ -197,7 +198,7 @@ export function createEngine({ bank, fetchFile, acoustics = null, tier = "low", 
   }
   function applyTier() {
     if (!slots.length) return;
-    const hrtf = E.tier === 'high' || E.tier === 'mid';
+    const hrtf = E.forcePanning ? E.forcePanning === 'HRTF' : E.tier === 'high' || E.tier === 'mid';
     for (const s of slots) s.panner.panningModel = hrtf ? 'HRTF' : 'equalpower';
     reverbs?.setTier(E.tier); mic?.setTier(E.tier);
   }
@@ -231,9 +232,12 @@ export function createEngine({ bank, fetchFile, acoustics = null, tier = "low", 
   function findSlot(cat, prio, aud) {
     const lim = CATS[cat]?.limit ?? 4;
     let free = null, worst = null, worstScore = 1e9, worstCat = null, worstCatScore = 1e9;
+    const now = E.ac.currentTime;
     for (const s of slots) {
       if (!s.busy) { if (!free) free = s; continue; }
-      const score = s.prio * 10 + Math.min(9.99, audibility(s) * 10) - (s.stopping ? 100 : 0);
+      // older one-shots give way first (their attack is over; the tail is masked by the new sound)
+      const age = s.loop ? 0 : Math.min(6, Math.max(0, now - s.t0) * 4);
+      const score = s.prio * 10 + Math.min(9.99, audibility(s) * 10) - age - (s.stopping ? 100 : 0);
       if (score < worstScore) { worstScore = score; worst = s; }
       if (s.cat === cat && score < worstCatScore) { worstCatScore = score; worstCat = s; }
     }
@@ -256,10 +260,10 @@ export function createEngine({ bank, fetchFile, acoustics = null, tier = "low", 
     const bs = E.stats.byName; bs.set(name, (bs.get(name) ?? 0) + 1);
     onPlay?.(name, o);
     const snd = bank.resolve(name);
-    if (!snd) { E.stats.drops++; return 0; }
+    if (!snd) { drop(name, "missing"); return 0; }
     if (nullOutput || !E.ac || !E.ready) return nullOutput ? E._nullHandle() : 0;
     const ci = o.clip >= 0 ? o.clip : bank.pick(snd.name, o.rnd ?? Math.random, o.pool, o.lastRef);
-    if (ci < 0) { E.stats.drops++; return 0; }
+    if (ci < 0) { drop(name, "noclip"); return 0; }
     const c = bank.clips[ci];
     const cat = o.cat || snd.cat, C = CATS[cat] ?? CATS.foley;
     const twoD = o.twoD || C.twoD || (!o.pos && !o.follow);
@@ -268,11 +272,11 @@ export function createEngine({ bank, fetchFile, acoustics = null, tier = "low", 
     const x = p ? p.x : E.listener.x, y = p ? p.y + o.fy : E.listener.y, z = p ? p.z : E.listener.z;
     const ref = o.ref || C.ref, max = o.max || C.max;
     const d = twoD ? 0 : Math.hypot(x - E.listener.x, y - E.listener.y, z - E.listener.z);
-    if (!twoD && d > max) { E.stats.drops++; return 0; }
+    if (!twoD && d > max) { drop(name, "range"); return 0; }
     const base = snd.gain * o.gain;
     const aud = base * (twoD ? 1 : ref / Math.max(ref, d));
     const s = findSlot(cat, prio, aud);
-    if (!s) { E.stats.drops++; return 0; }
+    if (!s) { drop(name, "busy"); return 0; }
     // reserve the slot now; start when the buffer is ready
     claim(s, c, cat, C, prio, twoD, o, x, y, z, ref, max, base);
     const h = handleOf(s);
@@ -289,6 +293,7 @@ export function createEngine({ bank, fetchFile, acoustics = null, tier = "low", 
     }
     return h;
   };
+  function drop(name, why) { E.stats.drops++; const k = `${why}:${name}`; E.stats.dropBy.set(k, (E.stats.dropBy.get(k) ?? 0) + 1); }
   let nullH = 0;
   E._nullHandle = () => (++nullH % 1e9) + 1;
   function handleOf(s) { return s.i + 1 + handleGen[s.i] * 64; }
