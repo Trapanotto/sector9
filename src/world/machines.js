@@ -264,17 +264,18 @@ export function createMachines(ctx) {
     const vis = ctx.world.isPointVisible(77, 0.8, 25);
     for (const k of c.chutes) {
       // paddle swing (fire → 0.35 s out, back)
-      if (k.fire > 0) k.fire = Math.max(0, k.fire - dt * (running ? 1 : 0));
+      if (k.fire > 0) k.fire = Math.max(0, k.fire - dt);
       const ph = k.fire > 0 ? Math.sin((1 - k.fire / 0.7) * Math.PI) : 0;
       k.pivot.rotation.y = -ph * 0.9;
       // chute cleared while nobody looks (staff empties it)
       if (k.held.length && !vis) { for (const ct of k.held) ct.mode = 'gone'; k.held.length = 0; }
     }
+    if (!vis) for (const ct of c.cartons) if (ct.mode === 'burst') ct.mode = 'gone';
     for (const ct of c.cartons) {
       if (ct.mode === 'gone') {
         // re-induct inside the scanner tunnel when its slot passes the induction point unseen
         const sPos = (c.s + ct.slot * c.spacing) % c.path.total;
-        if (sPos > c.induct && sPos < c.induct + 0.3 && (!vis || !ctx.world.isPointVisible(74.5, 0.8, 29))) ct.mode = 'belt';
+        if (sPos > c.induct && sPos < c.induct + 0.3 && (!vis || !ctx.world.isPointVisible(74.5, 0.8, 29))) { ct.mode = 'belt'; ct.burst = false; ct.forced = false; }
         else { ct.bone.scale.setScalar(0.0001); continue; }
       }
       if (ct.mode === 'belt') {
@@ -290,8 +291,20 @@ export function createMachines(ctx) {
             emitA('a:sorter', k.id, 'divert', k.k);
           }
         }
+      } else if (ct.mode === 'divert' && ct.burst) {
+        // staged divert: pushed off the belt, over the chute lip, falls to the floor and bursts
+        ct.t += dt;
+        const k = c.chutes[ct.chute], u = Math.min(1, ct.t / 1.1);
+        if (u < 0.3) { const f = u / 0.3; ct.x = 79.5 + f * 0.5; ct.y = 0.8 - f * 0.08; ct.z += (k.zc - ct.z) * Math.min(1, dt * 6); }
+        else { const f = (u - 0.3) / 0.7; ct.x = 80.0 + f * 0.9; ct.y = Math.max(0, 0.72 + 0.6 * f - 1.32 * f * f * 1.0); ct.yaw += dt * 2.5; }
+        if (u >= 1) {
+          ct.mode = 'burst'; ct.y = 0;
+          burstPt.x = ct.x; burstPt.y = 0.15; burstPt.z = ct.z;
+          ctx.fx?.powder?.(burstPt);
+          emitA('a:sorter', k.id, 'burst', k.k);
+        }
       } else if (ct.mode === 'divert') {
-        ct.t += dt * (running ? 1 : 0.0);
+        ct.t += dt * (running || ct.forced ? 1 : 0.0);
         const k = c.chutes[ct.chute];
         const u = Math.min(1, ct.t / 1.2);
         // across the belt (0..0.35), then down the slide to its rest place
@@ -301,11 +314,31 @@ export function createMachines(ctx) {
         ct.yaw *= Math.max(0, 1 - dt * 3);
         if (u >= 1) { ct.mode = 'chute'; ct.yaw = 0; }
       }
-      ct.bone.scale.setScalar(1);
+      if (ct.mode === 'burst') ct.bone.scale.set(1.15, 0.35, 1.1); else ct.bone.scale.setScalar(1);
       ct.bone.position.set(ct.x, ct.y, ct.z);
       ct.bone.rotation.set(ct.mode === 'chute' || (ct.mode === 'divert' && ct.t > 0.42) ? 0.0 : 0, ct.yaw, ct.mode === 'chute' ? -0.26 : 0);
     }
   }
+  const burstPt = { x: 0, y: 0, z: 0 };
+  /** staged sorter divert (director): the nearest belt carton is pushed into chute `chuteId` right now; with
+   *  opts.burst it overshoots the chute, falls and bursts (ctx.fx.powder at the landing point, 'a:sorter' burst) */
+  m.sorter = {
+    divert(chuteId = 'chute3', opts = {}) {
+      const c = m.conveyors.find((x) => x.id === L.sorter.conveyor); if (!c) return false;
+      const k = c.chutes.find((x) => x.id === chuteId) ?? c.chutes[2];
+      let best = null, bd = Infinity;
+      for (const ct of c.cartons) if (ct.mode === 'belt') { const d = Math.abs(ct.x - 79.5) + Math.abs(ct.z - k.zc); if (d < bd) { bd = d; best = ct; } }
+      if (!best) return false;
+      best.mode = 'divert'; best.t = 0; best.chute = k.k; best.burst = !!opts.burst; best.forced = true; best.x = 79.5; best.y = 0.8; best.z = k.zc - 0.4;
+      if (!best.burst) { k.held.push(best); best.rest = k.held.length - 1; }
+      k.fire = 0.7;
+      emitA('a:sorter', k.id, 'divert', k.k);
+      return true;
+    },
+  };
+  // anchors for staged moments (fog at the cold store door etc.)
+  m.anchors = { coldStoreDoor: [85.8, 1.0, 56.7], sorterChute3: [80.4, 0.6, 24], robot: [90, 1.5, 41], craneIO: [89.7, 1.0, 31.5] };
+  m.anchor = (name) => m.anchors[name] ?? null;
   function U_BELT(i, v) { if (material) material.uniforms.uBelt.value[i] = v - Math.floor(v); }
 
   // AKL outfeed: cartons appear in the wall hole, roll to the end stop; the robot picks the front one
@@ -489,7 +522,7 @@ export function createMachines(ctx) {
     for (const a of m.agvs) { const d = L.agvs.find((x) => x.id === a.id); a.state = d.state; a.s = d.start * a.route.total; a.v = d.state === 'running' ? a.speed : 0; a.hold = 0; placeAgv(a, 0); }
     for (const c of m.conveyors) {
       c.state = L.conveyors.find((x) => x.id === c.id).state; c.s = 0;
-      c.cartons?.forEach((ct, i) => { ct.mode = 'belt'; ct.u = -1; ct.slot = ct.slot ?? i; });
+      c.cartons?.forEach((ct, i) => { ct.mode = 'belt'; ct.u = -1; ct.slot = ct.slot ?? i; ct.burst = false; ct.forced = false; ct.z = 0; });
       c.chutes?.forEach((k) => { k.held.length = 0; k.fire = 0; });
       if (c.path) c.induct = indPoint(c);
     }

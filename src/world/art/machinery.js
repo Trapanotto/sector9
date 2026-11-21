@@ -104,7 +104,7 @@ export function cartonPart(b, w = 0.5, h = 0.3, d = 0.35, variant = 0) {
 }
 /** sorter paddle (swing arm): local origin at the pivot, arm along +z (0.7 m), 0.18 high */
 export function paddlePart(b) {
-  b.box(-0.02, 0.0, 0.0, 0.02, 0.18, 0.7, MAT.paint([0.1, 0.35, 0.7], 0.3));
+  b.box(-0.02, 0.0, 0.0, 0.02, 0.16, 0.7, MAT.galv(0.3));
   b.box(-0.03, 0.02, 0.62, 0.03, 0.16, 0.7, m('rubber', null, 0.2), 0);
   b.cyl(0, -0.02, 0, 0.05, 0.22, 10, MAT.paint(C.dgrey, 0.3), 1);
 }

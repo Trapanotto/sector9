@@ -41,7 +41,7 @@ function extinguisher(b, x, z, f) {
 
 export function decorArt(L, place, B, free = () => true) {
   const yellowLine = m('floorline', null, [0.5, 0.5]);
-  const whiteLine = m('floorline', [1.05, 1.15, 1.6], [0.5, 0.5]);
+  const whiteLine = m('paint', [1, 1, 0.97], [0.5, 0.5]);
 
   // ---- hall: aisle edge lines in front of every rack run facing an aisle, cross-aisle walkway lines
   const runs = HALL.racks;
