@@ -131,6 +131,11 @@ export function createAudio(ctx, opt = {}) {
       heavySwitch: () => heavy,
       // the real director (F) stages moment sounds itself (it exposes `tension`); the stub does not
       directorStages: () => !!ctx.director && 'tension' in ctx.director,
+      // the real enemies (D) decide when they speak (d:voice), report steps (d:step) and near misses (d:nearmiss);
+      // the real player/weapon (C) reports footsteps (c:footstep), casing bounces (c:casing) and reload stages
+      // (c:reload). With the stubs E falls back to polling and its own timing.
+      dEnemies: () => typeof ctx.enemies?.ambush === 'function',
+      cPlayer: () => typeof ctx.weapon?.snapshot === 'function',
       shortThump: () => (thumps.length ? thumps[(Math.random() * thumps.length) | 0] : -1),
       reserved: (file) => findClip(file),
     };

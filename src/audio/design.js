@@ -23,6 +23,8 @@ export function installDesign(K) {
   const lerp = (a, b, t) => a + (b - a) * t;
   const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
   const d2L = (x, y, z) => Math.hypot(x - K.L.x, y - K.L.y, z - K.L.z);
+  const dE = () => K.dEnemies?.() ?? false;   // D's enemies drive their own voices / steps / near misses
+  const cP = () => K.cPlayer?.() ?? false;    // C's player/weapon reports steps, casings, reload stages
 
   // ---- tiny helpers (shared opts object; positions are copied by the engine at play time)
   const at = { x: 0, y: 0, z: 0 };
@@ -82,11 +84,13 @@ export function installDesign(K) {
     // own pistol: 2D at the chest mic, strong send into the room the listener is in
     play2D('weapon.pistol.shot', 1.0, 1, 0, (o) => { o.send = 2.2; o.prio = 10; o.pitchVar = 0.02; o.cat = 'weapon'; });
     tail(cls, 0, 0, 0, 0.9, true);
-    // casing: hits the floor ~0.4 s later next to the right foot, by surface
-    const p = P().pos, surf = K.lastStepSurface ?? 'concrete';
-    const g = surf === 'gravel' ? 0.15 : surf === 'wood' ? 0.35 : 0.5;
-    const pitch = surf === 'metal' ? 1.12 : surf === 'wood' ? 0.85 : 1;
-    later(0.33 + rnd() * 0.2, 'weapon.casing', p.x + 0.4 * Math.cos(P().yaw), p.y + 0.05, p.z - 0.4 * Math.sin(P().yaw), g, pitch);
+    // casing: hits the floor ~0.4 s later next to the right foot, by surface (C's physical casings: c:casing)
+    if (!cP()) {
+      const p = P().pos, surf = K.lastStepSurface ?? 'concrete';
+      const g = surf === 'gravel' ? 0.15 : surf === 'wood' ? 0.35 : 0.5;
+      const pitch = surf === 'metal' ? 1.12 : surf === 'wood' ? 0.85 : 1;
+      later(0.33 + rnd() * 0.2, 'weapon.casing', p.x + 0.4 * Math.cos(P().yaw), p.y + 0.05, p.z - 0.4 * Math.sin(P().yaw), g, pitch);
+    }
     // very close & enclosed: brief ear ring (rate-limited, subtle)
     const now = K.now();
     if ((cls === 'room_small' || cls === 'corridor' || cls === 'stairwell' || cls === 'basement' || cls === 'cold_store') && now - lastOwnShot > 3) E.mic?.ring(0.25, 1.6);
@@ -126,10 +130,11 @@ export function installDesign(K) {
     rounds[k]++;
     checkReload(k, en, w);
     K.T.danger(d < 30 ? 0.22 : 0.08);
-    // some shouting while shooting
-    if (rnd() < 0.08) V.speak(k, rnd() < 0.5 ? 'taunt' : 'command', en.pos, 1, 0.2);
+    // some shouting while shooting (D's enemies shout through d:voice)
+    if (!dE() && rnd() < 0.08) V.speak(k, rnd() < 0.5 ? 'taunt' : 'command', en.pos, 1, 0.2);
   });
   function checkReload(k, en, w) {
+    if (dE()) return;     // D: magazine sounds follow the real reload (pollReloads), the callout is d:voice
     if (rounds[k] < (MAG[w] ?? 13)) return;
     rounds[k] = 0;
     // enemy reload: callout (sometimes) + mag handling at his position
@@ -145,7 +150,24 @@ export function installDesign(K) {
     }
     updateSteps(dt);
     updateEnemyAwareness();
+    if (dE()) pollReloads();
   };
+  // D's enemies: a new reloadUntil value = a reload started → mag out / mag in at the enemy (timed by the weapon)
+  const reloadSeen = new Float64Array(64);
+  function pollReloads() {
+    const list = ctx.enemies?.list; if (!list) return;
+    for (let i = 0; i < list.length && i < 64; i++) {
+      const en = list[i], ru = en.reloadUntil ?? -1;
+      if (ru > 0 && ru !== reloadSeen[i] && !en.dead) {
+        const dur = en.w?.reload ?? 1.8;
+        if (d2L(en.pos.x, en.pos.y, en.pos.z) < 30) {
+          later(0.3, 'weapon.pistol.mag', en.pos.x, en.pos.y + 1.1, en.pos.z, 0.6);
+          later(dur * 0.65, 'weapon.pistol.magin', en.pos.x, en.pos.y + 1.1, en.pos.z, 0.6);
+        }
+      }
+      reloadSeen[i] = ru;
+    }
+  }
 
   // ---- every round: impacts, ricochets, whizz
   const IMPACT = {
@@ -171,8 +193,8 @@ export function installDesign(K) {
       const ric = s === 'metal' ? 0.28 : s === 'concrete' || s === 'tile' ? 0.1 : 0;
       if (rnd() < ric) later(0.015 + rnd() * 0.03, 'bullet.ricochet', px, py, pz, 0.7);
     }
-    // near miss: rounds not fired by the player passing close to the listener
-    if (r.shooter !== P() && r.origin && r.dir) {
+    // near miss: rounds not fired by the player passing close to the listener (D reports them: d:nearmiss)
+    if (r.shooter !== P() && r.origin && r.dir && !dE()) {
       const o = r.origin, d = r.dir, L = K.L;
       const t = (L.x - o.x) * d.x + (L.y - o.y) * d.y + (L.z - o.z) * d.z;
       const tMax = r.hit ? r.t : 80;
@@ -188,6 +210,15 @@ export function installDesign(K) {
       }
     }
   });
+  // D: one event per enemy shot (all pellets), closest approach of the round to the player's head
+  ev.on('d:nearmiss', (e) => {
+    const p = e?.point; if (!p) return;
+    const miss = e.dist ?? 1;
+    const w = e.enemy?.def?.weapon;
+    playAt('bullet.whizz', p.x, p.y, p.z, (1 - Math.min(1, miss / 1.4)) * 0.85 + 0.3, w === 'rifle' ? 1.15 : 1, 0, (o2) => { o2.prio = 9; o2.occlude = false; o2.ref = 1; });
+    D.whizz++;
+    K.T.danger(0.25);
+  });
   ev.on('hit', (r) => {
     if (!r?.point || !r.target) return;
     if (r.target === P()) return;   // player: player:damage
@@ -196,13 +227,35 @@ export function installDesign(K) {
 
   // ==========================================================================================================
   // player weapon handling, damage, death, flashlight
+  // C's weapon emits c:reload stages in sync with the animation; the contract events are then silent here
   ev.on('weapon:reload', (w) => {
+    if (cP()) return;
     const T = w?.reloading > 0 ? w.reloading : 1.8;
     play2D('weapon.pistol.mag', 0.75, 1, 0.05, (o) => { o.cat = 'handling'; });
     later2D(0.18, 'foley.gear', 0.3);
     later2D(T * 0.55, 'weapon.pistol.magin', 0.85);
   });
-  ev.on('weapon:reloaded', () => { play2D('weapon.pistol.slide', 0.8, 1, 0, (o) => { o.cat = 'handling'; }); });
+  ev.on('weapon:reloaded', () => { if (!cP()) play2D('weapon.pistol.slide', 0.8, 1, 0, (o) => { o.cat = 'handling'; }); });
+  ev.on('c:reload', (s) => {
+    switch (s?.stage) {
+      case 'start': play2D('foley.cloth', 0.2, 1, 0, (o) => { o.cat = 'foley'; }); break;
+      case 'mag_out': play2D('weapon.pistol.mag', 0.75, 1, 0, (o) => { o.cat = 'handling'; }); break;
+      case 'mag_pouch': play2D('foley.gear', 0.32, 1, 0, (o) => { o.cat = 'foley'; }); break;
+      case 'mag_in': play2D('weapon.pistol.magin', 0.85, 1, 0, (o) => { o.cat = 'handling'; }); break;
+      case 'slide_release': play2D('weapon.pistol.slide', 0.8, 1, 0, (o) => { o.cat = 'handling'; }); break;
+      default: break;
+    }
+  });
+  // last round: the slide locks back (short, higher metallic click)
+  ev.on('c:slidelock', () => { play2D('weapon.dryfire', 0.45, 1.25, 0.06, (o) => { o.cat = 'handling'; o.dur = 0.12; }); });
+  // C's casings bounce (≤ 3 times, speed m/s at impact) on the surface under the player
+  ev.on('c:casing', (c) => {
+    if (!c) return;
+    const s = c.surface, sp = Math.min(1, (c.speed ?? 1) / 3);
+    const g = (s === 'dirt' ? 0.15 : s === 'wood' || s === 'cardboard' ? 0.35 : 0.5) * (0.35 + 0.65 * sp);
+    const pitch = (s === 'metal' ? 1.12 : s === 'wood' ? 0.85 : 1) * (1 + (1 - sp) * 0.08);
+    playAt('weapon.casing', c.x, c.y, c.z, g, pitch, 0, (o) => { o.pitchVar = 0.06; o.cat = 'handling'; });
+  });
   ev.on('weapon:empty', () => { play2D('weapon.dryfire', 0.8); });
   ev.on('player:flashlight', () => { play2D('foley.lightswitch', 0.28, 1.45, 0, (o) => { o.cat = 'handling'; o.lp = 6000; }); });
   let lastPain = -10;
@@ -233,7 +286,10 @@ export function installDesign(K) {
     alerted[k] = 1;
     const d = d2L(en.pos.x, en.pos.y + 1.6, en.pos.z);
     const sleeper = en.def?.role === 'sleeper';
-    if (d > 38) {
+    if (dE()) {
+      // D says the lines itself (d:voice); here only the officer's answer and the tension
+      if (firstAlert && d < 14) { firstAlert = false; later2D(0.5 + rnd() * 0.3, 'voice.player.command', 0.9); }
+    } else if (d > 38) {
       // far away inside the building: a distant shout reads better than a quiet close-miked line
       playAt('voice.distant.shout', en.pos.x, en.pos.y + 1.6, en.pos.z, 1, V.profiles[k]?.pitch ?? 1, 0.1 + rnd() * 0.3, (o) => { o.cat = 'voice'; o.ref = 12; });
     } else {
@@ -269,7 +325,8 @@ export function installDesign(K) {
       if (en.alerted && d2L(en.pos.x, en.pos.y, en.pos.z) < 45) { fighters++; if (!cand || rnd() < 0.35) cand = en; }
     }
     // combat chatter: one line every few seconds while enemies are fighting near the player
-    if (cand && fighters && now - lastChatter > 3.5 + rnd() * 3) {
+    // (D shouts its own alerts / flank calls / taunts: then only sparse fill-in chatter between them)
+    if (cand && fighters && now - lastChatter > (dE() ? 9 + rnd() * 6 : 3.5 + rnd() * 3) && (!dE() || cand.state === 'combat')) {
       lastChatter = now;
       const k = K.enemyIndex(cand);
       const r = rnd();
@@ -279,9 +336,51 @@ export function installDesign(K) {
   ev.on('enemy:damage', (e) => {
     const en = e?.enemy; if (!en) return;
     const k = K.enemyIndex(en);
+    if (dE()) { if (k >= 0) { lastPart[k] = e.part ?? ''; lastAmt[k] = e.amount ?? 30; } }   // D voices the pain (d:voice)
     // decide after this frame's events: a lethal hit emits enemy:death right after enemy:damage
-    sched.at(K.now() + 0.03, fnHurt, e.part ?? '', 0, 0, 0, en, e.amount ?? 30, k);
+    else sched.at(K.now() + 0.03, fnHurt, e.part ?? '', 0, 0, 0, en, e.amount ?? 30, k);
     if (!alerted[k]) onAlert(en);
+  });
+  const lastPart = new Array(64).fill(''), lastAmt = new Float32Array(64), deathSaid = new Uint8Array(64);
+  // D's voice requests: kind alert|command|reload|pain|death|dying|taunt|plead|surprise → this enemy's profile
+  ev.on('d:voice', (e) => {
+    const en = e?.enemy; if (!en) return;
+    const k = K.enemyIndex(en); if (k < 0) return;
+    const p = e.pos ?? en.pos, kind = e.kind;
+    const d = d2L(p.x, p.y, p.z);
+    switch (kind) {
+      case 'alert': case 'command':
+        // far away inside the building: a distant shout reads better than a quiet close-miked line
+        if (d > 38) playAt('voice.distant.shout', p.x, p.y, p.z, 1, V.profiles[k]?.pitch ?? 1, 0.1 + rnd() * 0.2, (o) => { o.cat = 'voice'; o.ref = 12; });
+        else V.speak(k, kind, p, 1, 0.05 + rnd() * 0.15);
+        break;
+      case 'pain': {
+        if (en.dead) break;
+        const part = lastPart[k], amt = lastAmt[k];
+        lastPart[k] = '';
+        if (!part) { V.speak(k, 'pain', p, 0.9); break; }       // flinch without a bullet (starts to flee)
+        if (part === 'legs') V.speak(k, amt < 40 ? 'effort' : 'scream', p, 1, 0, true);
+        else if (amt > 45 && rnd() < 0.5) V.speak(k, 'scream', p, 1, 0, true);
+        else V.speak(k, 'pain', p, 1, 0, true);
+        if (en.health > 35 && rnd() < 0.3) sched.at(K.now() + 0.9 + rnd() * 0.5, fnSpeak, 'hit', 0, 0, 0, en, 1, k);
+        if (en.health <= 50 && rnd() < 0.3) sched.at(K.now() + 2.5 + rnd() * 1.5, fnSpeak, 'breath.panic', 0, 0, 0, en, 0.7, k);
+        break;
+      }
+      case 'death': case 'dying':
+        if (en.dead) {
+          if (deathSaid[k]) break;          // exactly one death cry per body
+          deathSaid[k] = 1;
+          if (d > 35) playAt('voice.distant.scream', p.x, p.y, p.z, 1, V.profiles[k]?.pitch ?? 1, 0.02, (o) => { o.cat = 'voice'; o.ref = 12; o.max = 140; });
+          else V.speak(k, kind, p, 1, 0.02, true);
+          // writhing on the floor: a groan or two later
+          if (kind === 'dying' && !dyingSched[k]) {
+            dyingSched[k] = 1;
+            sched.at(K.now() + 3 + rnd() * 2, fnDying, '', p.x, en.pos.y + 0.3, p.z, en, 0.8, k);
+          }
+        } else V.speak(k, kind, p, 1, 0, true);   // wounded surrender: kneels and moans
+        break;
+      default: V.speak(k, kind, p, 1, 0.05); break;   // reload, taunt, plead, surprise
+    }
   });
   const fnHurt = (it) => {
     const en = it.a, k = it.k;
@@ -301,7 +400,9 @@ export function installDesign(K) {
     E.stopOwner(V.owner(k), 0.04);
     sched.cancel(fnSpeak, k); sched.cancel(fnHurt, k);
     const head = e.part === 'head';
-    if (d2L(x, y + 1.5, z) > 35) {
+    if (dE()) {
+      // D sends the death/dying line right after this (d:voice); head shots die silently
+    } else if (d2L(x, y + 1.5, z) > 35) {
       // far end of the hall / another room: the distant-scream recordings carry the space with them
       if (!head) playAt('voice.distant.scream', x, y + 1.2, z, 1, V.profiles[k]?.pitch ?? 1, 0.02, (o) => { o.cat = 'voice'; o.ref = 12; o.max = 140; });
     } else if (!head || rnd() < 0.2) V.speak(k, head ? 'pain' : 'death', en.pos, 1, 0.02, true);
@@ -309,7 +410,7 @@ export function installDesign(K) {
     later(0.55 + rnd() * 0.35, 'foley.bodyfall', x, y + 0.2, z, 0.95);
     later(0.75 + rnd() * 0.3, 'foley.gear', x, y + 0.2, z, 0.4);
     // some die slowly: groans a few seconds later
-    if (!head && !dyingSched[k] && rnd() < 0.4) {
+    if (!dE() && !head && !dyingSched[k] && rnd() < 0.4) {
       dyingSched[k] = 1;
       sched.at(K.now() + 3 + rnd() * 3, fnDying, '', x, y + 0.3, z, en, 0.8, k);
       if (rnd() < 0.5) sched.at(K.now() + 10 + rnd() * 5, fnDying, '', x, y + 0.3, z, en, 0.55, k);
@@ -431,7 +532,7 @@ export function installDesign(K) {
     wasMoving = moving;
     const stride = p.crouched ? 0.55 : speed > 3.4 ? 0.95 : speed < 1.5 ? 0.6 : 0.75;
     acc += h;
-    if (acc >= stride && moving) {
+    if (acc >= stride && moving && !cP()) {
       acc = 0; stepN++;
       const s = K.surfaceBelow(p.pos.x, p.pos.y, p.pos.z);
       K.lastStepSurface = s;
@@ -448,9 +549,9 @@ export function installDesign(K) {
     E.mic?.setWind(Math.max(out, (speed - 2.6) / 2.2 * 0.8 + turn * 0.25));
     if (turn > 0.7 && rnd() < dt * 2) play2D('foley.cloth', 0.15, 1.1, 0, (o) => { o.cat = 'foley'; });
     still = moving ? 0 : still + dt;
-    // enemies' footsteps (only near ones; positional with occlusion)
+    // enemies' footsteps (only near ones; positional with occlusion) — D reports them itself (d:step)
     const list = ctx.enemies?.list;
-    if (!list) return;
+    if (!list || dE()) return;
     for (let i = 0; i < list.length && i < 64; i++) {
       const en = list[i];
       if (en.dead) { eX[i] = NaN; continue; }
@@ -472,7 +573,29 @@ export function installDesign(K) {
     }
   }
 
+  // C: one event per footfall, surface from C's ground ray (impact names → step recordings)
+  const stepSurf = (s, x, y, z) => (s === 'metal' ? 'metal' : s === 'wood' || s === 'cardboard' || s === 'plastic' ? 'wood' : s === 'dirt' ? 'gravel' : K.classAt(x, y, z) === 'outdoor' ? 'asphalt' : 'concrete');
+  let cStepN = 0;
+  ev.on('c:footstep', (e) => {
+    if (!e || ctx.state !== 'playing') return;
+    const s = stepSurf(e.surface, e.x, e.y, e.z);
+    K.lastStepSurface = s;
+    const speed = e.speed ?? 2, run = e.sprint || speed > 3.4;
+    const g = e.crouched ? 0.16 : run ? 0.72 : speed < 1.5 ? 0.22 : 0.4;
+    play2D(STEP[s] ?? STEP.concrete, g, 1, 0, (o) => { o.cat = 'step'; o.pitchVar = 0.05; o.lp = e.crouched ? 3500 : 20000; o.send = 0.6; });
+    cStepN++;
+    if (run && cStepN % 2 === 0) play2D('foley.gear', 0.22, 1, 0.03, (o) => { o.cat = 'foley'; });
+    else if (cStepN % 5 === 0) play2D('foley.cloth', 0.12, 1, 0.02, (o) => { o.cat = 'foley'; });
+  });
+  ev.on('d:step', (e) => {
+    const p = e?.pos; if (!p) return;
+    if (d2L(p.x, p.y, p.z) > 32) return;
+    const s = K.surfaceBelow(p.x, p.y, p.z);
+    playAt(STEP[s] ?? STEP.concrete, p.x, p.y + 0.05, p.z, e.run ? 1.0 : 0.6, 1, 0, (o) => { o.pitchVar = 0.06; o.prio = 3; });
+  });
+
   D.reset = () => {
+    lastPart.fill(''); lastAmt.fill(0); deathSaid.fill(0); reloadSeen.fill(0); cStepN = 0;
     alerted.fill(0); pleaded.fill(0); dyingSched.fill(0); fromEvent.fill(0); rounds.fill(0); lastShot.fill(-10);
     burstH.fill(0); burstUntil.fill(0); firstAlert = true; prevState.clear(); roller.clear(); circLevel.clear();
     lx = NaN; acc = 0; eX.fill(NaN); eAcc.fill(0);

@@ -9,6 +9,8 @@ const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
 /** position of a machine record of whatever shape A uses (stub: group.position) */
 function posOf(rec, out) {
+  // A's records carry their world position as plain numbers (AGV x/z on the floor, crane x/z + fork height y)
+  if (rec && typeof rec.x === 'number' && typeof rec.z === 'number') { out.x = rec.x; out.y = typeof rec.y === 'number' ? rec.y : 0; out.z = rec.z; return true; }
   const p = rec?.pos ?? rec?.position ?? rec?.group?.position ?? rec?.object?.position ?? rec?.mesh?.position ?? rec?.root?.position;
   if (!p) return false;
   out.x = p.x ?? p[0]; out.y = (p.y ?? p[1] ?? 0); out.z = p.z ?? p[2];
@@ -98,8 +100,22 @@ export function installWorld(K) {
   // ---- sorter: clacks/thumps at the chutes while c_loop runs, occasional pneumatic hiss
   let sorterT = 0;
   const S = L.sorter;
+  // A's sorter reports every divert ('a:sorter' {id, phase 'divert'|'burst', index}): clack exactly then
+  const sorterEvents = () => typeof machines()?.sorter?.divert === 'function';
+  ctx.events.on('a:sorter', (e) => {
+    const ch = S?.chutes?.[e?.index ?? -1] ?? S?.chutes?.find((c) => c.id === e?.id); if (!ch) return;
+    const x = (ch.x0 + ch.x1) / 2, z = (ch.z0 + ch.z1) / 2;
+    if (e.phase === 'burst') {
+      // carton hits the floor and bursts
+      K.D.playAt('impact.cardboard', x + 0.9, 0.2, z, 1.0, 0.8, 0, (o) => { o.max = 40; });
+      K.D.playAt('foley.bodyfall', x + 0.9, 0.2, z, 0.45, 1.3, 0.02, (o) => { o.lp = 2500; o.max = 30; });
+    } else {
+      K.D.playAt('machine.sorter.clack', x, (ch.top ?? 0.8) + 0.4, z, 0.75, 1, 0, (o) => { o.dur = 1.6; o.max = 40; });
+      if (Math.random() < 0.2) K.D.playAt('machine.pneumatic', x, (ch.top ?? 0.8) + 0.2, z, 0.4, 1.1, 0.05, (o) => { o.dur = 1.0; o.max = 30; });
+    }
+  });
   function tickSorter(dt) {
-    if (!S || !running(loopRec())) return;
+    if (!S || sorterEvents() || !running(loopRec())) return;
     sorterT -= dt;
     if (sorterT > 0) return;
     sorterT = 0.7 + Math.random() * 1.8;
@@ -111,28 +127,41 @@ export function installWorld(K) {
   // ---- AGVs: drive hum + rolling + warning beeper (AMR)
   for (const a of L.agvs ?? []) {
     const rec = () => machines()?.agv?.(a.id) ?? machines()?.agvs?.find((x) => x.id === a.id);
-    const upd = (e) => { posOf(rec(), e.pos); e.pos.y += 0.35; };
-    emitter('loop.motor', { gain: 0.42, max: 28, pitch: a.kind === 'amr' ? 1.35 : 1.15, rateLo: 0.5, tau: 0.6, tauDown: 0.8, update: upd, want: () => (running(rec()) ? 1 : 0), tag: a.id });
-    emitter('loop.palletjack', { gain: a.kind === 'tugger' ? 0.65 : 0.4, max: 26, rateLo: 0.4, tau: 0.5, tauDown: 0.5, update: upd, want: () => (running(rec()) ? 1 : 0), tag: a.id });
-    if (a.kind === 'amr') emitter('loop.beeper', { gain: 0.55, max: 40, tau: 0.05, tauDown: 0.05, update: upd, want: () => (running(rec()) ? 1 : 0), tag: a.id });
+    const upd = (e) => { if (posOf(rec(), e.pos)) e.pos.y = 0.35; };
+    // A's AGVs: state running | blocked (stopped for someone ahead, beacon + beeper on) | parked | estop; `v` is the
+    // real speed, so drive and rolling follow the vehicle's acceleration and braking
+    const spd = () => { const r = rec(); if (!r) return 0; if (typeof r.v === 'number') return clamp01(r.v / (r.speed || 1.2)); return running(r) ? 1 : 0; };
+    const live = () => { const s = rec()?.state; return s === 'running' || s === 'blocked'; };
+    emitter('loop.motor', { gain: 0.42, max: 28, pitch: a.kind === 'amr' ? 1.35 : 1.15, rateLo: 0.5, tau: 0.6, tauDown: 0.8, update: upd, want: () => (live() ? 0.2 + 0.8 * spd() : 0), tag: a.id });
+    emitter('loop.palletjack', { gain: a.kind === 'tugger' ? 0.65 : 0.4, max: 26, rateLo: 0.4, tau: 0.3, tauDown: 0.3, update: upd, want: spd, tag: a.id });
+    if (a.kind === 'amr') emitter('loop.beeper', { gain: 0.55, max: 40, tau: 0.05, tauDown: 0.05, update: upd, want: () => (live() ? 1 : 0), tag: a.id });
+    else emitter('loop.beeper', { gain: 0.5, max: 34, pitch: 0.85, tau: 0.05, tauDown: 0.05, update: upd, want: () => (rec()?.state === 'blocked' ? 1 : 0), tag: a.id });   // tugger warns only when blocked
   }
 
   // ---- stacker crane: travel whine scaled by its speed
   for (const c of L.cranes ?? []) {
-    let lz = NaN, v = 0;
+    let lz = NaN, ly = NaN, v = 0;
     const rec = () => machines()?.crane?.(c.id) ?? machines()?.cranes?.find((x) => x.id === c.id);
     emitter('loop.crane', {
       gain: 0.9, max: 45, rateLo: 0.6, tau: 0.4, tauDown: 0.4, tag: c.id,
       update(e, dt) {
         const r = rec();
-        if (!posOf(r, e.pos)) { e.pos.x = c.x; e.pos.z = (c.z0 + c.z1) / 2; }
-        e.pos.y = (r?.car?.position?.y ?? 3) + 0.5;
-        if (!Number.isNaN(lz) && dt > 0) v += (Math.abs(e.pos.z - lz) / dt - v) * Math.min(1, dt * 4);
-        lz = e.pos.z;
+        if (!posOf(r, e.pos)) { e.pos.x = c.x; e.pos.z = (c.z0 + c.z1) / 2; e.pos.y = 3; }
+        e.pos.y = Math.max(0.5, e.pos.y) + 0.3;
+        // travel along the aisle plus hoisting (slower, counts double)
+        if (!Number.isNaN(lz) && dt > 0) v += ((Math.abs(e.pos.z - lz) + 2 * Math.abs(e.pos.y - ly)) / dt - v) * Math.min(1, dt * 4);
+        lz = e.pos.z; ly = e.pos.y;
       },
-      want: () => (running(rec()) ? clamp01(v / (c.speed || 2.5)) : 0),
+      want: () => (running(rec()) ? clamp01(0.15 + v / (c.speed || 2.5)) : 0),
     });
   }
+  // crane forks set a pallet down / lift it off ('a:crane' {id, phase 'pick'|'drop'}): steel clunk at the fork
+  ctx.events.on('a:crane', (e) => {
+    const r = machines()?.crane?.(e?.id); if (!r) return;
+    const x = r.x + (r.fx ?? 0), y = r.y ?? 2, z = r.z;
+    K.D.playAt('impact.sheetmetal', x, y, z, e.phase === 'drop' ? 0.8 : 0.6, 0.62, 0, (o) => { o.max = 45; o.lp = 3500; });
+    K.D.playAt('impact.wood', x, y, z, 0.5, 0.7, 0.03, (o) => { o.max = 35; });
+  });
 
   // ---- palletising robot: servo loop with |ω|, a servo move one-shot at every reversal, gripper hiss
   for (const r of L.robots ?? []) {
@@ -143,7 +172,7 @@ export function installWorld(K) {
       x: bx, y: by, z: bz, gain: 0.8, max: 35, rateLo: 0.7, tau: 0.25, tauDown: 0.35, tag: r.id,
       update(e, dt) {
         const R = rec();
-        const ang = R?.arm?.rotation?.y ?? R?.angle ?? R?.joints?.[0] ?? NaN;
+        const ang = R?.turret?.rotation?.y ?? R?.arm?.rotation?.y ?? R?.angle ?? R?.joints?.[0] ?? NaN;
         if (!Number.isNaN(ang) && !Number.isNaN(la) && dt > 0) {
           const om = (ang - la) / dt;
           w += (Math.abs(om) - w) * Math.min(1, dt * 8);
@@ -151,13 +180,21 @@ export function installWorld(K) {
           if (sg && lastSign && sg !== lastSign && K.now() - lastEv > 0.8) {
             lastEv = K.now();
             K.D.playAt('machine.servo', bx, by, bz, 0.9, 1, 0, (o) => { o.dur = 2.0; o.max = 40; });
-            if (Math.random() < 0.45) K.D.playAt('machine.pneumatic', bx, r.base[1] + 0.6, bz, 0.5, 1.1, 0.25, (o) => { o.dur = 1.2; });
+            // (gripper hiss: 'a:robot' below)
           }
           if (sg) lastSign = sg;
         }
         la = ang;
       },
       want: () => (running(rec()) ? clamp01(0.25 + w / 1.4) : 0),
+    });
+    // gripper: vacuum grip at the pick, release puff at the place ('a:robot' {id, phase})
+    ctx.events.on('a:robot', (e) => {
+      if (e?.id !== r.id) return;
+      const R = rec(), p = R?.tool;
+      const x = p?.x || bx, z = p?.z || bz, y = (p?.y || by) - 0.2;
+      K.D.playAt('machine.pneumatic', x, y, z, e.phase === 'pick' ? 0.55 : 0.4, e.phase === 'pick' ? 1.0 : 1.2, 0, (o) => { o.dur = e.phase === 'pick' ? 0.9 : 0.6; o.max = 35; });
+      if (e.phase === 'place') K.D.playAt('impact.cardboard', x, y - 0.3, z, 0.45, 0.85, 0.1, (o) => { o.max = 30; });
     });
   }
 
@@ -304,6 +341,12 @@ export function installWorld(K) {
   W.machineState = (e) => {
     // instant reaction to a state event (the emitters also poll); a stop makes the silence noticeable
     if (e?.kind === 'conveyor' && e.state !== 'running') W.silence(0.5, 2.5);
+    // emergency stop: every machine reports 'estop' in the same frame → one heavy contactor clunk, then quiet
+    if (e?.state === 'estop' && K.now() - (W.estopT ?? -10) > 1) {
+      W.estopT = K.now();
+      K.D.playAt('foley.switch', 82, 3, 30, 1.0, 0.75, 0, (o) => { o.ref = 6; o.clip = K.heavySwitch(); o.max = 70; });
+      W.silence(0.35, 3.5);
+    }
   };
   return W;
 }
