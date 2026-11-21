@@ -21,6 +21,8 @@ const variants = ['thug_jacket', 'thug_hoodie', 'thug_balaclava', 'thug_worker',
 if (!only || only === 'enemies') {
   run('python', ['-I', 'build_enemies.py', cache, raw]);
   for (const v of variants) run('node', ['optimize.mjs', path.join(raw, `${v}_raw.glb`), path.join(chars, `${v}.glb`), '8000', '2500', '1024']);
+  // workstream D: far LOD (800 triangles) for the triangle budget with many visible enemies
+  for (const v of variants) run('node', ['add_lod2.mjs', path.join(chars, `${v}.glb`), path.join(chars, `${v}.glb`), '800']);
 }
 const ref = path.join(raw, 'thug_jacket_raw.glb');
 if (!only || only === 'enemies' || only === 'anims') {

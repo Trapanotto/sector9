@@ -20,7 +20,8 @@
    "rootScale": 1.01627,
    "height": 1.833,
    "weapon": "smg",
-   "bytes": 176244
+   "bytes": 192804,
+   "lod2": "thug_tee_LOD2"
   },
   {
    "name": "thug_jacket",
@@ -30,7 +31,8 @@
    "rootScale": 0.9707,
    "height": 1.763,
    "weapon": "pistol",
-   "bytes": 180172
+   "bytes": 199236,
+   "lod2": "thug_jacket_LOD2"
   },
   {
    "name": "thug_hoodie",
@@ -40,7 +42,8 @@
    "rootScale": 1.02143,
    "height": 1.851,
    "weapon": "smg",
-   "bytes": 174040
+   "bytes": 192076,
+   "lod2": "thug_hoodie_LOD2"
   },
   {
    "name": "thug_balaclava",
@@ -50,7 +53,8 @@
    "rootScale": 0.96768,
    "height": 1.764,
    "weapon": "shotgun",
-   "bytes": 191076
+   "bytes": 208476,
+   "lod2": "thug_balaclava_LOD2"
   },
   {
    "name": "thug_worker",
@@ -60,7 +64,8 @@
    "rootScale": 0.99481,
    "height": 1.819,
    "weapon": "pistol",
-   "bytes": 166004
+   "bytes": 183808,
+   "lod2": "thug_worker_LOD2"
   },
   {
    "name": "thug_female",
@@ -70,7 +75,8 @@
    "rootScale": 0.90441,
    "height": 1.673,
    "weapon": "pistol",
-   "bytes": 213056
+   "bytes": 231412,
+   "lod2": "thug_female_LOD2"
   }
  ],
  "anims": "enemy_anims.glb",

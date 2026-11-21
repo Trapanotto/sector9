@@ -18,7 +18,7 @@ Built by `scripts/chars/` (see "Rebuilding" below); credits and licences in `/CR
 
 | file | content | size |
 |---|---|---|
-| `thug_jacket.glb` `thug_hoodie.glb` `thug_balaclava.glb` `thug_worker.glb` `thug_tee.glb` `thug_female.glb` | one skinned character each: meshes `<name>_LOD0` (8 000 tris) and `<name>_LOD1` (2 500 tris) sharing one skeleton, one material, one 1024 WebP atlas | 166-213 KB each |
+| `thug_jacket.glb` `thug_hoodie.glb` `thug_balaclava.glb` `thug_worker.glb` `thug_tee.glb` `thug_female.glb` | one skinned character each: meshes `<name>_LOD0` (8 000 tris), `<name>_LOD1` (2 500 tris) and `<name>_LOD2` (800 tris, added by workstream D with `scripts/chars/add_lod2.mjs`) sharing one skeleton, one material, one 1024 WebP atlas | 166-213 KB each |
 | `enemy_anims.glb` | skeleton + 56 clips (no mesh) | 0.97 MB |
 | `enemy_anims.clips.json` | per clip: duration, loop flag, sourced/made, source | |
 | `weapons/pistol.glb` `smg.glb` `shotgun.glb` | enemy weapons (208 / 320 / 276 tris, vertex colours) | ~6 KB each |
@@ -120,7 +120,7 @@ authored with the same offsets, so `smg_*`/`shotgun_*` hold their weapon by cons
 `hitboxes.json -> capsules[]`: `{part, bone, a, b, r, damage}`. `a`/`b` are capsule segment end points in the
 bone's local frame, `r` the radius in bone-local units (world radius = `r * rootScale`).
 `world = bone.localToWorld(new Vector3(...a))`. 17 capsules: head (x4 damage), neck, chest, stomach, pelvis,
-upper/lower arms, hands, thighs, calves, feet. Fitted on `thug_jacket`; shared by all variants.
+upper/lower arms, hands, thighs, calves, feet. Fitted on `thug_jacket`; shared by all variants. The head capsule was refitted by\nworkstream D (vertical segment, covers chin to skull top/hair on all six variants; see `build_hitboxes.mjs`).
 
 ## Loading (three r170)
 
