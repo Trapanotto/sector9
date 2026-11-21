@@ -1,0 +1,82 @@
+{
+ "pistol": {
+  "file": "weapons/pistol.glb",
+  "tris": 208,
+  "bone": "hand_r",
+  "offset": {
+   "position": [
+    -0.02447,
+    0.07839,
+    -0.00563
+   ],
+   "quaternion": [
+    0.00676,
+    -0.76445,
+    -0.64416,
+    -0.02488
+   ]
+  },
+  "muzzle": [
+   0,
+   0.062,
+   0.165
+  ],
+  "support": null
+ },
+ "smg": {
+  "file": "weapons/smg.glb",
+  "tris": 320,
+  "bone": "hand_r",
+  "offset": {
+   "position": [
+    -0.02447,
+    0.07839,
+    -0.00563
+   ],
+   "quaternion": [
+    -0.07339,
+    0.60978,
+    0.78655,
+    0.06421
+   ]
+  },
+  "muzzle": [
+   0,
+   0.055,
+   0.33
+  ],
+  "support": [
+   0,
+   0.005,
+   0.2
+  ]
+ },
+ "shotgun": {
+  "file": "weapons/shotgun.glb",
+  "tris": 276,
+  "bone": "hand_r",
+  "offset": {
+   "position": [
+    -0.02447,
+    0.07839,
+    -0.00563
+   ],
+   "quaternion": [
+    -0.08019,
+    0.51682,
+    0.85052,
+    0.05549
+   ]
+  },
+  "muzzle": [
+   0,
+   0.05,
+   0.68
+  ],
+  "support": [
+   0,
+   -0.005,
+   0.36
+  ]
+ }
+}

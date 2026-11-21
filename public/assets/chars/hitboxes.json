@@ -1,0 +1,277 @@
+{
+ "note": "Capsule endpoints a/b and radius r are in the bone's local space (skeleton units). World = bone.localToWorld(a); world radius = r * rootScale. Fitted to thug_jacket bind pose (55th percentile radius for torso capsules, 80th for limbs, 85th head); shared by all variants.",
+ "capsules": [
+  {
+   "part": "head",
+   "bone": "Head",
+   "a": [
+    0,
+    0.0145,
+    0.0372
+   ],
+   "b": [
+    0,
+    0.0145,
+    0.0372
+   ],
+   "r": 0.0891,
+   "damage": 4
+  },
+  {
+   "part": "neck",
+   "bone": "neck_01",
+   "a": [
+    0,
+    0.0263,
+    0
+   ],
+   "b": [
+    0,
+    0.0263,
+    0
+   ],
+   "r": 0.0783,
+   "damage": 2
+  },
+  {
+   "part": "chest",
+   "bone": "spine_03",
+   "a": [
+    0,
+    0.0839,
+    0
+   ],
+   "b": [
+    0,
+    0.0839,
+    0
+   ],
+   "r": 0.1538,
+   "damage": 1
+  },
+  {
+   "part": "stomach",
+   "bone": "spine_01",
+   "a": [
+    0,
+    0.1434,
+    -0.0116
+   ],
+   "b": [
+    0,
+    0.1434,
+    -0.0116
+   ],
+   "r": 0.2188,
+   "damage": 1
+  },
+  {
+   "part": "pelvis",
+   "bone": "pelvis",
+   "a": [
+    0,
+    0.0182,
+    0
+   ],
+   "b": [
+    0,
+    0.0182,
+    0
+   ],
+   "r": 0.1716,
+   "damage": 1
+  },
+  {
+   "part": "upperarm_l",
+   "bone": "upperarm_l",
+   "a": [
+    0,
+    0.0356,
+    0
+   ],
+   "b": [
+    0,
+    0.1441,
+    0
+   ],
+   "r": 0.0916,
+   "damage": 0.75
+  },
+  {
+   "part": "lowerarm_l",
+   "bone": "lowerarm_l",
+   "a": [
+    0,
+    0.0606,
+    0
+   ],
+   "b": [
+    0,
+    0.2086,
+    0
+   ],
+   "r": 0.0607,
+   "damage": 0.6
+  },
+  {
+   "part": "hand_l",
+   "bone": "hand_l",
+   "a": [
+    0.0044,
+    0.0483,
+    -0.0019
+   ],
+   "b": [
+    0.0096,
+    0.1062,
+    -0.0041
+   ],
+   "r": 0.0425,
+   "damage": 0.5
+  },
+  {
+   "part": "thigh_l",
+   "bone": "thigh_l",
+   "a": [
+    0,
+    0.1231,
+    0
+   ],
+   "b": [
+    0,
+    0.3073,
+    0
+   ],
+   "r": 0.1274,
+   "damage": 0.75
+  },
+  {
+   "part": "calf_l",
+   "bone": "calf_l",
+   "a": [
+    0,
+    0.0763,
+    0
+   ],
+   "b": [
+    0,
+    0.344,
+    0
+   ],
+   "r": 0.0716,
+   "damage": 0.6
+  },
+  {
+   "part": "foot_l",
+   "bone": "foot_l",
+   "a": [
+    -0.0026,
+    0.024,
+    0.0044
+   ],
+   "b": [
+    -0.0139,
+    0.127,
+    0.0234
+   ],
+   "r": 0.0708,
+   "damage": 0.5
+  },
+  {
+   "part": "upperarm_r",
+   "bone": "upperarm_r",
+   "a": [
+    0,
+    0.0356,
+    0
+   ],
+   "b": [
+    0,
+    0.1441,
+    0
+   ],
+   "r": 0.0916,
+   "damage": 0.75
+  },
+  {
+   "part": "lowerarm_r",
+   "bone": "lowerarm_r",
+   "a": [
+    0,
+    0.0608,
+    0
+   ],
+   "b": [
+    0,
+    0.2084,
+    0
+   ],
+   "r": 0.0609,
+   "damage": 0.6
+  },
+  {
+   "part": "hand_r",
+   "bone": "hand_r",
+   "a": [
+    -0.0044,
+    0.0483,
+    -0.0019
+   ],
+   "b": [
+    -0.0097,
+    0.1062,
+    -0.0041
+   ],
+   "r": 0.0425,
+   "damage": 0.5
+  },
+  {
+   "part": "thigh_r",
+   "bone": "thigh_r",
+   "a": [
+    0,
+    0.113,
+    0
+   ],
+   "b": [
+    0,
+    0.3198,
+    0
+   ],
+   "r": 0.1224,
+   "damage": 0.75
+  },
+  {
+   "part": "calf_r",
+   "bone": "calf_r",
+   "a": [
+    0,
+    0.0814,
+    0
+   ],
+   "b": [
+    0,
+    0.3409,
+    0
+   ],
+   "r": 0.0747,
+   "damage": 0.6
+  },
+  {
+   "part": "foot_r",
+   "bone": "foot_r",
+   "a": [
+    0.0027,
+    0.0237,
+    0.0043
+   ],
+   "b": [
+    0.0143,
+    0.1271,
+    0.0228
+   ],
+   "r": 0.0707,
+   "damage": 0.5
+  }
+ ]
+}

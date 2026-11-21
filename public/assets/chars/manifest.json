@@ -1,0 +1,557 @@
+{
+ "version": 1,
+ "convention": {
+  "units": "metres",
+  "up": "+Y",
+  "forward": "+Z (glTF default; rotate by PI to face -Z)",
+  "left": "+X"
+ },
+ "skeleton": {
+  "joints": 41,
+  "root": "root",
+  "note": "variants carry their height in the root bone scale (rootScale)"
+ },
+ "variants": [
+  {
+   "name": "thug_tee",
+   "file": "thug_tee.glb",
+   "lod0": "thug_tee_LOD0",
+   "lod1": "thug_tee_LOD1",
+   "rootScale": 1.01627,
+   "height": 1.833,
+   "weapon": "smg",
+   "bytes": 176244
+  },
+  {
+   "name": "thug_jacket",
+   "file": "thug_jacket.glb",
+   "lod0": "thug_jacket_LOD0",
+   "lod1": "thug_jacket_LOD1",
+   "rootScale": 0.9707,
+   "height": 1.763,
+   "weapon": "pistol",
+   "bytes": 180172
+  },
+  {
+   "name": "thug_hoodie",
+   "file": "thug_hoodie.glb",
+   "lod0": "thug_hoodie_LOD0",
+   "lod1": "thug_hoodie_LOD1",
+   "rootScale": 1.02143,
+   "height": 1.851,
+   "weapon": "smg",
+   "bytes": 174040
+  },
+  {
+   "name": "thug_balaclava",
+   "file": "thug_balaclava.glb",
+   "lod0": "thug_balaclava_LOD0",
+   "lod1": "thug_balaclava_LOD1",
+   "rootScale": 0.96768,
+   "height": 1.764,
+   "weapon": "shotgun",
+   "bytes": 191076
+  },
+  {
+   "name": "thug_worker",
+   "file": "thug_worker.glb",
+   "lod0": "thug_worker_LOD0",
+   "lod1": "thug_worker_LOD1",
+   "rootScale": 0.99481,
+   "height": 1.819,
+   "weapon": "pistol",
+   "bytes": 166580
+  },
+  {
+   "name": "thug_female",
+   "file": "thug_female.glb",
+   "lod0": "thug_female_LOD0",
+   "lod1": "thug_female_LOD1",
+   "rootScale": 0.90441,
+   "height": 1.673,
+   "weapon": "pistol",
+   "bytes": 213056
+  }
+ ],
+ "anims": "enemy_anims.glb",
+ "clips": [
+  {
+   "name": "idle",
+   "duration": 2.5,
+   "loop": true,
+   "source": "Quaternius UAL1 Idle_Loop",
+   "made": false
+  },
+  {
+   "name": "idle_talk",
+   "duration": 2.933,
+   "loop": true,
+   "source": "Quaternius UAL1 Idle_Talking_Loop",
+   "made": false
+  },
+  {
+   "name": "idle_arms_folded",
+   "duration": 2.5,
+   "loop": true,
+   "source": "Quaternius UAL2 Idle_FoldArms_Loop",
+   "made": false
+  },
+  {
+   "name": "idle_phone",
+   "duration": 2.933,
+   "loop": true,
+   "source": "Quaternius UAL2 Idle_TalkingPhone_Loop",
+   "made": false
+  },
+  {
+   "name": "walk",
+   "duration": 1.333,
+   "loop": true,
+   "source": "Quaternius UAL1 Walk_Loop",
+   "made": false
+  },
+  {
+   "name": "run",
+   "duration": 0.933,
+   "loop": true,
+   "source": "Quaternius UAL1 Jog_Fwd_Loop",
+   "made": false
+  },
+  {
+   "name": "sprint",
+   "duration": 0.667,
+   "loop": true,
+   "source": "Quaternius UAL1 Sprint_Loop",
+   "made": false
+  },
+  {
+   "name": "crouch_idle",
+   "duration": 2.933,
+   "loop": true,
+   "source": "Quaternius UAL1 Crouch_Idle_Loop",
+   "made": false
+  },
+  {
+   "name": "crouch_walk",
+   "duration": 2,
+   "loop": true,
+   "source": "Quaternius UAL1 Crouch_Fwd_Loop",
+   "made": false
+  },
+  {
+   "name": "pistol_idle",
+   "duration": 1.667,
+   "loop": true,
+   "source": "Quaternius UAL1 Pistol_Idle_Loop",
+   "made": false
+  },
+  {
+   "name": "pistol_aim",
+   "duration": 0.167,
+   "loop": true,
+   "source": "Quaternius UAL1 Pistol_Aim_Neutral",
+   "made": false
+  },
+  {
+   "name": "pistol_aim_up",
+   "duration": 0.167,
+   "loop": true,
+   "source": "Quaternius UAL1 Pistol_Aim_Up",
+   "made": false
+  },
+  {
+   "name": "pistol_aim_down",
+   "duration": 0.167,
+   "loop": true,
+   "source": "Quaternius UAL1 Pistol_Aim_Down",
+   "made": false
+  },
+  {
+   "name": "pistol_fire",
+   "duration": 0.633,
+   "loop": false,
+   "source": "Quaternius UAL1 Pistol_Shoot",
+   "made": false
+  },
+  {
+   "name": "pistol_reload",
+   "duration": 1.667,
+   "loop": false,
+   "source": "Quaternius UAL1 Pistol_Reload",
+   "made": false
+  },
+  {
+   "name": "hit_chest",
+   "duration": 0.333,
+   "loop": false,
+   "source": "Quaternius UAL1 Hit_Chest",
+   "made": false
+  },
+  {
+   "name": "hit_head",
+   "duration": 0.433,
+   "loop": false,
+   "source": "Quaternius UAL1 Hit_Head",
+   "made": false
+  },
+  {
+   "name": "hit_knockback",
+   "duration": 0.833,
+   "loop": false,
+   "source": "Quaternius UAL2 Hit_Knockback",
+   "made": false
+  },
+  {
+   "name": "death_backward",
+   "duration": 2.4,
+   "loop": false,
+   "source": "Quaternius UAL1 Death01",
+   "made": false
+  },
+  {
+   "name": "sit_enter",
+   "duration": 1.3,
+   "loop": false,
+   "source": "Quaternius UAL1 Sitting_Enter",
+   "made": false
+  },
+  {
+   "name": "sit_idle",
+   "duration": 1.667,
+   "loop": true,
+   "source": "Quaternius UAL1 Sitting_Idle_Loop",
+   "made": false
+  },
+  {
+   "name": "sit_talk",
+   "duration": 2.933,
+   "loop": true,
+   "source": "Quaternius UAL1 Sitting_Talking_Loop",
+   "made": false
+  },
+  {
+   "name": "sit_exit",
+   "duration": 1.033,
+   "loop": false,
+   "source": "Quaternius UAL1 Sitting_Exit",
+   "made": false
+  },
+  {
+   "name": "lying_to_idle",
+   "duration": 1.533,
+   "loop": false,
+   "source": "Quaternius UAL2 LayToIdle",
+   "made": false
+  },
+  {
+   "name": "melee_jab",
+   "duration": 0.867,
+   "loop": false,
+   "source": "Quaternius UAL1 Punch_Jab",
+   "made": false
+  },
+  {
+   "name": "melee_cross",
+   "duration": 1,
+   "loop": false,
+   "source": "Quaternius UAL1 Punch_Cross",
+   "made": false
+  },
+  {
+   "name": "melee_hook",
+   "duration": 0.467,
+   "loop": false,
+   "source": "Quaternius UAL2 Melee_Hook",
+   "made": false
+  },
+  {
+   "name": "kneel_fix",
+   "duration": 5.2,
+   "loop": true,
+   "source": "Quaternius UAL1 Fixing_Kneeling",
+   "made": false
+  },
+  {
+   "name": "interact",
+   "duration": 2,
+   "loop": false,
+   "source": "Quaternius UAL1 Interact",
+   "made": false
+  },
+  {
+   "name": "pickup",
+   "duration": 0.833,
+   "loop": false,
+   "source": "Quaternius UAL1 PickUp_Table",
+   "made": false
+  },
+  {
+   "name": "no",
+   "duration": 2.5,
+   "loop": true,
+   "source": "Quaternius UAL2 Idle_No_Loop",
+   "made": false
+  },
+  {
+   "name": "look_around",
+   "duration": 6,
+   "loop": true,
+   "source": "made: UAL Idle_Loop + keyed spine/neck/head yaw",
+   "made": true
+  },
+  {
+   "name": "smg_idle",
+   "duration": 2.5,
+   "loop": true,
+   "source": "made: UAL Idle_Loop + IK low-ready smg",
+   "made": true
+  },
+  {
+   "name": "smg_aim",
+   "duration": 2,
+   "loop": true,
+   "source": "made: UAL Pistol_Aim stance + IK shouldered smg",
+   "made": true
+  },
+  {
+   "name": "smg_aim_crouch",
+   "duration": 2,
+   "loop": true,
+   "source": "made: UAL Crouch_Idle legs + aim torso + IK smg",
+   "made": true
+  },
+  {
+   "name": "smg_fire",
+   "duration": 0.12,
+   "loop": true,
+   "source": "made: recoil impulse on the shouldered smg pose",
+   "made": true
+  },
+  {
+   "name": "smg_reload",
+   "duration": 2.2,
+   "loop": false,
+   "source": "made: keyed support-hand reload on the smg",
+   "made": true
+  },
+  {
+   "name": "shotgun_idle",
+   "duration": 2.5,
+   "loop": true,
+   "source": "made: UAL Idle_Loop + IK low-ready shotgun",
+   "made": true
+  },
+  {
+   "name": "shotgun_aim",
+   "duration": 2,
+   "loop": true,
+   "source": "made: UAL Pistol_Aim stance + IK shouldered shotgun",
+   "made": true
+  },
+  {
+   "name": "shotgun_aim_crouch",
+   "duration": 2,
+   "loop": true,
+   "source": "made: UAL Crouch_Idle legs + aim torso + IK shotgun",
+   "made": true
+  },
+  {
+   "name": "shotgun_fire",
+   "duration": 0.55,
+   "loop": false,
+   "source": "made: recoil impulse on the shouldered shotgun pose",
+   "made": true
+  },
+  {
+   "name": "shotgun_reload",
+   "duration": 2.2,
+   "loop": false,
+   "source": "made: keyed support-hand reload on the shotgun",
+   "made": true
+  },
+  {
+   "name": "pistol_aim_crouch",
+   "duration": 2,
+   "loop": true,
+   "source": "made: UAL Crouch_Idle legs + UAL Pistol_Aim torso/arms (chest held upright)",
+   "made": true
+  },
+  {
+   "name": "hit_back",
+   "duration": 0.7,
+   "loop": false,
+   "source": "made: impulse curve, hit from behind (chest thrown forward, head whips back)",
+   "made": true
+  },
+  {
+   "name": "hit_left",
+   "duration": 0.7,
+   "loop": false,
+   "source": "made: impulse curve, hit on the left side (torso bends right)",
+   "made": true
+  },
+  {
+   "name": "hit_right",
+   "duration": 0.7,
+   "loop": false,
+   "source": "made: impulse curve, hit on the right side (torso bends left)",
+   "made": true
+  },
+  {
+   "name": "hit_front",
+   "duration": 0.7,
+   "loop": false,
+   "source": "made: impulse curve, hit from the front (torso folds back)",
+   "made": true
+  },
+  {
+   "name": "death_forward",
+   "duration": 1.8,
+   "loop": false,
+   "source": "made: Hit_Chest start, knee buckle, accelerated blend into a prone pose, impact bounce",
+   "made": true
+  },
+  {
+   "name": "death_headshot",
+   "duration": 1.4,
+   "loop": false,
+   "source": "made: limp collapse (knees fold in 0.35 s), then topple into a twisted prone pose",
+   "made": true
+  },
+  {
+   "name": "death_slump",
+   "duration": 2,
+   "loop": false,
+   "source": "made: Hit_Chest start, sag onto the backside (seated-on-floor end pose), head drops",
+   "made": true
+  },
+  {
+   "name": "sleep_lying",
+   "duration": 4,
+   "loop": true,
+   "source": "made: UAL LayToIdle frame 0 (lying on back) + head turn + breathing",
+   "made": true
+  },
+  {
+   "name": "lean_wall",
+   "duration": 4,
+   "loop": true,
+   "source": "made: UAL Idle_FoldArms upper body, tilted against a wall behind, leg IK (one foot on the wall)",
+   "made": true
+  },
+  {
+   "name": "surrender",
+   "duration": 3,
+   "loop": true,
+   "source": "made: UAL Idle_Loop + IK hands raised, palms forward",
+   "made": true
+  },
+  {
+   "name": "kneel_hands_head",
+   "duration": 3,
+   "loop": true,
+   "source": "made: kneeling on both knees (leg IK) + IK hands on the head",
+   "made": true
+  },
+  {
+   "name": "startled_turn",
+   "duration": 0.9,
+   "loop": false,
+   "source": "made: head-torso-pelvis staggered 180 deg pivot with a small hop; ends facing -Z (rotate the actor by PI)",
+   "made": true
+  },
+  {
+   "name": "shove",
+   "duration": 0.8,
+   "loop": false,
+   "source": "made: two-handed shove with IK",
+   "made": true
+  }
+ ],
+ "weapons": {
+  "pistol": {
+   "file": "weapons/pistol.glb",
+   "tris": 208,
+   "bone": "hand_r",
+   "offset": {
+    "position": [
+     -0.02447,
+     0.07839,
+     -0.00563
+    ],
+    "quaternion": [
+     0.00676,
+     -0.76445,
+     -0.64416,
+     -0.02488
+    ]
+   },
+   "muzzle": [
+    0,
+    0.062,
+    0.165
+   ],
+   "support": null,
+   "bytes": 5636
+  },
+  "smg": {
+   "file": "weapons/smg.glb",
+   "tris": 320,
+   "bone": "hand_r",
+   "offset": {
+    "position": [
+     -0.02447,
+     0.07839,
+     -0.00563
+    ],
+    "quaternion": [
+     -0.07339,
+     0.60978,
+     0.78655,
+     0.06421
+    ]
+   },
+   "muzzle": [
+    0,
+    0.055,
+    0.33
+   ],
+   "support": [
+    0,
+    0.005,
+    0.2
+   ],
+   "bytes": 6576
+  },
+  "shotgun": {
+   "file": "weapons/shotgun.glb",
+   "tris": 276,
+   "bone": "hand_r",
+   "offset": {
+    "position": [
+     -0.02447,
+     0.07839,
+     -0.00563
+    ],
+    "quaternion": [
+     -0.08019,
+     0.51682,
+     0.85052,
+     0.05549
+    ]
+   },
+   "muzzle": [
+    0,
+    0.05,
+    0.68
+   ],
+   "support": [
+    0,
+    -0.005,
+    0.36
+   ],
+   "bytes": 5676
+  }
+ },
+ "hitboxes": "hitboxes.json"
+}
