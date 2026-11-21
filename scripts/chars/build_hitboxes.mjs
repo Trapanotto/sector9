@@ -69,8 +69,13 @@ for (const [part, vb, b0, b1, dmg] of SPEC) {
   capsules.push({ part, bone: b0, a: la.toArray().map((v) => +v.toFixed(4)), b: lb.toArray().map((v) => +v.toFixed(4)),
     r: +(r / s.x).toFixed(4), damage: dmg });
 }
+// Head: the cloud fit above collapsed to a sphere at face height (top of the skull uncovered). Workstream D
+// measured the Head-weighted vertices of all six variants in Head-bone space (y -0.08 chin … 0.15 skull/hair,
+// z -0.09 … 0.12, x ±0.085) and uses a vertical capsule instead.
+const head = capsules.find((c) => c.part === 'head');
+Object.assign(head, { a: [0, 0, 0.015], b: [0, 0.068, 0.008], r: 0.088 });
 const out = {
-  note: 'Capsule endpoints a/b and radius r are in the bone\'s local space (skeleton units). World = bone.localToWorld(a); world radius = r * rootScale. Fitted to thug_jacket bind pose (55th percentile radius for torso capsules, 80th for limbs, 85th head); shared by all variants.',
+  note:'Capsule endpoints a/b and radius r are in the bone\'s local space (skeleton units). World = bone.localToWorld(a); world radius = r * rootScale. Fitted to thug_jacket bind pose (55th percentile radius for torso capsules, 80th for limbs, 85th head); shared by all variants.',
   capsules,
 };
 fs.writeFileSync(outPath, JSON.stringify(out, null, 1));

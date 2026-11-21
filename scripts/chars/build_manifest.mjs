@@ -14,7 +14,7 @@ const manifest = {
   convention: { units: 'metres', up: '+Y', forward: '+Z (glTF default; rotate by PI to face -Z)', left: '+X' },
   skeleton: { joints: 41, root: 'root', note: 'variants carry their height in the root bone scale (rootScale)' },
   variants: Object.entries(meta).map(([name, m]) => ({
-    name, file: `${name}.glb`, lod0: `${name}_LOD0`, lod1: `${name}_LOD1`, rootScale: m.root_scale, height: m.height_m,
+    name, file: `${name}.glb`, lod0: `${name}_LOD0`, lod1: `${name}_LOD1`, lod2: `${name}_LOD2`, rootScale: m.root_scale, height: m.height_m,
     weapon: defaultWeapon[name] || 'pistol', bytes: size(`${name}.glb`),
   })),
   anims: 'enemy_anims.glb',
